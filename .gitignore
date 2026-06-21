@@ -1,0 +1,11 @@
+.vercel
+
+node_modules
+**/node_modules
+
+dist
+**/dist
+
+*.log
+
+helpdesk-sim/

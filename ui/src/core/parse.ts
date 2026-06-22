@@ -56,6 +56,7 @@ export const COMMAND_ALIASES: Record<string, string> = {
 
   "set password": "set_new_password",
   "password set": "set_new_password",
+  "password reset": "set_new_password",
   "set new password": "set_new_password",
   "new password set": "set_new_password",
   "change password": "set_new_password",
@@ -191,6 +192,9 @@ export const COMMAND_ALIASES: Record<string, string> = {
   "vpn access enable": "enable_vpn_access",
   "grant vpn access": "enable_vpn_access",
   "assign vpn access": "enable_vpn_access",
+  "fix vpn": "enable_vpn_access",
+  "setup vpn": "enable_vpn_access",
+  "configure vpn": "enable_vpn_access",
 
   // MFA / Multi-Factor Authentication
   "check mfa": "check_mfa_status",
@@ -205,6 +209,8 @@ export const COMMAND_ALIASES: Record<string, string> = {
   "mfa status check": "check_mfa_status",
   "check mfa code": "check_mfa_status",
 
+  "reset mfa status": "reset_mfa_method",
+  "mfa status reset": "reset_mfa_method",
   "reset mfa": "reset_mfa_method",
   "mfa reset": "reset_mfa_method",
   "reset mfa method": "reset_mfa_method",
@@ -343,6 +349,8 @@ export const COMMAND_ALIASES: Record<string, string> = {
   "drive map": "remap_network_drive",
   "restore network drive": "remap_network_drive",
   "reconnect network drive": "remap_network_drive",
+  "fix network drive": "remap_network_drive",
+  "restore network drive access": "remap_network_drive",
 
   "test network drive": "test_network_drive_access",
   "network drive test": "test_network_drive_access",
@@ -381,6 +389,9 @@ export const COMMAND_ALIASES: Record<string, string> = {
   "verify permissions": "check_user_permissions",
   "review permissions": "check_user_permissions",
 
+  "grant drive access": "add_user_to_group",
+  "add drive access": "add_user_to_group",
+  "restore drive access": "add_user_to_group",
   "add user to group": "add_user_to_group",
   "user add to group": "add_user_to_group",
   "add group membership": "add_user_to_group",
@@ -517,6 +528,9 @@ export const COMMAND_ALIASES: Record<string, string> = {
   "check app license": "check_license_assignment",
   "app license check": "check_license_assignment",
 
+  "grant license": "assign_software_license",
+  "give license": "assign_software_license",
+  "add license": "assign_software_license",
   "assign license": "assign_software_license",
   "license assign": "assign_software_license",
   "assign software license": "assign_software_license",

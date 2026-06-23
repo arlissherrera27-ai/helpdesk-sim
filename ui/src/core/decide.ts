@@ -1180,6 +1180,7 @@ if (
   !state.scenarioFacts ||
   (
     state.scenarioFacts.kind !== "not_receiving_email" &&
+    state.scenarioFacts.kind !== "not_receiving_email_inbox_rule_redirecting" &&
     state.scenarioFacts.kind !== "password_reset_recovery_email_never_arrives"
   )
 ) {
@@ -1224,6 +1225,7 @@ if (command.kind === "disable_inbox_filter") {
     !state.scenarioFacts ||
     (
       state.scenarioFacts.kind !== "not_receiving_email" &&
+      state.scenarioFacts.kind !== "not_receiving_email_inbox_rule_redirecting" &&
       state.scenarioFacts.kind !== "password_reset_recovery_email_never_arrives"
     )
   ) {
@@ -1231,8 +1233,16 @@ if (command.kind === "disable_inbox_filter") {
   }
 
 if (
-  state.scenarioFacts.kind === "password_reset_recovery_email_never_arrives" &&
-  !state.scenarioFacts.inbox_filter_checked
+  (
+    state.scenarioFacts.kind ===
+      "password_reset_recovery_email_never_arrives" &&
+    !state.scenarioFacts.inbox_filter_checked
+  ) ||
+  (
+    state.scenarioFacts.kind ===
+      "not_receiving_email_inbox_rule_redirecting" &&
+    !state.scenarioFacts.inbox_filter_checked
+  )
 ) {
   return denyProcedure(command.kind);
 }

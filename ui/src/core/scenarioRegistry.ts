@@ -632,7 +632,7 @@ What is your first troubleshooting step?`,
       "Customer: Great, I received the email.",
     ],
 
-    defaults: {
+defaults: {
   kind: "not_receiving_email",
   identity_verified: false,
   filters_checked: false,
@@ -640,6 +640,64 @@ What is your first troubleshooting step?`,
   can_receive_email: false,
 },
   },
+
+not_receiving_email_inbox_rule_redirecting: {
+  label: "Email Not Receiving — Inbox Rule Redirecting Mail",
+  startPrompt: `Customer: I'm not receiving emails I need for work.
+
+What is your first troubleshooting step?`,
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting the mailbox.",
+    },
+    {
+      command: "check_inbox_filters",
+      preview:
+        "Check inbox rules or filters to see if incoming email is being redirected.",
+    },
+    {
+      command: "disable_inbox_filter",
+      preview:
+        "Disable the inbox rule that is redirecting incoming mail away from the inbox.",
+    },
+    {
+      command: "send_test_email",
+      preview:
+        "Send a test email to confirm incoming delivery reaches the inbox.",
+    },
+  ],
+
+  completion: {
+    command: "send_test_email",
+    fact: "can_receive_email",
+  },
+
+  proofLines: [
+    "Verified the user before making mailbox changes",
+    "Checked inbox rules and filters before changing mail delivery settings",
+    "Identified that an inbox rule was redirecting incoming mail",
+    "Disabled the redirecting inbox rule",
+    "Confirmed incoming email reached the inbox with a test message",
+  ],
+
+  successLines: [
+    "Agent: The redirecting inbox rule has been disabled and incoming email delivery has been verified.",
+    "System: New messages now arrive in the inbox successfully.",
+    "Customer: Great, I can see the email now.",
+  ],
+
+  defaults: {
+    kind: "not_receiving_email_inbox_rule_redirecting",
+    identity_verified: false,
+    inbox_filter_checked: false,
+    inbox_filter_enabled: true,
+    filter_disabled: false,
+    can_receive_email: false,
+  },
+},
 
 mailbox_full: {
   label: "Mailbox Full",

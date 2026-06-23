@@ -399,6 +399,15 @@ export type NotReceivingEmailFacts = {
   can_receive_email: boolean;
 };
 
+export type NotReceivingEmailInboxRuleRedirectingFacts = {
+  kind: "not_receiving_email_inbox_rule_redirecting";
+  identity_verified: boolean;
+  inbox_filter_checked: boolean;
+  inbox_filter_enabled: boolean;
+  filter_disabled: boolean;
+  can_receive_email: boolean;
+};
+
 export type MailboxFullFacts = {
   kind: "mailbox_full";
   identity_verified: boolean;
@@ -636,6 +645,7 @@ export type ScenarioFacts =
   // EMAIL
   | EmailNotSendingFacts
   | NotReceivingEmailFacts
+  | NotReceivingEmailInboxRuleRedirectingFacts
   | MailboxFullFacts
   | EmailLoginIssueFacts
   | EmailClientNotSyncingFacts

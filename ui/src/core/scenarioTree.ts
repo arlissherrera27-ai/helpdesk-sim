@@ -1028,6 +1028,36 @@ scenarios: [
           },
         ],
       },
+            {
+        tierId: "email",
+        tierLabel: "Email",
+        scenarios: [
+          {
+            id: "not_receiving_email_inbox_rule_redirecting",
+            label: getScenarioLabel(
+              "not_receiving_email_inbox_rule_redirecting"
+            ),
+            level: "Beginner",
+            estimatedTime: "5–7 min",
+            description:
+              "Resolve an email delivery issue caused by an inbox rule redirecting incoming mail.",
+            skillFocus: [
+              "Email Troubleshooting",
+              "Inbox Rules",
+              "Dependency Awareness",
+            ],
+            scenarioContext:
+              "A user reports that important incoming emails never appear in their inbox.",
+            successOutcome:
+              "The redirecting inbox rule is removed and incoming email delivery is verified.",
+            previewSteps: getScenarioPreviewSteps(
+              "not_receiving_email_inbox_rule_redirecting"
+            ),
+            selectCommand:
+              "select not_receiving_email_inbox_rule_redirecting",
+          },
+        ],
+      },
       {
         tierId: "software_applications",
         tierLabel: "Software App Won’t Open",

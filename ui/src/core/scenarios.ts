@@ -18,6 +18,7 @@ export const SCENARIO_IDS = [
   // EMAIL
   "email_not_sending",
   "not_receiving_email",
+  "not_receiving_email_inbox_rule_redirecting",
   "mailbox_full",
   "email_login_issue",
   "email_client_not_syncing",
@@ -78,6 +79,8 @@ export const SCENARIO_LABELS: Record<ScenarioId, string> = {
   // EMAIL
   email_not_sending: "Email Not Sending",
   not_receiving_email: "Email Not Receiving",
+  not_receiving_email_inbox_rule_redirecting:
+    "Email Not Receiving: Inbox Rule Redirecting Mail",
   mailbox_full: "Mailbox Full",
   email_login_issue: "Email Login Issue",
   email_client_not_syncing: "Email Client Not Syncing",

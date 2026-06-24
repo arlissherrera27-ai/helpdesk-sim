@@ -692,11 +692,22 @@ export const COMMAND_ALIASES: Record<string, string> = {
 export function parseCommand(inputRaw: string): Command {
   const trimmed = inputRaw.trim();
   const lower = trimmed.toLowerCase();
-  const aliasedLower = COMMAND_ALIASES[lower] ?? lower;
 
   if (lower.length === 0) {
     return { kind: "unknown", rawInput: inputRaw };
   }
+
+  const separatedParts = lower
+    .split(/\s*[-/|,]\s*/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const matchedPart = separatedParts.find(
+    (part) => COMMAND_ALIASES[part] || lookupCommandDef(part.replace(/\s+/g, "_"))
+  );
+
+  const normalizedLower = matchedPart ?? lower;
+  const aliasedLower = COMMAND_ALIASES[normalizedLower] ?? normalizedLower;
 
   // Split into: verb + rest
   const [verb, ...rest] = aliasedLower.split(/\s+/);

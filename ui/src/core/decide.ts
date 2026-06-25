@@ -56,6 +56,38 @@ function isVpnProcedureScenario(
   );
 }
 
+function isNetworkDriveProcedureScenario(
+  facts: SimState["scenarioFacts"]
+): facts is Extract<
+  NonNullable<SimState["scenarioFacts"]>,
+  {
+    kind:
+      | "network_drive_missing"
+      | "network_drive_vpn_required_first";
+  }
+> {
+  return (
+    facts?.kind === "network_drive_missing" ||
+    facts?.kind === "network_drive_vpn_required_first"
+  );
+}
+
+function isSharedDriveProcedureScenario(
+  facts: SimState["scenarioFacts"]
+): facts is Extract<
+  NonNullable<SimState["scenarioFacts"]>,
+  {
+    kind:
+      | "shared_drive_access_issue"
+      | "shared_drive_group_membership_missing";
+  }
+> {
+  return (
+    facts?.kind === "shared_drive_access_issue" ||
+    facts?.kind === "shared_drive_group_membership_missing"
+  );
+}
+
 // Decision Maker: decides legitimacy and returns an authorized plan.
 // No state mutation. No execution.
 export function decide(state: SimState, command: Command): Decision {
@@ -1926,15 +1958,12 @@ if (runningCheck) {
   return runningCheck;
 }
 
-  if (
-    !state.scenarioFacts ||
-    (
-      state.scenarioFacts.kind !== "shared_drive_access_issue" &&
-      state.scenarioFacts.kind !== "shared_drive_group_membership_missing"
-    )
-  ) {
-    return denyProcedure(command.kind);
-  }
+if (
+  !state.scenarioFacts ||
+  !isSharedDriveProcedureScenario(state.scenarioFacts)
+) {
+  return denyProcedure(command.kind);
+}
 
 const identityCheck = mustHaveIdentityVerified(
   state,
@@ -2054,10 +2083,7 @@ if (runningCheck) {
 
 if (
   !state.scenarioFacts ||
-  (
-    state.scenarioFacts.kind !== "network_drive_missing" &&
-    state.scenarioFacts.kind !== "network_drive_vpn_required_first"
-  )
+  !isNetworkDriveProcedureScenario(state.scenarioFacts)
 ) {
   return denyProcedure(command.kind);
 }
@@ -2094,10 +2120,7 @@ if (runningCheck) {
 
 if (
   !state.scenarioFacts ||
-  (
-    state.scenarioFacts.kind !== "network_drive_missing" &&
-    state.scenarioFacts.kind !== "network_drive_vpn_required_first"
-  )
+  !isNetworkDriveProcedureScenario(state.scenarioFacts)
 ) {
   return denyProcedure(command.kind);
 }
@@ -2121,10 +2144,7 @@ if (runningCheck) {
 }
 if (
   !state.scenarioFacts ||
-  (
-    state.scenarioFacts.kind !== "network_drive_missing" &&
-    state.scenarioFacts.kind !== "network_drive_vpn_required_first"
-  )
+  !isNetworkDriveProcedureScenario(state.scenarioFacts)
 ) {
   return denyProcedure(command.kind);
 }

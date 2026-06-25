@@ -38,6 +38,24 @@ function mustHaveIdentityVerified(
   return null;
 }
 
+function isVpnProcedureScenario(
+  facts: SimState["scenarioFacts"]
+): facts is Extract<
+  NonNullable<SimState["scenarioFacts"]>,
+  {
+    kind:
+      | "vpn_access_issue"
+      | "vpn_mfa_dependency_missing"
+      | "network_drive_vpn_required_first";
+  }
+> {
+  return (
+    facts?.kind === "vpn_access_issue" ||
+    facts?.kind === "vpn_mfa_dependency_missing" ||
+    facts?.kind === "network_drive_vpn_required_first"
+  );
+}
+
 // Decision Maker: decides legitimacy and returns an authorized plan.
 // No state mutation. No execution.
 export function decide(state: SimState, command: Command): Decision {
@@ -499,11 +517,7 @@ if (runningCheck) {
 
 if (
   !state.scenarioFacts ||
-  (
-    state.scenarioFacts.kind !== "vpn_access_issue" &&
-    state.scenarioFacts.kind !== "vpn_mfa_dependency_missing" &&
-    state.scenarioFacts.kind !== "network_drive_vpn_required_first"
-  )
+  !isVpnProcedureScenario(state.scenarioFacts)
 ) {
   return denyProcedure(command.kind);
 }
@@ -533,11 +547,7 @@ if (runningCheck) {
 
 if (
   !state.scenarioFacts ||
-  (
-    state.scenarioFacts.kind !== "vpn_access_issue" &&
-    state.scenarioFacts.kind !== "vpn_mfa_dependency_missing" &&
-    state.scenarioFacts.kind !== "network_drive_vpn_required_first"
-  )
+  !isVpnProcedureScenario(state.scenarioFacts)
 ) {
   return denyProcedure(command.kind);
 }

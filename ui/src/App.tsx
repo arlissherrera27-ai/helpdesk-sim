@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { handleInput } from "./core/engine";
 import { initialState } from "./core/state";
 import type { SimState } from "./core/types";
@@ -104,13 +104,8 @@ export default function App() {
   const [procedureHelpPinned, setProcedureHelpPinned] = useState(false);
   const mode = state.mode;
 
-  const bottomRef = useRef<HTMLDivElement | null>(null);
   const visibleCommands = getVisibleCommands(state); 
-  const shownCommands =
-    (state.executionState === "LOBBY" && state.scenario === null) ||
-    log.includes("Select a scenario to begin")
-      ? []
-      : visibleCommands;
+
 
   const scenarioProcedureCommands = getScenarioProcedureCommands(state.scenario);
   const currentExpectedProcedureLabel = getCurrentExpectedProcedureLabel(state);
@@ -142,13 +137,6 @@ export default function App() {
     state.executionState !== "COMPLETED";
 
   const procedureHelpOpen = procedureHelpPinned;
-  
-  const showTopScenarioButton =
-    state.executionState !== "RUNNING"
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  },  [log]);
 
   function runCommand() {
     const trimmed = input.trim();
@@ -257,27 +245,6 @@ if (isCompleted) {
 
     setInput("");
   }
-
-let inputPlaceholder = "Select a scenario to begin";
-
-if (showSelector) {
-  inputPlaceholder = "Choose a scenario above";
-} else if (state.executionState === "RUNNING") {
-  const hasCompletedProcedure = state.runLog.some(
-    (event) =>
-      event.decision === "ALLOW" &&
-      event.plan !== "StartNewAttempt" &&
-      event.plan !== "ReadOnly"
-  );
-
-  inputPlaceholder = hasCompletedProcedure
-    ? "What’s your next step?"
-    : "Enter first troubleshooting step...";
-} else if (state.executionState === "COMPLETED") {
-  inputPlaceholder = "Type here...";
-} else if (state.scenario !== null || state.previewScenario !== null) {
-  inputPlaceholder = "Type here...";
-}
 
 const previewScenarioDetails = scenarioTree
   .flatMap((scenarioType) => scenarioType.branches)
@@ -1308,6 +1275,49 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
         
             Next step: type <strong>'start'</strong> to begin.
           </div>
+          <div
+  style={{
+    marginTop: "12px",
+    display: "flex",
+    gap: "8px",
+  }}
+>
+  <input
+    value={input}
+    onChange={(e) => setInput(e.target.value)}
+    onKeyDown={(e) => {
+      if (e.key === "Enter") {
+        runCommand();
+      }
+    }}
+    placeholder="Type 'start' to begin"
+    style={{
+      flex: 1,
+      boxSizing: "border-box",
+      fontFamily: "monospace",
+      background: "transparent",
+      color: "#fff",
+      border: "1px solid #2a2a2a",
+      borderRadius: "8px",
+      padding: "10px 12px",
+    }}
+  />
+
+  <button
+    onClick={runCommand}
+    style={{
+      fontFamily: "monospace",
+      padding: "10px 16px",
+      border: "1px solid #6d4aff",
+      borderRadius: "8px",
+      background: "rgba(109, 74, 255, 0.18)",
+      color: "#fff",
+      cursor: "pointer",
+    }}
+  >
+    Enter
+  </button>
+</div>
                 </section>
       )}
 {state.executionState === "RUNNING" && (
@@ -1633,467 +1643,10 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
 >
   <div style={{ flex: 1 }}>
     
-      {state.scenario &&
-      state.executionState !== "LOBBY" &&
-      !showSelector &&
-      !log.includes("Select a scenario to begin") && (
-      <div
-        style={{
-          marginBottom: "10px",
-          padding: "8px 10px",
-          borderBottom: "1px solid #2a2a2a",
-          fontSize: "13px",
-          color: "#bdbdbd",
-        }}
-      >
-        Active Scenario:{" "}
-        <strong>
-          {SCENARIO_LABELS[state.scenario as keyof typeof SCENARIO_LABELS]}
-        </strong>{" "}
-        — {getScenarioTypeDisplayLabel(
-          state.scenario as keyof typeof SCENARIO_LABELS
-        )}
-        <div style={{ marginTop: "4px", display: "flex", gap: "10px", alignItems: "center" }}>
-          <span>Mode: {mode === "practice" ? "Practice" : "Assessment"}</span>
-
-          {state.executionState === "RUNNING" && mode === "assessment" && (
-            <button
-            onClick={() => {
-            setState((current) => ({
-              ...current,
-              mode: "practice",
-
-              ...(current.mode === "assessment" &&
-              current.executionState === "RUNNING"
-                ? { assessmentIntegrity: "converted_to_practice" }
-                : {}),
-            }));
-
-            setProcedureHelpPinned(false);
-            }}
-              style={{
-                fontFamily: "monospace",
-                fontSize: "11px",
-                background: "transparent",
-                color: "#bdbdbd",
-                border: "1px solid #2a2a2a",
-                cursor: "pointer",
-              }}
-            >
-              Switch to Practice
-            </button>
-          )}
-        </div>
-      </div>
-    )}
-
-{state.executionState !== "RUNNING" &&
- !(
-   state.executionState === "LOBBY" &&
-   (state.scenario === null || showState3Preview)
- ) && (
-  <>
-      {showTopScenarioButton && (
-        <div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginBottom: "8px",
-            }}
-          >
-            <button
-            onClick={() => {
-              setProcedureHelpPinned(false);
-
-              if (showSelector) {
-                setShowSelector(false);
-                setOpenScenarioTypeId(null);
-                setOpenBranchId(null);
-                return;
-              }
-
-              if (state.executionState === "LOBBY" && state.scenario !== null) {
-                setShowSelector(true);
-                setOpenScenarioTypeId(null);
-                setOpenBranchId(null);  
-
-                setLog([
-  "Select a scenario to begin",
-]);
-
-                return;
-              }
-
-              setShowSelector(true);
-            }}
-              style={{ fontFamily: "monospace" }}
-            >
-              Select Scenario
-            </button>
-
-            <span style={{ fontSize: "12px", color: "#bdbdbd" }}>
-              Mode: {mode === "practice" ? "Practice" : "Assessment"}
-            </span>
-
-            <button
-              onClick={() => {
-              const nextMode = state.mode === "practice" ? "assessment" : "practice";
-
-              setState((current) => ({
-              ...current,
-              mode: nextMode,
-              assessmentIntegrity: "maintained",
-            }));
-
-            if (
-              state.executionState === "LOBBY" &&
-              state.previewScenario !== null
-            ) {
-              const selectedScenario = scenarioTree
-                .flatMap((scenarioType) => scenarioType.branches)
-                .flatMap((branch) => branch.scenarios)
-                .find((scenario) => scenario.id === state.previewScenario);
-
-                if (selectedScenario && !log.includes("Select a scenario to begin")) {
-                  setLog(buildLogBlock(buildScenarioPreview(selectedScenario, nextMode)));
-                }
-              }
-
-                setProcedureHelpPinned(false);
-              }}
-              style={{
-                fontFamily: "monospace",
-                fontSize: "11px",
-                background: "transparent",
-                color: "#bdbdbd",
-                border: "1px solid #2a2a2a",
-                cursor: "pointer",
-              }}
-            >
-              Switch to {mode === "practice" ? "Assessment" : "Practice"}
-            </button>
-          </div>
-
-          {showSelector &&
-            scenarioTree.map((scenarioType) => (
-              <div key={scenarioType.typeId} style={{ marginTop: "8px" }}>
-                <button
-                  onClick={() => {
-                    if (!scenarioType.enabled) return;
-
-                    setOpenScenarioTypeId((prev) =>
-                      prev === scenarioType.typeId ? null : scenarioType.typeId
-                    );
-
-                    setOpenBranchId(null);
-                  }}
-                  style={{
-                    fontFamily: "monospace",
-                    display: "block",
-                    opacity: scenarioType.enabled ? 1 : 0.5,
-                    cursor: scenarioType.enabled ? "pointer" : "default",
-                  }}
-                >
-                  {scenarioType.typeLabel}
-                </button>
-
-                <div
-                  style={{
-                    fontSize: "12px",
-                    opacity: 0.75,
-                    marginLeft: "8px",
-                  }}
-                >
-                  {scenarioType.description}
-                  {!scenarioType.enabled ? " Coming later." : ""}
-                </div>
-
-                {openScenarioTypeId === scenarioType.typeId &&
-                  scenarioType.branches.map((branch) => (
-                    <div
-                      key={branch.tierId}
-                      style={{
-                        marginTop: "8px",
-                        marginLeft: "16px",
-                      }}
-                    >
-                      <button
-                        onClick={() => {
-                          setOpenBranchId((prev) =>
-                            prev === branch.tierId ? null : branch.tierId
-                          );
-
-                        }}
-                        style={{
-                          fontFamily: "monospace",
-                          display: "block",
-                        }}
-                      >
-                        {branch.tierLabel}
-                      </button>
-
-{openBranchId === branch.tierId &&
-  branch.scenarios.map((scenario) => (
-    <div
-      key={scenario.id}
-      style={{
-        marginLeft: "16px",
-        marginTop: "8px",
-      }}
-    >
-<button
-  onClick={() => {
-    const command = scenario.selectCommand;
-
-    if (!command) return;
-
-    const out = handleInput(state, command);
-
-    setState(out.state);
-
-    const previewMessage = buildScenarioPreview(
-      scenario,
-      mode
-    );
-
-    setLog(buildLogBlock(previewMessage));
-
-    setShowSelector(false);
-    setOpenScenarioTypeId(null);
-    setOpenBranchId(null);
-  }}
-  style={{
-    fontFamily: "monospace",
-    display: "block",
-    textAlign: "left",
-    padding: "8px",
-    maxWidth: "360px",
-    cursor: "pointer",
-  }}
->
-  <div>{scenario.label}</div>
-
-  <div style={{ fontSize: "12px", opacity: 0.75 }}>
-    {scenario.level} • {scenario.estimatedTime}
   </div>
 
-  <div style={{ fontSize: "12px", opacity: 0.75 }}>
-    {scenario.description}
-  </div>
-</button>
-    </div>
-  ))}
-                    </div>
-                  ))}
-              </div>
-            ))}
-        </div>
-      )}
-  </>
-)}
-  </div>
-
-  {shownCommands.length > 0 && (
-  <div
-    style={{
-      minWidth: "160px",
-      padding: "4px 6px",
-      fontFamily: "monospace",
-      fontSize: "11px",
-      color: "#888",
-      background: "transparent",
-    }}
-  >
-    <div
-      style={{
-        marginBottom: "4px",
-        fontSize: "10px",
-        letterSpacing: "0.3px",
-        color: "#666",
-      }}
-    >
-      Available commands:
-    </div>
-
-    {shownCommands.map((command) => (
-      <div
-        key={command}
-        style={{
-          marginBottom: "1px",
-          opacity: 0.8,
-        }}
-      >
-        - {command}
-      </div>
-    ))}
-
-    {showProcedureHelp && (
-      <div
-        style={{
-          position: "relative",
-          marginTop: "10px",
-          paddingTop: "8px",
-          borderTop: "1px solid #2a2a2a",
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => {
-          setProcedureHelpPinned((current) => {
-            const nextPinned = !current;
-
-            if (nextPinned) {
-              setState((currentState) => {
-                const currentExpectedStep =
-                  getCurrentExpectedProcedureLabel(currentState);
-
-                return {
-                  ...currentState,
-                  procedureHelpOpenedCount:
-                    currentState.procedureHelpOpenedCount + 1,
-
-                  procedureHelpUsedDuring:
-                    currentExpectedStep &&
-                    !currentState.procedureHelpUsedDuring.includes(currentExpectedStep)
-                      ? [
-                          ...currentState.procedureHelpUsedDuring,
-                          currentExpectedStep,
-                        ]
-                      : currentState.procedureHelpUsedDuring,
-                };
-              });
-            }
-
-            return nextPinned;
-          });
-        }}
-          style={{
-            fontFamily: "monospace",
-            fontSize: "11px",
-            color: "#bdbdbd",
-            background: "transparent",
-            border: "none",
-            padding: 0,
-            cursor: "pointer",
-            textAlign: "left",
-          }}
-        >
-          {procedureHelpOpen ? "Hide Procedure Help" : "Show Procedure Help"}
-        </button>
-
-        {procedureHelpOpen && (
-          <div
-            style={{
-              position: "absolute",
-              right: 0,
-              top: "24px",
-              zIndex: 20,
-              width: "320px",
-              maxHeight: "360px",
-              overflowY: "auto",
-              padding: "10px",
-              border: "1px solid #2a2a2a",
-              background: "#111",
-              color: "#e5e5e5",
-              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.35)",
-            }}
-          >
-            <div style={{ marginBottom: "8px", fontWeight: "bold" }}>
-              Parser accepts these expressions:
-            </div>
-
-            {parserAliasHelp.map((item) => (
-              <div key={item.command} style={{ marginTop: "8px" }}>
-                <div style={{ fontWeight: "bold" }}>{item.label}</div>
-
-                {item.aliases.map((alias) => (
-                  <div key={alias} style={{ marginLeft: "10px" }}>
-                    - {alias}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    )}
-  </div>
-)}
 </div>
-    
-    <div
-      style={{
-        flex: 1,
-        overflowY: "auto",
-        whiteSpace: "pre-wrap",
-        marginBottom: "0px",
-      }}
-    >
-            {!showSelector &&
-        !showState3Preview &&
-        log.map((line, index) =>
-        line === "" ? (
-         <div key={index} style={{ height: "10px" }} />
-        ) : (
-          <div
-            key={index}
-            style={{
-              marginBottom: line.startsWith(">") ? "6px" : "2px",
-              fontWeight: "normal",
-            }}
-          >
-            {line}
-          </div>
-        )
-      )}
 
-      <div ref={bottomRef} />
-    </div>
-
-    <div
-      style={{
-        borderTop: "1px solid #2a2a2a",
-        paddingTop: "0px",
-        background: "transparent",
-      }}
-    >
-      <div style={{ display: "flex", gap: "8px" }}>
-  <input
-    value={input}
-    onChange={(e) => setInput(e.target.value)}
-    onKeyDown={(e) => {
-      if (e.key === "Enter") {
-        runCommand();
-      }
-    }}
-    placeholder={inputPlaceholder}
-    style={{
-      flex: 1, // fills remaining space
-      boxSizing: "border-box",
-      fontFamily: "monospace",
-      background: "transparent",
-      color: "#fff",
-      border: "1px solid #2a2a2a",
-    }}
-  />
-
-  <button
-    onClick={runCommand}
-    style={{
-      fontFamily: "monospace",
-      padding: "4px 10px",
-      border: "1px solid #2a2a2a",
-      background: "transparent",
-      color: "#fff",
-      cursor: "pointer",
-    }}
-  >
-    Enter
-  </button>
-</div>
-    </div>
   </div>
 );
 }

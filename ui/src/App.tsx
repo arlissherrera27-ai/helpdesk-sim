@@ -11,6 +11,85 @@ import {
 import { COMMAND_ALIASES } from "./core/parse";
 import { getScenarioProcedureCommands } from "./core/scenarioRegistry";
 
+// ==========================================
+// UI STANDARDS
+// ==========================================
+
+const COLORS = {
+  appBg: "#0b0f14",
+  panel: "rgba(255,255,255,0.03)",
+  panelSoft: "rgba(255,255,255,0.02)",
+  border: "#2a2a2a",
+  text: "#f5f7fb",
+  body: "#d1d5db",
+  muted: "#9aa4b2",
+  success: "#22c55e",
+  successDark: "#1f7a3a",
+  practice: "#a78bfa",
+  practiceStrong: "#6d4aff",
+  assessment: "#93c5fd",
+  assessmentStrong: "#60a5fa",
+};
+
+const TEXT = {
+  label: "12px",
+  detail: "13px",
+  body: "14px",
+  section: "20px",
+  title: "24px",
+  hero: "56px",
+};
+
+const SPACE = {
+  xs: "4px",
+  sm: "8px",
+  md: "16px",
+  lg: "22px",
+  xl: "28px",
+};
+
+const RADIUS = {
+  button: "8px",
+  chip: "10px",
+  card: "12px",
+  pill: "999px",
+};
+
+const CARD = {
+  base: {
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: RADIUS.card,
+    background: COLORS.panel,
+  },
+};
+
+const BUTTON = {
+  secondary: {
+    fontFamily: "monospace",
+    padding: "10px 14px",
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: RADIUS.button,
+    background: "transparent",
+    color: COLORS.text,
+    cursor: "pointer",
+  },
+  primary: {
+    fontFamily: "monospace",
+    padding: "10px 14px",
+    border: `1px solid ${COLORS.practiceStrong}`,
+    borderRadius: RADIUS.button,
+    background: "rgba(109, 74, 255, 0.18)",
+    color: COLORS.text,
+    cursor: "pointer",
+  },
+};
+
+const LAYOUT = {
+  completedHero: "1fr 340px",
+  completedSummaryCards: "1fr 1fr 1fr",
+  runningMain: "1fr 320px",
+};
+
 function getVisibleCommands(state: SimState): string[] {
   if (state.executionState === "LOBBY") {
     if (state.scenario === null && state.previewScenario === null) {
@@ -449,39 +528,7 @@ const showState3Preview =
         </div>
       </section>
 )}
-{state.executionState === "COMPLETED" && (
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "2fr 0.7fr 1fr",
-      gap: "16px",
-      marginBottom: "16px",
-    }}
-  >
-    <section style={{ padding: "18px", border: "1px solid #2a2a2a", borderRadius: "12px", background: "rgba(255,255,255,0.03)" }}>
-      <div style={{ color: "#9aa4b2", fontSize: "12px", fontWeight: 700 }}>Score</div>
-      <div style={{ marginTop: "8px", color: "#f5f7fb", fontSize: "24px", fontWeight: 700 }}>
-        {"—"}
-      </div>
-    </section>
 
-    <section style={{ padding: "18px", border: "1px solid #2a2a2a", borderRadius: "12px", background: "rgba(255,255,255,0.03)" }}>
-      <div style={{ color: "#9aa4b2", fontSize: "12px", fontWeight: 700 }}>Evidence</div>
-      <div style={{ marginTop: "8px", color: "#d1d5db", fontSize: "13px" }}>
-        Complete
-      </div>
-    </section>
-
-    <section style={{ padding: "18px", border: "1px solid #2a2a2a", borderRadius: "12px", background: "rgba(255,255,255,0.03)" }}>
-      <div style={{ color: "#9aa4b2", fontSize: "12px", fontWeight: 700 }}>Assistance</div>
-      <div style={{ marginTop: "8px", color: "#d1d5db", fontSize: "13px" }}>
-        {state.procedureHelpUsedDuring.length > 0
-          ? `${state.procedureHelpUsedDuring.length} help use(s)`
-          : "None"}
-      </div>
-    </section>
-  </div>
-)}
             {state.executionState === "LOBBY" &&
         state.scenario === null &&
         state.previewScenario === null &&
@@ -611,8 +658,8 @@ const showState3Preview =
                   </strong>
                   <span
                     style={{
-                      color: "#d1d5db",
-                      fontSize: "13px",
+                      color: COLORS.body,
+                      fontSize: TEXT.detail,
                       lineHeight: 1.5,
                     }}
                   >
@@ -681,8 +728,8 @@ const showState3Preview =
                   </strong>
                   <span
                     style={{
-                      color: "#d1d5db",
-                      fontSize: "13px",
+                      color: COLORS.body,
+                      fontSize: TEXT.detail,
                       lineHeight: 1.5,
                     }}
                   >
@@ -1064,7 +1111,7 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
                         width: "100%",
                         display: "block",
                         textAlign: "left",
-                        marginBottom: "10px",
+                        marginBottom: SPACE.sm,
                         padding: "14px 16px",
                         fontFamily: "monospace",
                         color: "#f5f7fb",
@@ -1248,7 +1295,7 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
                       gap: "14px",
                       padding: "14px 0",
                       borderBottom: "1px solid #2a2a2a",
-                      color: "#d1d5db",
+                      color: COLORS.body,
                     }}
                   >
                     <strong style={{ color: "#a78bfa" }}>{index + 1}</strong>
@@ -1323,22 +1370,23 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
 {state.executionState === "RUNNING" && (
   <div
     style={{
-      display: "grid",
-      gridTemplateColumns: "1fr 320px",
-      gap: "16px",
-      alignItems: "start",
-      marginBottom: "16px",
+      display: "block",
+      marginBottom: SPACE.md,
     }}
   >
     <section
-      style={{
-        padding: "22px",
-        border: "1px solid #2a2a2a",
-      borderRadius: "12px",
-      background: "rgba(255, 255, 255, 0.03)",
-    }}
-  >
-    <h2 style={{ margin: "0 0 14px", color: "#f5f7fb" }}>
+  style={{
+    ...CARD.base,
+    padding: SPACE.lg,
+  }}
+>
+  <h2
+  style={{
+    margin: `0 0 ${SPACE.md}`,
+    color: COLORS.text,
+    fontSize: TEXT.title,
+  }}
+>
       {state.scenario
         ? SCENARIO_LABELS[state.scenario as keyof typeof SCENARIO_LABELS]
         : "Active Scenario"}{" "}
@@ -1350,12 +1398,12 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
     </h2>
 
     <p style={{ margin: "0 0 10px", color: "#d1d5db", lineHeight: 1.6 }}>
-      <strong style={{ color: "#60a5fa" }}>Customer Issue:</strong>{" "}
+      <strong style={{ color: COLORS.assessmentStrong }}>Customer Issue:</strong>{" "}
       {previewScenarioDetails?.scenarioContext ?? "Customer issue is active."}
     </p>
 
         <p style={{ margin: 0, color: "#d1d5db", lineHeight: 1.6 }}>
-      <strong style={{ color: "#60a5fa" }}>Scenario Goal:</strong>{" "}
+      <strong style={{ color: COLORS.assessmentStrong }}>Scenario Goal:</strong>{" "}
       {previewScenarioDetails?.successOutcome ?? "Resolve the customer issue."}
     </p>
 
@@ -1375,113 +1423,19 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
 
           setProcedureHelpPinned(false);
         }}
-        style={{
-          marginTop: "16px",
-          fontFamily: "monospace",
-          fontSize: "13px",
-          color: "#a78bfa",
-          background: "transparent",
-          border: "1px solid #6d4aff",
-          borderRadius: "8px",
-          padding: "9px 12px",
-          cursor: "pointer",
-        }}
+style={{
+  ...BUTTON.secondary,
+  width: "100%",
+  marginTop: SPACE.md,
+  border: `1px solid ${COLORS.practiceStrong}`,
+  color: COLORS.practice,
+  textAlign: "center",
+}}
       >
         Switch to Practice
       </button>
     )}
                 </section>
-
-        <section
-  style={{
-    position: "relative",
-    zIndex: 10,
-    padding: "18px 22px",
-    border: "1px solid #2a2a2a",
-    borderRadius: "12px",
-    background: "rgba(255, 255, 255, 0.03)",
-  }}
->
-      
-      <div
-        style={{
-          marginBottom: "8px",
-          color: "#f5f7fb",
-          fontWeight: 700,
-        }}
-      >
-        Available commands:
-      </div>
-
-            {visibleCommands.map((command) => (
-        <div
-          key={command}
-          style={{
-            color: "#d1d5db",
-            marginBottom: "4px",
-          }}
-        >
-          - {command}
-        </div>
-      ))}
-
-      {showProcedureHelp && (
-        <button
-          type="button"
-          onClick={() => {
-            setProcedureHelpPinned((current) => !current);
-          }}
-          style={{
-            marginTop: "12px",
-            fontFamily: "monospace",
-            fontSize: "13px",
-            color: "#a78bfa",
-            background: "transparent",
-            border: "1px solid #6d4aff",
-            borderRadius: "8px",
-            padding: "9px 12px",
-            cursor: "pointer",
-          }}
-        >
-          {procedureHelpOpen ? "Hide Procedure Help" : "Show Procedure Help"}
-        </button>
-      )}
-            {procedureHelpOpen && (
-        <div
-          style={{
-          position: "absolute",
-          top: "100%",
-          right: 0,
-          width: "320px",
-          marginTop: "8px",
-          padding: "10px",
-          border: "1px solid #2a2a2a",
-          borderRadius: "8px",
-          background: "#111",
-          color: "#e5e5e5",
-          maxHeight: "320px",
-          overflowY: "auto",
-          boxShadow: "0 16px 35px rgba(0, 0, 0, 0.45)",
-        }}
-        >
-          <div style={{ marginBottom: "8px", fontWeight: "bold" }}>
-            Parser accepts these expressions:
-          </div>
-
-          {parserAliasHelp.map((item) => (
-            <div key={item.command} style={{ marginTop: "8px" }}>
-              <div style={{ fontWeight: "bold" }}>{item.label}</div>
-
-              {item.aliases.map((alias) => (
-                <div key={alias} style={{ marginLeft: "10px" }}>
-                  - {alias}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
 
   </div>
 )}
@@ -1489,27 +1443,135 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
 {state.executionState === "RUNNING" && (
   <section
     style={{
-      marginBottom: "16px",
-      padding: "22px",
-      border: "1px solid #2a2a2a",
-      borderRadius: "12px",
-      background: "rgba(255, 255, 255, 0.03)",
+      ...CARD.base,
+      marginBottom: SPACE.md,
+      padding: SPACE.lg,
     }}
   >
-    <h3 style={{ margin: "0 0 16px", color: "#f5f7fb" }}>
+    <h3
+      style={{
+        margin: `0 0 ${SPACE.md}`,
+        color: COLORS.text,
+        fontSize: TEXT.section,
+      }}
+    >
       Conversation
     </h3>
 
-    <div style={{ whiteSpace: "pre-wrap", color: "#d1d5db", lineHeight: 1.6 }}>
-      {log.map((line, index) =>
-        line === "" ? (
-          <div key={index} style={{ height: "10px" }} />
-        ) : (
-          <div key={index} style={{ marginBottom: "4px" }}>
-            {line}
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 280px",
+        gap: SPACE.lg,
+        alignItems: "start",
+      }}
+    >
+      <div
+        style={{
+          maxHeight: "320px",
+          overflowY: "auto",
+          paddingRight: SPACE.sm,
+        }}
+      >
+        <div
+          style={{
+            whiteSpace: "pre-wrap",
+            color: COLORS.body,
+            fontSize: TEXT.detail,
+            lineHeight: 1.6,
+          }}
+        >
+          {log.map((line, index) =>
+            line === "" ? (
+              <div key={index} style={{ height: "10px" }} />
+            ) : (
+              <div key={index} style={{ marginBottom: "4px" }}>
+                {line}
+              </div>
+            )
+          )}
+        </div>
+      </div>
+
+      <aside
+        style={{
+          borderLeft: `1px solid ${COLORS.border}`,
+          paddingLeft: SPACE.lg,
+        }}
+      >
+        <div
+          style={{
+            marginBottom: SPACE.sm,
+            color: COLORS.text,
+            fontSize: TEXT.section,
+            fontWeight: 700,
+          }}
+        >
+          Available commands:
+        </div>
+
+        {visibleCommands.map((command) => (
+          <div
+            key={command}
+            style={{
+              color: COLORS.body,
+              fontSize: TEXT.detail,
+              marginBottom: SPACE.xs,
+            }}
+          >
+            - {command}
           </div>
-        )
-      )}
+        ))}
+
+        {showProcedureHelp && (
+          <button
+            type="button"
+            onClick={() => {
+              setProcedureHelpPinned((current) => !current);
+            }}
+            style={{
+              ...BUTTON.secondary,
+              width: "100%",
+              marginTop: SPACE.md,
+              border: `1px solid ${COLORS.practiceStrong}`,
+              color: COLORS.practice,
+            }}
+          >
+            {procedureHelpOpen ? "Hide Procedure Help" : "Show Procedure Help"}
+          </button>
+        )}
+
+        {procedureHelpOpen && (
+          <div
+            style={{
+              marginTop: SPACE.md,
+              padding: SPACE.md,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: RADIUS.button,
+              background: COLORS.panelSoft,
+              color: COLORS.body,
+              maxHeight: "220px",
+              overflowY: "auto",
+            }}
+          >
+            <div style={{ marginBottom: SPACE.sm, fontWeight: "bold" }}>
+              Parser accepts these expressions:
+            </div>
+
+            {parserAliasHelp.map((item) => (
+              <div key={item.command} style={{ marginTop: SPACE.sm }}>
+                <div style={{ fontWeight: "bold" }}>{item.label}</div>
+
+                {item.aliases.map((alias) => (
+                  <div key={alias} style={{ marginLeft: "10px" }}>
+                    - {alias}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </aside>
     </div>
   </section>
 )}
@@ -1517,31 +1579,37 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
 {state.executionState === "RUNNING" && (
   <section
     style={{
-      marginBottom: "16px",
-      padding: "22px",
-      border: "1px solid #1f7a3a",
-      borderRadius: "12px",
+      marginBottom: SPACE.md,
+      padding: SPACE.lg,
+      border: `1px solid ${COLORS.successDark}`,
+      borderRadius: RADIUS.card,
       background: "rgba(22, 101, 52, 0.08)",
     }}
   >
-    <h3 style={{ margin: "0 0 8px", color: "#f5f7fb" }}>
-      Current Decision
-    </h3>
+<h3
+  style={{
+    margin: `0 0 ${SPACE.sm}`,
+    color: COLORS.text,
+    fontSize: TEXT.section,
+  }}
+>
+  Current Decision
+</h3>
 
-    <div
-      style={{
-        marginBottom: "14px",
-        color: "#e5e7eb",
-        fontSize: "20px",
-        fontWeight: 700,
-      }}
-    >
+<div
+  style={{
+    marginBottom: SPACE.md,
+    color: COLORS.text,
+    fontSize: TEXT.section,
+    fontWeight: 700,
+  }}
+>
       {state.runLog.length === 0
         ? "What is your first troubleshooting step?"
         : "What’s your next step?"}
     </div>
 
-    <div style={{ display: "flex", gap: "8px" }}>
+    <div style={{ display: "flex", gap: SPACE.sm }}>
       <input
         value={input}
         onChange={(e) => setInput(e.target.value)}
@@ -1556,9 +1624,9 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
           boxSizing: "border-box",
           fontFamily: "monospace",
           background: "transparent",
-          color: "#fff",
-          border: "1px solid #2a2a2a",
-          borderRadius: "8px",
+          color: COLORS.text,
+          border: `1px solid ${COLORS.border}`,
+          borderRadius: RADIUS.button,
           padding: "10px 12px",
         }}
       />
@@ -1566,26 +1634,22 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
       <button
         onClick={runCommand}
         style={{
-          fontFamily: "monospace",
-          padding: "10px 16px",
-          border: "1px solid #1f7a3a",
-          borderRadius: "8px",
+          ...BUTTON.secondary,
+          border: `1px solid ${COLORS.successDark}`,
           background: "rgba(22, 163, 74, 0.35)",
-          color: "#fff",
-          cursor: "pointer",
         }}
       >
         Enter
       </button>
     </div>
 
-    <div
-      style={{
-        marginTop: "10px",
-        color: "#9aa4b2",
-        fontSize: "12px",
-      }}
-    >
+<div
+  style={{
+    marginTop: SPACE.sm,
+    color: COLORS.muted,
+    fontSize: TEXT.label,
+  }}
+>
       Type a procedure you believe is the best next step.
     </div>
     </section>
@@ -1593,44 +1657,295 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
 {state.executionState === "COMPLETED" && (
   <section
     style={{
-      marginBottom: "16px",
-      padding: "22px",
-      border: "1px solid #2a2a2a",
-      borderRadius: "12px",
-      background: "rgba(255, 255, 255, 0.03)",
-    }}
+  ...CARD.base,
+  marginBottom: SPACE.lg,
+  padding: SPACE.xl,
+}}
   >
     <div
       style={{
-        color: "#9aa4b2",
-        fontSize: "13px",
-        fontWeight: 700,
-        marginBottom: "8px",
+        display: "grid",
+        gridTemplateColumns: LAYOUT.completedHero,
+        gap: SPACE.xl,
+        alignItems: "center",
       }}
     >
-      Assessment Result
-    </div>
+      <div>
+        <div
+          style={{
+            color: COLORS.success,
+            fontSize: TEXT.hero,
+            fontWeight: 700,
+            lineHeight: 1,
+            marginBottom: SPACE.sm,
+          }}
+        >
+          PASS
+        </div>
 
-    <h2 style={{ margin: "0 0 10px", color: "#f5f7fb", fontSize: "26px" }}>
-      PASS
-    </h2>
+        <div
+          style={{
+            color: COLORS.body,
+            marginBottom: SPACE.md,
+          }}
+        >
+          You completed the scenario successfully.
+        </div>
 
-    <div style={{ color: "#d1d5db", fontSize: "13px", lineHeight: 1.6 }}>
-      {state.scenario
-        ? SCENARIO_LABELS[state.scenario as keyof typeof SCENARIO_LABELS]
-        : "Completed Scenario"}{" "}
-      —{" "}
-      {state.scenario
-        ? getScenarioTypeDisplayLabel(
-            state.scenario as keyof typeof SCENARIO_LABELS
-          )
-        : "Standard"}
-    </div>
+        <div
+          style={{
+            display: "inline-block",
+            padding: "10px 16px",
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: RADIUS.chip,
+            color: COLORS.text,
+          }}
+        >
+          Scenario:&nbsp;
+          {state.scenario
+            ? SCENARIO_LABELS[state.scenario as keyof typeof SCENARIO_LABELS]
+            : "Completed Scenario"}
+          {" — "}
+          {state.scenario
+            ? getScenarioTypeDisplayLabel(
+                state.scenario as keyof typeof SCENARIO_LABELS
+              )
+            : "Standard"}
+        </div>
+      </div>
 
-    <div style={{ color: "#9aa4b2", fontSize: "13px", marginTop: "6px" }}>
-      Mode: {mode === "practice" ? "Practice" : "Assessment"}
+      <div
+        style={{
+          borderLeft: `1px solid ${COLORS.border}`,
+          paddingLeft: SPACE.xl,
+        }}
+      >
+        <h3
+          style={{
+            marginTop: 0,
+            color: COLORS.text,
+          }}
+        >
+          Assessment Result
+        </h3>
+
+        <div style={{ marginTop: SPACE.lg, color: COLORS.body }}>
+          <strong>Mode:</strong>{" "}
+          {mode === "practice" ? "Practice" : "Assessment"}
+        </div>
+
+        <div
+          style={{
+            marginTop: SPACE.md,
+            color: COLORS.body,
+          }}
+        >
+          <strong>Assessment Integrity:</strong>{" "}
+          {state.assessmentIntegrity === "maintained"
+            ? "Maintained"
+            : "Converted to Practice"}
+        </div>
+      </div>
     </div>
   </section>
+)}
+{state.executionState === "COMPLETED" && (
+  <div>
+    <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: LAYOUT.completedSummaryCards,
+    gap: SPACE.md,
+    marginBottom: SPACE.md,
+  }}
+>
+      <section
+        style={{
+  ...CARD.base,
+  padding: SPACE.md,
+}}
+      >
+        <div
+  style={{
+    color: COLORS.muted,
+    fontSize: TEXT.label,
+    fontWeight: 700,
+  }}
+>
+          Score
+        </div>
+
+        <div
+          style={{
+            marginTop: "10px",
+            color: "#f5f7fb",
+            fontSize: TEXT.title,
+            fontWeight: 700,
+          }}
+        >
+          —
+        </div>
+      </section>
+
+      <section
+        style={{
+  ...CARD.base,
+  padding: SPACE.md,
+}}
+      >
+        <div
+  style={{
+    color: COLORS.muted,
+    fontSize: TEXT.label,
+    fontWeight: 700,
+  }}
+>
+          Evidence
+        </div>
+
+        <div
+  style={{
+    marginTop: "10px",
+    color: COLORS.body,
+    fontSize: TEXT.detail,
+  }}
+>
+          Scenario completed successfully.
+        </div>
+      </section>
+
+      <section
+        style={{
+  ...CARD.base,
+  padding: SPACE.md,
+}}
+      >
+        <div
+  style={{
+    color: COLORS.muted,
+    fontSize: TEXT.label,
+    fontWeight: 700,
+  }}
+>
+          Assistance
+        </div>
+
+        <div
+          style={{
+            marginTop: "10px",
+            color: COLORS.body,
+            fontSize: TEXT.detail,
+          }}
+        >
+          {state.procedureHelpUsedDuring.length > 0
+            ? `${state.procedureHelpUsedDuring.length} help use(s)`
+            : "None"}
+        </div>
+      </section>
+    </div>
+
+    <section
+      style={{
+  ...CARD.base,
+  marginBottom: SPACE.md,
+  padding: SPACE.lg,
+}}
+    >
+      <h3
+  style={{
+    marginTop: 0,
+    color: COLORS.text,
+    fontSize: TEXT.section,
+  }}
+>
+  Mistake Summary
+</h3>
+
+      <div style={{ color: "#d1d5db", fontSize: "13px", lineHeight: 1.7 }}>
+        Mistake details will appear here.
+      </div>
+    </section>
+
+    <section
+      style={{
+  ...CARD.base,
+  marginBottom: SPACE.md,
+  padding: SPACE.lg,
+}}
+    >
+      <h3
+  style={{
+    marginTop: 0,
+    color: COLORS.text,
+    fontSize: TEXT.section,
+  }}
+>
+  Assessment Notes
+</h3>
+
+      <p style={{ marginBottom: 0, color: "#d1d5db", lineHeight: 1.6 }}>
+        You completed the scenario and reached the required success outcome.
+      </p>
+    </section>
+
+    <section
+      style={{
+        display: "flex",
+        gap: "12px",
+        padding: "18px",
+        border: "1px solid #2a2a2a",
+        borderRadius: "12px",
+        background: "rgba(255,255,255,0.03)",
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => {
+          const scenarioCommand = previewScenarioDetails?.selectCommand;
+
+          if (!scenarioCommand) return;
+
+          const out = handleInput(state, "restart");
+
+          setState(out.state);
+          setLog(buildLogBlock(out.message || ""));
+          setProcedureHelpPinned(false);
+        }}
+          style={BUTTON.secondary}
+      >
+        Retry Scenario
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          setShowSelector(true);
+          setLog(["Select a scenario to begin"]);
+          setProcedureHelpPinned(false);
+        }}
+        style={BUTTON.primary}
+      >
+        Choose Another Scenario
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          const out = handleInput(state, "quit");
+
+          setState(out.state);
+          setLog([]);
+          setShowSelector(false);
+          setOpenScenarioTypeId(null);
+          setOpenBranchId(null);
+          setProcedureHelpPinned(false);
+        }}
+          style={BUTTON.secondary}
+      >
+        Return Home
+      </button>
+    </section>
+  </div>
 )}
     <div
   style={{

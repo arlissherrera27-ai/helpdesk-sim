@@ -172,15 +172,93 @@ function getCurrentExpectedProcedureLabel(
   return expectedCommand ? getPreviewStepLabel(expectedCommand) : null;
 }
 
+function getReportMeasurements(state: SimState) {
+  const completedProcedures = state.runLog.filter(
+    (event) =>
+      event.decision === "ALLOW" &&
+      event.plan !== "StartNewAttempt" &&
+      event.plan !== "ReadOnly"
+  );
+
+  const mistakes = state.runLog.filter((event) => event.decision === "DENY");
+
+  const score = Math.max(0, 10 - mistakes.length);
+
+  return {
+    score,
+    completedProcedureCount: completedProcedures.length,
+    mistakeCount: mistakes.length,
+    assistanceCount: state.procedureHelpUsedDuring.length,
+    assessmentIntegrity: state.assessmentIntegrity,
+  };
+}
+
+function formatRunLogTime(timestamp: string): string {
+  return new Date(timestamp).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function getRunLogDisplayCommand(event: SimState["runLog"][number]): string {
+  return event.attemptedInput ?? event.command;
+}
+
+function getMistakeLabel(event: SimState["runLog"][number]): string {
+  if (event.mistakeType === "unknown") {
+    return "Unknown Command";
+  }
+
+  if (event.mistakeType === "repeated") {
+    return "Repeated Procedure Attempt";
+  }
+
+  if (event.decision === "DENY") {
+    return "Wrong Procedure Order";
+  }
+
+  return "Recorded Event";
+}
+
+function formatRunLogEvent(event: SimState["runLog"][number]): string {
+  return `${formatRunLogTime(event.timestamp)} — ${getRunLogDisplayCommand(
+    event
+  )}`;
+}
+
+function getReportDetails(state: SimState) {
+  const deniedAttempts = state.runLog.filter(
+    (event) => event.decision === "DENY"
+  );
+
+  const unknownCommands = deniedAttempts.filter(
+    (event) => event.mistakeType === "unknown"
+  );
+
+  const repeatedProcedureAttempts = deniedAttempts.filter(
+    (event) => event.mistakeType === "repeated"
+  );
+
+  return {
+    deniedAttempts,
+    unknownCommands,
+    repeatedProcedureAttempts,
+  };
+}
+
 export default function App() {
   const [state, setState] = useState<SimState>(initialState());
   const [input, setInput] = useState("");
   const [log, setLog] = useState<string[]>([]);
 
-  const [showSelector, setShowSelector] = useState(false);
-  const [openScenarioTypeId, setOpenScenarioTypeId] = useState<string | null>(null);
-  const [openBranchId, setOpenBranchId] = useState<string | null>(null);
-  const [procedureHelpPinned, setProcedureHelpPinned] = useState(false);
+const [showSelector, setShowSelector] = useState(false);
+const [openScenarioTypeId, setOpenScenarioTypeId] = useState<string | null>(null);
+const [openBranchId, setOpenBranchId] = useState<string | null>(null);
+const [procedureHelpPinned, setProcedureHelpPinned] = useState(false);
+
+const [scoringInput, setScoringInput] = useState("");
+const [scoringOutput, setScoringOutput] = useState("");
   const mode = state.mode;
 
   const visibleCommands = getVisibleCommands(state); 
@@ -216,6 +294,9 @@ export default function App() {
     state.executionState !== "COMPLETED";
 
   const procedureHelpOpen = procedureHelpPinned;
+
+    const reportMeasurements = getReportMeasurements(state);
+  const reportDetails = getReportDetails(state);
 
   function runCommand() {
     const trimmed = input.trim();
@@ -1740,10 +1821,12 @@ style={{
             color: COLORS.body,
           }}
         >
-          <strong>Assessment Integrity:</strong>{" "}
-          {state.assessmentIntegrity === "maintained"
-            ? "Maintained"
-            : "Converted to Practice"}
+<strong>Assessment Status:</strong>{" "}
+{mode === "practice"
+  ? "Remained in Practice"
+  : reportMeasurements.assessmentIntegrity === "maintained"
+    ? "Maintained"
+    : "Converted to Practice"}
         </div>
       </div>
     </div>
@@ -1783,7 +1866,7 @@ style={{
             fontWeight: 700,
           }}
         >
-          —
+          {reportMeasurements.score}/10
         </div>
       </section>
 
@@ -1810,7 +1893,7 @@ style={{
     fontSize: TEXT.detail,
   }}
 >
-          Scenario completed successfully.
+          See below for details.
         </div>
       </section>
 
@@ -1830,63 +1913,134 @@ style={{
           Assistance
         </div>
 
-        <div
-          style={{
-            marginTop: "10px",
-            color: COLORS.body,
-            fontSize: TEXT.detail,
-          }}
-        >
-          {state.procedureHelpUsedDuring.length > 0
-            ? `${state.procedureHelpUsedDuring.length} help use(s)`
-            : "None"}
-        </div>
+<div
+  style={{
+    marginTop: "10px",
+    color: COLORS.body,
+    fontSize: TEXT.detail,
+  }}
+>
+  {reportMeasurements.assistanceCount > 0
+    ? `Procedure Help Opened: ${reportMeasurements.assistanceCount} time(s)`
+    : "Procedure Help Opened: 0 times"}
+</div>
       </section>
     </div>
 
-    <section
-      style={{
-  ...CARD.base,
-  marginBottom: SPACE.md,
-  padding: SPACE.lg,
-}}
-    >
-      <h3
+<section
   style={{
-    marginTop: 0,
-    color: COLORS.text,
-    fontSize: TEXT.section,
+    ...CARD.base,
+    marginBottom: SPACE.md,
+    padding: SPACE.lg,
   }}
 >
-  Mistake Summary
-</h3>
+  <h3
+    style={{
+      marginTop: 0,
+      color: COLORS.text,
+      fontSize: TEXT.section,
+    }}
+  >
+    Mistake Summary
+  </h3>
 
-      <div style={{ color: "#d1d5db", fontSize: "13px", lineHeight: 1.7 }}>
-        Mistake details will appear here.
-      </div>
-    </section>
+  <div
+    style={{
+      color: COLORS.body,
+      fontSize: TEXT.detail,
+      lineHeight: 1.7,
+    }}
+  >
+    <div>
+      <strong>Denied Attempts:</strong> {reportDetails.deniedAttempts.length}
+    </div>
 
-    <section
-      style={{
-  ...CARD.base,
-  marginBottom: SPACE.md,
-  padding: SPACE.lg,
-}}
-    >
-      <h3
+    {reportDetails.deniedAttempts.length > 0 ? (
+      reportDetails.deniedAttempts.map((event) => (
+        <div key={`${event.timestamp}-${event.command}`}>
+          - {formatRunLogEvent(event)}
+  {" "}
+  ({getMistakeLabel(event)})
+        </div>
+      ))
+    ) : (
+      <div>None recorded.</div>
+    )}
+
+    <div style={{ marginTop: SPACE.md }}>
+      <strong>Unknown Commands:</strong> {reportDetails.unknownCommands.length}
+    </div>
+
+    {reportDetails.unknownCommands.length > 0 ? (
+      reportDetails.unknownCommands.map((event) => (
+        <div key={`${event.timestamp}-${event.command}`}>
+          - {formatRunLogEvent(event)}
+  {" "}
+  ({getMistakeLabel(event)})
+        </div>
+      ))
+    ) : (
+      <div>None recorded.</div>
+    )}
+
+    <div style={{ marginTop: SPACE.md }}>
+      <strong>Repeated Procedure Attempts:</strong>{" "}
+      {reportDetails.repeatedProcedureAttempts.length}
+    </div>
+
+    {reportDetails.repeatedProcedureAttempts.length > 0 ? (
+      reportDetails.repeatedProcedureAttempts.map((event) => (
+        <div key={`${event.timestamp}-${event.command}`}>
+          - {formatRunLogEvent(event)}
+  {" "}
+  ({getMistakeLabel(event)})
+        </div>
+      ))
+    ) : (
+      <div>None recorded.</div>
+    )}
+  </div>
+</section>
+
+<section
   style={{
-    marginTop: 0,
-    color: COLORS.text,
-    fontSize: TEXT.section,
+    ...CARD.base,
+    marginBottom: SPACE.md,
+    padding: SPACE.lg,
   }}
 >
-  Assessment Notes
-</h3>
+  <h3
+    style={{
+      marginTop: 0,
+      color: COLORS.text,
+      fontSize: TEXT.section,
+    }}
+  >
+    Summary
+  </h3>
 
-      <p style={{ marginBottom: 0, color: "#d1d5db", lineHeight: 1.6 }}>
-        You completed the scenario and reached the required success outcome.
-      </p>
-    </section>
+  <div
+    style={{
+      color: COLORS.body,
+      fontSize: TEXT.detail,
+      lineHeight: 1.7,
+    }}
+  >
+    <div>
+      <strong>Procedure Help Used During</strong>
+    </div>
+
+    {state.procedureHelpUsedDuring.length > 0 ? (
+      state.procedureHelpUsedDuring.map((procedure) => (
+        <div key={procedure}>
+          - {procedure}
+        </div>
+      ))
+    ) : (
+      <div>None recorded.</div>
+    )}
+  </div>
+</section>
 
     <section
       style={{
@@ -1945,6 +2099,124 @@ style={{
         Return Home
       </button>
     </section>
+    <section
+  style={{
+    ...CARD.base,
+    marginTop: SPACE.md,
+    padding: SPACE.md,
+  }}
+>
+  <div
+    style={{
+      marginBottom: SPACE.sm,
+      color: COLORS.text,
+      fontSize: TEXT.detail,
+      fontWeight: 700,
+    }}
+  >
+    Debug Console
+  </div>
+
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: SPACE.sm,
+    }}
+  >
+    <input
+      value={scoringInput}
+      onChange={(e) => setScoringInput(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          const command = scoringInput.trim().toLowerCase();
+
+          if (command === "debug") {
+            setScoringOutput(
+              JSON.stringify(
+                {
+                  executionState: state.executionState,
+                  scenario: state.scenario,
+                  mode: state.mode,
+                  score: reportMeasurements.score,
+                  mistakes: reportMeasurements.mistakeCount,
+                  runLog: state.runLog,
+                },
+                null,
+                2
+              )
+            );
+
+            setScoringInput("");
+          }
+        }
+      }}
+      placeholder="type debug"
+      style={{
+        width: "180px",
+        padding: "6px 10px",
+        fontFamily: "monospace",
+        fontSize: TEXT.label,
+        background: "transparent",
+        color: COLORS.body,
+        border: `1px solid ${COLORS.border}`,
+        borderRadius: RADIUS.button,
+      }}
+    />
+
+    <button
+      type="button"
+      onClick={() => {
+        const command = scoringInput.trim().toLowerCase();
+
+        if (command === "debug") {
+          setScoringOutput(
+            JSON.stringify(
+              {
+                executionState: state.executionState,
+                scenario: state.scenario,
+                mode: state.mode,
+                score: reportMeasurements.score,
+                mistakes: reportMeasurements.mistakeCount,
+                runLog: state.runLog,
+              },
+              null,
+              2
+            )
+          );
+
+          setScoringInput("");
+        }
+      }}
+      style={{
+        ...BUTTON.secondary,
+        padding: "6px 10px",
+        fontSize: TEXT.label,
+      }}
+    >
+      Enter
+    </button>
+  </div>
+
+  <pre
+    style={{
+      marginTop: SPACE.md,
+      minHeight: "160px",
+      maxHeight: "360px",
+      overflow: "auto",
+      padding: SPACE.md,
+      color: COLORS.body,
+      fontSize: TEXT.label,
+      fontFamily: "monospace",
+      whiteSpace: "pre-wrap",
+      border: `1px solid ${COLORS.border}`,
+      borderRadius: RADIUS.button,
+      background: COLORS.panelSoft,
+    }}
+  >
+    {scoringOutput || "Debug output will appear here."}
+  </pre>
+</section>
   </div>
 )}
     <div

@@ -696,11 +696,9 @@ const showState3Preview =
                 }}
                 style={{
                   minHeight: "116px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "18px",
-                  padding: "22px",
-                  textAlign: "left",
+                  display: "block",
+                  padding: "18px",
+                  textAlign: "center",
                   fontFamily: "monospace",
                   borderRadius: "12px",
                   border:
@@ -715,44 +713,28 @@ const showState3Preview =
                   cursor: "pointer",
                 }}
               >
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: "52px",
-                    height: "52px",
-                    borderRadius: "999px",
-                    display: "grid",
-                    placeItems: "center",
-                    background: "rgba(139, 92, 246, 0.16)",
-                    color: "#a78bfa",
-                    fontSize: "24px",
-                    flex: "0 0 auto",
-                  }}
-                >
-                  ◇
-                </span>
+<div>
+  <strong
+    style={{
+      display: "block",
+      color: "#a78bfa",
+      fontSize: "17px",
+      marginBottom: "8px",
+    }}
+  >
+    Practice Mode
+  </strong>
 
-                <span>
-                  <strong
-                    style={{
-                      display: "block",
-                      color: "#a78bfa",
-                      fontSize: "18px",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    Practice Mode
-                  </strong>
-                  <span
-                    style={{
-                      color: COLORS.body,
-                      fontSize: TEXT.detail,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    You can see how it works—procedures, commands, and guided steps.
-                  </span>
-                </span>
+  <span
+    style={{
+      color: COLORS.body,
+      fontSize: TEXT.detail,
+      lineHeight: 1.5,
+    }}
+  >
+    You can see how it works—procedures, commands, and guided steps.
+  </span>
+</div>
               </button>
 
               <button
@@ -764,14 +746,12 @@ const showState3Preview =
                     assessmentIntegrity: "maintained",
                   }));
                 }}
-                style={{
-                  minHeight: "116px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "18px",
-                  padding: "22px",
-                  textAlign: "left",
-                  fontFamily: "monospace",
+                  style={{
+                    minHeight: "116px",
+                    display: "block",
+                    padding: "18px",
+                    textAlign: "center",
+                    fontFamily: "monospace",
                   borderRadius: "12px",
                   border:
                     mode === "assessment"
@@ -785,44 +765,28 @@ const showState3Preview =
                   cursor: "pointer",
                 }}
               >
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: "52px",
-                    height: "52px",
-                    borderRadius: "999px",
-                    display: "grid",
-                    placeItems: "center",
-                    background: "rgba(96, 165, 250, 0.14)",
-                    color: "#93c5fd",
-                    fontSize: "24px",
-                    flex: "0 0 auto",
-                  }}
-                >
-                  ⚖
-                </span>
+<div>
+  <strong
+    style={{
+      display: "block",
+      color: "#93c5fd",
+      fontSize: "17px",
+      marginBottom: "8px",
+    }}
+  >
+    Assessment Mode
+  </strong>
 
-                <span>
-                  <strong
-                    style={{
-                      display: "block",
-                      color: "#93c5fd",
-                      fontSize: "18px",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    Assessment Mode
-                  </strong>
-                  <span
-                    style={{
-                      color: COLORS.body,
-                      fontSize: TEXT.detail,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    When you’re ready, take the training wheels off. No assistance.
-                  </span>
-                </span>
+  <span
+    style={{
+      color: COLORS.body,
+      fontSize: TEXT.detail,
+      lineHeight: 1.5,
+    }}
+  >
+    When you’re ready, take the training wheels off. No assistance.
+  </span>
+</div>
               </button>
             </div>
 

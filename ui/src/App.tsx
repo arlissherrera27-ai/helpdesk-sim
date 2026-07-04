@@ -889,8 +889,10 @@ setOpenBranchId(standardType?.branches[0]?.tierId ?? null);
   style={{
     display: "flex",
     flexDirection: "column",
-    alignItems: "center",
-    textAlign: "center",
+    alignItems:
+      window.innerWidth <= 768 ? "center" : "flex-start",
+    textAlign:
+      window.innerWidth <= 768 ? "center" : "left",
     gap: "14px",
     marginBottom: "24px",
   }}
@@ -988,7 +990,8 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
 <div
   style={{
     marginBottom: "18px",
-    textAlign: "center",
+    textAlign:
+      window.innerWidth <= 768 ? "center" : "left",
   }}
 >
   <h2

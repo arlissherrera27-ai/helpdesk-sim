@@ -889,7 +889,8 @@ setOpenBranchId(standardType?.branches[0]?.tierId ?? null);
   style={{
     display: "flex",
     flexDirection: "column",
-    alignItems: "flex-start",
+    alignItems: "center",
+    textAlign: "center",
     gap: "14px",
     marginBottom: "24px",
   }}
@@ -984,7 +985,12 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
             </div>
           </div>
 
-<div style={{ marginBottom: "18px" }}>
+<div
+  style={{
+    marginBottom: "18px",
+    textAlign: "center",
+  }}
+>
   <h2
     style={{
       margin: "0 0 6px",

@@ -878,24 +878,22 @@ setOpenBranchId(standardType?.branches[0]?.tierId ?? null);
           </section>
         )}
               {showSelector && (
-        <section
-          style={{
-            marginBottom: "16px",
-            padding: "28px 32px",
-            border: "1px solid #6d4aff",
-            borderRadius: "12px",
-            background: "rgba(109, 74, 255, 0.04)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "16px",
-              marginBottom: "24px",
-            }}
-          >
+<section
+  style={{
+    marginBottom: "16px",
+    padding: "28px 32px",
+    background: "transparent",
+  }}
+>
+<div
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: "14px",
+    marginBottom: "24px",
+  }}
+>
             <button
               type="button"
               onClick={() => {
@@ -921,16 +919,17 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
               ← Back to Training Choice
             </button>
 
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #2a2a2a",
-                borderRadius: "999px",
-                overflow: "hidden",
-                background: "rgba(255, 255, 255, 0.03)",
-              }}
-            >
+<div
+  style={{
+    display: "flex",
+    alignItems: "center",
+    alignSelf: "center",
+    border: "1px solid #2a2a2a",
+    borderRadius: "999px",
+    overflow: "hidden",
+    background: "rgba(255, 255, 255, 0.03)",
+  }}
+>
               <button
                 type="button"
                 onClick={() => {

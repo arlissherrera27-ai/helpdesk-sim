@@ -430,22 +430,24 @@ const showState3Preview =
         boxSizing: "border-box",
       }}
     >
-      <header
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          height: "72px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 24px",
-          boxSizing: "border-box",
-          borderBottom: "1px solid #2a2a2a",
-          background: "#0b0f14",
-        }}
+<header
+  style={{
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    minHeight: "72px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "12px",
+    padding: "12px 16px",
+    boxSizing: "border-box",
+    borderBottom: "1px solid #2a2a2a",
+    background: "#0b0f14",
+    flexWrap: "wrap",
+  }}
       >
         <div
           style={{
@@ -500,7 +502,9 @@ const showState3Preview =
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "8px",
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
           }}
         >
           {["History", "Profile", "Settings"].map((item) => (
@@ -514,7 +518,7 @@ const showState3Preview =
                 background: "transparent",
                 border: "1px solid #2a2a2a",
                 borderRadius: "999px",
-                padding: "7px 11px",
+                padding: "7px 10px",
                 cursor: "pointer",
               }}
             >
@@ -525,7 +529,10 @@ const showState3Preview =
       </header>
 
       {/* ===== STATE BANNER (Box 2) ===== */}
-      {state.executionState === "LOBBY" && (
+      {state.executionState === "LOBBY" &&
+      state.scenario === null &&
+      state.previewScenario === null &&
+      !showSelector && (
       <section
         style={{
           minHeight: "132px",
@@ -575,7 +582,7 @@ const showState3Preview =
                 lineHeight: 1.2,
               }}
             >
-              Welcome.
+              Welcome
             </h1>
 
             <p
@@ -586,10 +593,9 @@ const showState3Preview =
                 lineHeight: 1.6,
               }}
             >
-              Practice realistic IT support scenarios.
-              <br />
-              Learn structured troubleshooting by solving customer issues step by step.
-            </p>
+                Choose your training mode to begin.
+                <br />
+                Practice or Assessment—your choice.            </p>
           </div>
         </div>
 
@@ -1015,17 +1021,39 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
             </div>
           </div>
 
-          <div style={{ marginBottom: "18px" }}>
-            <div
-              style={{
-                marginBottom: "12px",
-                color: "#f5f7fb",
-                fontSize: "16px",
-                fontWeight: 700,
-              }}
-            >
-              Scenario Type
-            </div>
+<div style={{ marginBottom: "18px" }}>
+  <h2
+    style={{
+      margin: "0 0 6px",
+      color: "#f5f7fb",
+      fontSize: "24px",
+      lineHeight: 1.2,
+    }}
+  >
+    Select a Scenario
+  </h2>
+
+  <p
+    style={{
+      margin: "0 0 18px",
+      color: "#9aa4b2",
+      fontSize: "14px",
+      lineHeight: 1.6,
+    }}
+  >
+    Browse the training library and choose a scenario.
+  </p>
+
+  <div
+    style={{
+      marginBottom: "12px",
+      color: "#f5f7fb",
+      fontSize: "16px",
+      fontWeight: 700,
+    }}
+  >
+    Scenario Type
+  </div>
 
             <div
               style={{
@@ -1238,19 +1266,44 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
           </div>
         </section>
       )}
-           {showState3Preview && previewScenarioDetails && (
-        <section
-          style={{
-            marginBottom: "16px",
-            padding: "28px 32px",
-            border: "1px solid #6d4aff",
-            borderRadius: "12px",
-            background: "rgba(109, 74, 255, 0.04)",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => {
+{showState3Preview && previewScenarioDetails && (
+  <section
+    style={{
+      marginBottom: "16px",
+      padding: "28px 32px",
+      border: "1px solid #6d4aff",
+      borderRadius: "12px",
+      background: "rgba(109, 74, 255, 0.04)",
+    }}
+  >
+
+    <div style={{ marginBottom: "22px" }}>
+      <h2
+        style={{
+          margin: "0 0 6px",
+          color: "#f5f7fb",
+          fontSize: "24px",
+          lineHeight: 1.2,
+        }}
+      >
+        Scenario Preview
+      </h2>
+
+      <p
+        style={{
+          margin: 0,
+          color: "#9aa4b2",
+          fontSize: "14px",
+          lineHeight: 1.6,
+        }}
+      >
+        Review the scenario before starting your simulation.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => {
   const defaultScenarioType = scenarioTree.find(
     (scenarioType) => scenarioType.enabled
   );

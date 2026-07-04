@@ -881,7 +881,7 @@ setOpenBranchId(standardType?.branches[0]?.tierId ?? null);
 <section
   style={{
     marginBottom: "16px",
-    padding: "28px 32px",
+    padding: window.innerWidth <= 768 ? "18px 12px" : "28px 32px",
     background: "transparent",
   }}
 >
@@ -895,6 +895,11 @@ setOpenBranchId(standardType?.branches[0]?.tierId ?? null);
       window.innerWidth <= 768 ? "center" : "left",
     gap: "14px",
     marginBottom: "24px",
+    width: window.innerWidth <= 768 ? "calc(100vw - 40px)" : "auto",
+    marginLeft: window.innerWidth <= 768 ? "-32px" : 0,
+    position: "relative",
+    zIndex: 1,
+    background: COLORS.appBg,
   }}
 >
             <button
@@ -1070,22 +1075,23 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
             </div>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "280px 1fr",
-              gap: "24px",
-              alignItems: "start",
-            }}
-          >
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns:
+      window.innerWidth <= 768 ? "240px 1fr" : "280px 1fr",
+    gap: window.innerWidth <= 768 ? "12px" : "24px",
+    alignItems: "start",
+  }}
+>
             <div
-              style={{
-                minHeight: "320px",
-                padding: "16px",
-                border: "1px solid #2a2a2a",
-                borderRadius: "10px",
-                background: "rgba(255, 255, 255, 0.03)",
-              }}
+style={{
+  minHeight: "320px",
+  padding: window.innerWidth <= 768 ? "10px" : "16px",
+  border: "1px solid #2a2a2a",
+  borderRadius: "10px",
+  background: "rgba(255, 255, 255, 0.03)",
+}}
             >
               <div
                 style={{
@@ -1149,13 +1155,13 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
             </div>
 
             <div
-              style={{
-                minHeight: "320px",
-                padding: "16px",
-                border: "1px solid #2a2a2a",
-                borderRadius: "10px",
-                background: "rgba(255, 255, 255, 0.02)",
-              }}
+style={{
+  minHeight: "320px",
+  padding: window.innerWidth <= 768 ? "10px" : "16px",
+  border: "1px solid #2a2a2a",
+  borderRadius: "10px",
+  background: "rgba(255, 255, 255, 0.02)",
+}}
             >
               {openBranchId === null ? (
                 <div

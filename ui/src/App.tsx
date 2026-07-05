@@ -1079,7 +1079,7 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
   style={{
     display: "grid",
     gridTemplateColumns:
-      window.innerWidth <= 768 ? "240px 1fr" : "280px 1fr",
+      window.innerWidth <= 768 ? "220px 1fr" : "280px 1fr",
     gap: window.innerWidth <= 768 ? "12px" : "24px",
     alignItems: "start",
   }}

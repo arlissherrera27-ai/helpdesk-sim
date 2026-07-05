@@ -1087,10 +1087,14 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
             <div
 style={{
   minHeight: "320px",
-  padding: window.innerWidth <= 768 ? "10px" : "16px",
-  border: "1px solid #2a2a2a",
-  borderRadius: "10px",
-  background: "rgba(255, 255, 255, 0.03)",
+  padding: window.innerWidth <= 768 ? "0" : "16px",
+  border:
+    window.innerWidth <= 768 ? "none" : "1px solid #2a2a2a",
+  borderRadius: window.innerWidth <= 768 ? 0 : "10px",
+  background:
+    window.innerWidth <= 768
+      ? "transparent"
+      : "rgba(255, 255, 255, 0.03)",
 }}
             >
               <div
@@ -1157,10 +1161,14 @@ style={{
             <div
 style={{
   minHeight: "320px",
-  padding: window.innerWidth <= 768 ? "10px" : "16px",
-  border: "1px solid #2a2a2a",
-  borderRadius: "10px",
-  background: "rgba(255, 255, 255, 0.02)",
+  padding: window.innerWidth <= 768 ? "0" : "16px",
+  border:
+    window.innerWidth <= 768 ? "none" : "1px solid #2a2a2a",
+  borderRadius: window.innerWidth <= 768 ? 0 : "10px",
+  background:
+    window.innerWidth <= 768
+      ? "transparent"
+      : "rgba(255, 255, 255, 0.02)",
 }}
             >
               {openBranchId === null ? (

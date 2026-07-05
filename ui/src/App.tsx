@@ -1253,15 +1253,17 @@ style={{
         </section>
       )}
 {showState3Preview && previewScenarioDetails && (
-  <section
-    style={{
-      marginBottom: "16px",
-      padding: "28px 32px",
-      border: "1px solid #6d4aff",
-      borderRadius: "12px",
-      background: "rgba(109, 74, 255, 0.04)",
-    }}
-  >
+<section
+  style={{
+    marginBottom: "16px",
+    padding: "28px 32px",
+    border:
+      window.innerWidth <= 768 ? "none" : "1px solid #6d4aff",
+    borderRadius:
+      window.innerWidth <= 768 ? 0 : "12px",
+    background: "rgba(109, 74, 255, 0.04)",
+  }}
+>
 
     <div style={{ marginBottom: "22px" }}>
       <h2
@@ -1356,27 +1358,36 @@ style={{
           </div>
 
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "18px",
-              marginBottom: "18px",
-            }}
+style={{
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: window.innerWidth <= 768 ? "10px" : "18px",
+  marginBottom: "18px",
+}}
           >
             <div
-              style={{
-                padding: "22px",
-                border: "1px solid #2a2a2a",
-                borderRadius: "12px",
-                background: "rgba(255, 255, 255, 0.03)",
-              }}
+style={{
+  padding: window.innerWidth <= 768 ? "14px" : "22px",
+  border: "1px solid #2a2a2a",
+  borderRadius: "12px",
+  background: "rgba(255, 255, 255, 0.03)",
+}}
             >
               <h3 style={{ marginTop: 0, color: "#f5f7fb" }}>Skill Focus:</h3>
 
               {previewScenarioDetails.skillFocus.map((skill) => (
-                <div key={skill} style={{ marginBottom: "8px", color: "#d1d5db" }}>
-                  ✓ {skill}
-                </div>
+<div
+  key={skill}
+  style={{
+    marginBottom: "8px",
+    color: "#d1d5db",
+    fontSize: window.innerWidth <= 768 ? "13px" : "16px",
+    lineHeight: window.innerWidth <= 768 ? 1.35 : 1.6,
+    whiteSpace: "nowrap",
+  }}
+>
+  ✓ {skill}
+</div>
               ))}
 
               <hr style={{ borderColor: "#2a2a2a", margin: "22px 0" }} />
@@ -1395,12 +1406,12 @@ style={{
             </div>
 
             <div
-              style={{
-                padding: "22px",
-                border: "1px solid #2a2a2a",
-                borderRadius: "12px",
-                background: "rgba(255, 255, 255, 0.03)",
-              }}
+style={{
+  padding: window.innerWidth <= 768 ? "14px" : "22px",
+  border: "1px solid #2a2a2a",
+  borderRadius: "12px",
+  background: "rgba(255, 255, 255, 0.03)",
+}}
             >
               <h3 style={{ marginTop: 0, color: "#f5f7fb" }}>
                 Expected procedure:
@@ -1410,13 +1421,15 @@ style={{
                 previewScenarioDetails.previewSteps.map((step, index) => (
                   <div
                     key={step}
-                    style={{
-                      display: "flex",
-                      gap: "14px",
-                      padding: "14px 0",
-                      borderBottom: "1px solid #2a2a2a",
-                      color: COLORS.body,
-                    }}
+style={{
+  display: "flex",
+  gap: window.innerWidth <= 768 ? "8px" : "14px",
+  padding: window.innerWidth <= 768 ? "10px 0" : "14px 0",
+  borderBottom: "1px solid #2a2a2a",
+  color: COLORS.body,
+  fontSize: window.innerWidth <= 768 ? "13px" : "16px",
+  lineHeight: window.innerWidth <= 768 ? 1.35 : 1.6,
+}}
                   >
                     <strong style={{ color: "#a78bfa" }}>{index + 1}</strong>
                     <span>{getPreviewStepLabel(step)}</span>

@@ -1360,16 +1360,16 @@ style={{
 <div
 style={{
   display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gap: window.innerWidth <= 768 ? "10px" : "18px",
+  gridTemplateColumns: window.innerWidth <= 768 ? "40% 60%" : "1fr 1fr",
+  gap: window.innerWidth <= 768 ? "8px" : "18px",
   marginBottom: "18px",
-width: window.innerWidth <= 768 ? "calc(100vw - 48px)" : "auto",
-marginLeft: window.innerWidth <= 768 ? "-12px" : 0,
+  width: window.innerWidth <= 768 ? "calc(100vw - 24px)" : "auto",
+  marginLeft: window.innerWidth <= 768 ? "-24px" : 0,
 }}
 >
             <div
 style={{
-  padding: window.innerWidth <= 768 ? "14px" : "22px",
+  padding: window.innerWidth <= 768 ? "10px" : "22px",
   border: "1px solid #2a2a2a",
   borderRadius: "12px",
   background: "rgba(255, 255, 255, 0.03)",
@@ -1383,8 +1383,8 @@ style={{
   style={{
     marginBottom: "8px",
     color: "#d1d5db",
-    fontSize: window.innerWidth <= 768 ? "13px" : "16px",
-    lineHeight: window.innerWidth <= 768 ? 1.35 : 1.6,
+    fontSize: window.innerWidth <= 768 ? "11px" : "16px",
+    lineHeight: window.innerWidth <= 768 ? 1.25 : 1.6,
     whiteSpace: "nowrap",
   }}
 >
@@ -1409,7 +1409,7 @@ style={{
 
             <div
 style={{
-  padding: window.innerWidth <= 768 ? "14px" : "22px",
+  padding: window.innerWidth <= 768 ? "10px" : "22px",
   border: "1px solid #2a2a2a",
   borderRadius: "12px",
   background: "rgba(255, 255, 255, 0.03)",
@@ -1429,8 +1429,8 @@ style={{
   padding: window.innerWidth <= 768 ? "10px 0" : "14px 0",
   borderBottom: "1px solid #2a2a2a",
   color: COLORS.body,
-  fontSize: window.innerWidth <= 768 ? "13px" : "16px",
-  lineHeight: window.innerWidth <= 768 ? 1.35 : 1.6,
+  fontSize: window.innerWidth <= 768 ? "11px" : "16px",
+  lineHeight: window.innerWidth <= 768 ? 1.25 : 1.6,
 }}
                   >
                     <strong style={{ color: "#a78bfa" }}>{index + 1}</strong>

@@ -1261,7 +1261,7 @@ style={{
       window.innerWidth <= 768 ? "none" : "1px solid #6d4aff",
     borderRadius:
       window.innerWidth <= 768 ? 0 : "12px",
-    background: "rgba(109, 74, 255, 0.04)",
+    background: window.innerWidth <= 768 ? "transparent" : "rgba(109, 74, 255, 0.04)",
   }}
 >
 
@@ -1375,7 +1375,16 @@ style={{
   background: "rgba(255, 255, 255, 0.03)",
 }}
             >
-              <h3 style={{ marginTop: 0, color: "#f5f7fb" }}>Skill Focus:</h3>
+              <h3
+  style={{
+    marginTop: 0,
+    color: "#f5f7fb",
+    fontSize: window.innerWidth <= 768 ? "18px" : "20px",
+    lineHeight: window.innerWidth <= 768 ? 1.15 : 1.2,
+  }}
+>
+  Skill Focus:
+</h3>
 
               {previewScenarioDetails.skillFocus.map((skill) => (
 <div
@@ -1394,14 +1403,38 @@ style={{
 
               <hr style={{ borderColor: "#2a2a2a", margin: "22px 0" }} />
 
-              <h3 style={{ color: "#f5f7fb" }}>Scenario Context:</h3>
-              <p style={{ color: "#d1d5db", lineHeight: 1.6 }}>
+              <h3
+                style={{
+                  marginTop: 0,
+                  color: "#f5f7fb",
+                  fontSize: window.innerWidth <= 768 ? "18px" : "20px",
+                  lineHeight: window.innerWidth <= 768 ? 1.15 : 1.2,
+                }}
+              >
+                Scenario Context:
+              </h3>
+              <p
+                style={{
+                  color: "#d1d5db",
+                  fontSize: window.innerWidth <= 768 ? "13px" : "16px",
+                  lineHeight: window.innerWidth <= 768 ? 1.35 : 1.6,
+                }}
+              >
                 {previewScenarioDetails.scenarioContext}
               </p>
 
               <hr style={{ borderColor: "#2a2a2a", margin: "22px 0" }} />
 
-              <h3 style={{ color: "#f5f7fb" }}>Success Outcome:</h3>
+              <h3
+                style={{
+                  marginTop: 0,
+                  color: "#f5f7fb",
+                  fontSize: window.innerWidth <= 768 ? "18px" : "20px",
+                  lineHeight: window.innerWidth <= 768 ? 1.15 : 1.2,
+                }}
+              >
+                Success Outcome:
+              </h3>
               <p style={{ color: "#d1d5db", lineHeight: 1.6 }}>
                 {previewScenarioDetails.successOutcome}
               </p>

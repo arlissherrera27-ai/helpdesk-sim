@@ -1357,14 +1357,16 @@ style={{
 )}
           </div>
 
-          <div
+<div
 style={{
   display: "grid",
   gridTemplateColumns: "1fr 1fr",
   gap: window.innerWidth <= 768 ? "10px" : "18px",
   marginBottom: "18px",
+  width: window.innerWidth <= 768 ? "calc(100vw - 24px)" : "auto",
+  marginLeft: window.innerWidth <= 768 ? "-26px" : 0,
 }}
-          >
+>
             <div
 style={{
   padding: window.innerWidth <= 768 ? "14px" : "22px",

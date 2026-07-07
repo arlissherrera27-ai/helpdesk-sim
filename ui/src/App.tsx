@@ -1406,7 +1406,8 @@ style={{
     color: COLORS.body,
     fontSize: STATE3_TEXT.body,
     lineHeight: STATE3_TEXT.lineHeight,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    overflowWrap: "break-word",
   }}
 >
   ✓ {skill}

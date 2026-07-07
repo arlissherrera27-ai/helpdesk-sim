@@ -419,6 +419,20 @@ const showState3Preview =
   !showSelector &&
   previewScenarioDetails !== undefined;
 
+  const isMobile = window.innerWidth <= 768;
+
+const STATE3_TEXT = {
+  heading: isMobile ? "16px" : "20px",
+  body: isMobile ? "12px" : "16px",
+  meta: isMobile ? "11px" : "13px",
+  lineHeight: isMobile ? 1.35 : 1.6,
+};
+
+const STATE3_DIVIDER = {
+  borderColor: COLORS.border,
+  margin: isMobile ? "16px 0" : "22px 0",
+};
+
   return (
     <div
       style={{
@@ -1257,11 +1271,9 @@ style={{
   style={{
     marginBottom: "16px",
     padding: "28px 32px",
-    border:
-      window.innerWidth <= 768 ? "none" : "1px solid #6d4aff",
-    borderRadius:
-      window.innerWidth <= 768 ? 0 : "12px",
-    background: window.innerWidth <= 768 ? "transparent" : "rgba(109, 74, 255, 0.04)",
+    border: isMobile ? "none" : "1px solid #6d4aff",
+    borderRadius: isMobile ? 0 : "12px",
+    background: isMobile ? "transparent" : "rgba(109, 74, 255, 0.04)",
   }}
 >
 
@@ -1360,27 +1372,27 @@ style={{
 <div
 style={{
   display: "grid",
-  gridTemplateColumns: window.innerWidth <= 768 ? "40% 60%" : "1fr 1fr",
-  gap: window.innerWidth <= 768 ? "8px" : "18px",
+  gridTemplateColumns: isMobile ? "40% 60%" : "1fr 1fr",
+  gap: isMobile ? "8px" : "18px",
   marginBottom: "18px",
-  width: window.innerWidth <= 768 ? "calc(100vw - 24px)" : "auto",
-  marginLeft: window.innerWidth <= 768 ? "-24px" : 0,
+  width: isMobile ? "calc(100vw - 24px)" : "auto",
+  marginLeft: isMobile ? "-24px" : 0,
 }}
 >
-            <div
+<div
 style={{
-  padding: window.innerWidth <= 768 ? "10px" : "22px",
+  padding: isMobile ? "10px" : "22px",
   border: "1px solid #2a2a2a",
   borderRadius: "12px",
   background: "rgba(255, 255, 255, 0.03)",
 }}
-            >
-              <h3
+>
+<h3
   style={{
     marginTop: 0,
-    color: "#f5f7fb",
-    fontSize: window.innerWidth <= 768 ? "18px" : "20px",
-    lineHeight: window.innerWidth <= 768 ? 1.15 : 1.2,
+    color: COLORS.text,
+    fontSize: STATE3_TEXT.heading,
+    lineHeight: 1.2,
   }}
 >
   Skill Focus:
@@ -1391,9 +1403,9 @@ style={{
   key={skill}
   style={{
     marginBottom: "8px",
-    color: "#d1d5db",
-    fontSize: window.innerWidth <= 768 ? "11px" : "16px",
-    lineHeight: window.innerWidth <= 768 ? 1.25 : 1.6,
+    color: COLORS.body,
+    fontSize: STATE3_TEXT.body,
+    lineHeight: STATE3_TEXT.lineHeight,
     whiteSpace: "nowrap",
   }}
 >
@@ -1401,56 +1413,69 @@ style={{
 </div>
               ))}
 
-              <hr style={{ borderColor: "#2a2a2a", margin: "22px 0" }} />
+              <hr style={STATE3_DIVIDER} />
 
-              <h3
-                style={{
-                  marginTop: 0,
-                  color: "#f5f7fb",
-                  fontSize: window.innerWidth <= 768 ? "18px" : "20px",
-                  lineHeight: window.innerWidth <= 768 ? 1.15 : 1.2,
-                }}
-              >
-                Scenario Context:
-              </h3>
-              <p
-                style={{
-                  color: "#d1d5db",
-                  fontSize: window.innerWidth <= 768 ? "13px" : "16px",
-                  lineHeight: window.innerWidth <= 768 ? 1.35 : 1.6,
-                }}
-              >
-                {previewScenarioDetails.scenarioContext}
-              </p>
+<h3
+  style={{
+    marginTop: 0,
+    color: COLORS.text,
+    fontSize: STATE3_TEXT.heading,
+    lineHeight: 1.2,
+  }}
+>
+  Scenario Context:
+</h3>
+<p
+  style={{
+    color: COLORS.body,
+    fontSize: STATE3_TEXT.body,
+    lineHeight: STATE3_TEXT.lineHeight,
+  }}
+>
+  {previewScenarioDetails.scenarioContext}
+</p>
 
-              <hr style={{ borderColor: "#2a2a2a", margin: "22px 0" }} />
+              <hr style={STATE3_DIVIDER} />
 
-              <h3
-                style={{
-                  marginTop: 0,
-                  color: "#f5f7fb",
-                  fontSize: window.innerWidth <= 768 ? "18px" : "20px",
-                  lineHeight: window.innerWidth <= 768 ? 1.15 : 1.2,
-                }}
-              >
-                Success Outcome:
-              </h3>
-              <p style={{ color: "#d1d5db", lineHeight: 1.6 }}>
-                {previewScenarioDetails.successOutcome}
-              </p>
+<h3
+  style={{
+    marginTop: 0,
+    color: COLORS.text,
+    fontSize: STATE3_TEXT.heading,
+    lineHeight: 1.2,
+  }}
+>
+  Success Outcome:
+</h3>
+<p
+  style={{
+    color: COLORS.body,
+    fontSize: STATE3_TEXT.body,
+    lineHeight: STATE3_TEXT.lineHeight,
+  }}
+>
+  {previewScenarioDetails.successOutcome}
+</p>
             </div>
 
-            <div
+<div
 style={{
-  padding: window.innerWidth <= 768 ? "10px" : "22px",
+  padding: isMobile ? "10px" : "22px",
   border: "1px solid #2a2a2a",
   borderRadius: "12px",
   background: "rgba(255, 255, 255, 0.03)",
 }}
-            >
-              <h3 style={{ marginTop: 0, color: "#f5f7fb" }}>
-                Expected procedure:
-              </h3>
+>
+<h3
+  style={{
+    marginTop: 0,
+    color: COLORS.text,
+    fontSize: STATE3_TEXT.heading,
+    lineHeight: 1.2,
+  }}
+>
+  Expected procedure:
+</h3>
 
               {mode === "practice" ? (
                 previewScenarioDetails.previewSteps.map((step, index) => (
@@ -1462,8 +1487,8 @@ style={{
   padding: window.innerWidth <= 768 ? "10px 0" : "14px 0",
   borderBottom: "1px solid #2a2a2a",
   color: COLORS.body,
-  fontSize: window.innerWidth <= 768 ? "11px" : "16px",
-  lineHeight: window.innerWidth <= 768 ? 1.25 : 1.6,
+  fontSize: STATE3_TEXT.body,
+  lineHeight: STATE3_TEXT.lineHeight,
 }}
                   >
                     <strong style={{ color: "#a78bfa" }}>{index + 1}</strong>
@@ -1471,9 +1496,15 @@ style={{
                   </div>
                 ))
               ) : (
-                <p style={{ color: "#9aa4b2", lineHeight: 1.6 }}>
-                  Procedure preview is hidden in Assessment Mode.
-                </p>
+<p
+  style={{
+    color: COLORS.muted,
+    fontSize: STATE3_TEXT.body,
+    lineHeight: STATE3_TEXT.lineHeight,
+  }}
+>
+  Procedure preview is hidden in Assessment Mode.
+</p>
               )}
             </div>
           </div>

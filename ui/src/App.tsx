@@ -257,6 +257,8 @@ const [openScenarioTypeId, setOpenScenarioTypeId] = useState<string | null>(null
 const [openBranchId, setOpenBranchId] = useState<string | null>(null);
 const [procedureHelpPinned, setProcedureHelpPinned] = useState(false);
 
+const [showMobileProcedureHelp, setShowMobileProcedureHelp] = useState(false);
+
 const [scoringInput, setScoringInput] = useState("");
 const [scoringOutput, setScoringOutput] = useState("");
   const mode = state.mode;
@@ -318,6 +320,7 @@ const expectedStepDuringHelp =
 
 if (isAcceptedProcedure) {
   setProcedureHelpPinned(false);
+  setShowMobileProcedureHelp(false);
 }
 
 const finalStepDuringHelp =
@@ -431,6 +434,14 @@ const STATE3_TEXT = {
 const STATE3_DIVIDER = {
   borderColor: COLORS.border,
   margin: isMobile ? "16px 0" : "22px 0",
+};
+
+const STATE4_TEXT = {
+  title: isMobile ? "18px" : TEXT.title,
+  section: isMobile ? "16px" : TEXT.section,
+  body: isMobile ? "13px" : TEXT.body,
+  detail: isMobile ? "12px" : TEXT.detail,
+  lineHeight: isMobile ? 1.45 : 1.6,
 };
 
   return (
@@ -868,8 +879,9 @@ const standardType = scenarioTree.find(
 );
 
 setOpenBranchId(standardType?.branches[0]?.tierId ?? null);
-                  setProcedureHelpPinned(false);
-                  setLog(["Select a scenario to begin"]);
+setProcedureHelpPinned(false);
+setShowMobileProcedureHelp(false);
+setLog(["Select a scenario to begin"]);
                 }}
                 style={{
                   width: "100%",
@@ -1266,6 +1278,9 @@ style={{
           </div>
         </section>
       )}
+
+
+
 {showState3Preview && previewScenarioDetails && (
 <section
   style={{
@@ -1406,7 +1421,7 @@ style={{
     color: COLORS.body,
     fontSize: STATE3_TEXT.body,
     lineHeight: STATE3_TEXT.lineHeight,
-    whiteSpace: "normal",
+    whiteSpace: "pre-line",
     overflowWrap: "break-word",
   }}
 >
@@ -1567,24 +1582,92 @@ style={{
 </div>
                 </section>
       )}
-{state.executionState === "RUNNING" && (
-  <div
-    style={{
-      display: "block",
-      marginBottom: SPACE.md,
-    }}
-  >
+      {state.executionState === "RUNNING" &&
+  isMobile &&
+  showMobileProcedureHelp && (
     <section
+      style={{
+        ...CARD.base,
+        marginBottom: SPACE.md,
+        padding: SPACE.md,
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => {
+          setShowMobileProcedureHelp(false);
+        }}
+        style={{
+          ...BUTTON.secondary,
+          width: "100%",
+          marginBottom: SPACE.md,
+          border: `1px solid ${COLORS.practiceStrong}`,
+          color: COLORS.practice,
+        }}
+      >
+        ← Back to Scenario
+      </button>
+
+      <h3
+        style={{
+          margin: `0 0 ${SPACE.md}`,
+          color: COLORS.text,
+          fontSize: STATE4_TEXT.section,
+          lineHeight: 1.25,
+        }}
+      >
+        Procedure Help
+      </h3>
+
+      <div
+        style={{
+          padding: SPACE.md,
+          border: `1px solid ${COLORS.border}`,
+          borderRadius: RADIUS.button,
+          background: COLORS.panelSoft,
+          color: COLORS.body,
+          fontSize: STATE4_TEXT.detail,
+          lineHeight: STATE4_TEXT.lineHeight,
+        }}
+      >
+        <div style={{ marginBottom: SPACE.sm, fontWeight: "bold" }}>
+          Parser accepts these expressions:
+        </div>
+
+        {parserAliasHelp.map((item) => (
+          <div key={item.command} style={{ marginTop: SPACE.sm }}>
+            <div style={{ fontWeight: "bold" }}>{item.label}</div>
+
+            {item.aliases.map((alias) => (
+              <div key={alias} style={{ marginLeft: "10px" }}>
+                - {alias}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
+{state.executionState === "RUNNING" &&
+  !(isMobile && showMobileProcedureHelp) && (
+<div
   style={{
-    ...CARD.base,
-    padding: SPACE.lg,
+    display: "block",
+    marginBottom: isMobile ? SPACE.sm : SPACE.md,
   }}
 >
-  <h2
+<section
+  style={{
+    ...CARD.base,
+    padding: isMobile ? SPACE.md : SPACE.lg,
+  }}
+>
+<h2
   style={{
     margin: `0 0 ${SPACE.md}`,
     color: COLORS.text,
-    fontSize: TEXT.title,
+    fontSize: STATE4_TEXT.title,
+    lineHeight: 1.25,
   }}
 >
       {state.scenario
@@ -1597,12 +1680,26 @@ style={{
         : "Standard"}
     </h2>
 
-    <p style={{ margin: "0 0 10px", color: "#d1d5db", lineHeight: 1.6 }}>
+    <p
+  style={{
+    margin: "0 0 10px",
+    color: COLORS.body,
+    fontSize: STATE4_TEXT.body,
+    lineHeight: STATE4_TEXT.lineHeight,
+  }}
+>
       <strong style={{ color: COLORS.assessmentStrong }}>Customer Issue:</strong>{" "}
       {previewScenarioDetails?.scenarioContext ?? "Customer issue is active."}
     </p>
 
-        <p style={{ margin: 0, color: "#d1d5db", lineHeight: 1.6 }}>
+        <p
+  style={{
+    margin: 0,
+    color: COLORS.body,
+    fontSize: STATE4_TEXT.body,
+    lineHeight: STATE4_TEXT.lineHeight,
+  }}
+>
       <strong style={{ color: COLORS.assessmentStrong }}>Scenario Goal:</strong>{" "}
       {previewScenarioDetails?.successOutcome ?? "Resolve the customer issue."}
     </p>
@@ -1622,6 +1719,7 @@ style={{
           }));
 
           setProcedureHelpPinned(false);
+          setShowMobileProcedureHelp(false);
         }}
 style={{
   ...BUTTON.secondary,
@@ -1640,7 +1738,8 @@ style={{
   </div>
 )}
 
-{state.executionState === "RUNNING" && (
+{state.executionState === "RUNNING" &&
+  !(isMobile && showMobileProcedureHelp) && (
   <section
     style={{
       ...CARD.base,
@@ -1648,39 +1747,40 @@ style={{
       padding: SPACE.lg,
     }}
   >
-    <h3
-      style={{
-        margin: `0 0 ${SPACE.md}`,
-        color: COLORS.text,
-        fontSize: TEXT.section,
-      }}
-    >
-      Conversation
-    </h3>
+<h3
+  style={{
+    margin: `0 0 ${SPACE.md}`,
+    color: COLORS.text,
+    fontSize: STATE4_TEXT.section,
+    lineHeight: 1.25,
+  }}
+>
+  Conversation
+</h3>
 
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 280px",
-        gap: SPACE.lg,
-        alignItems: "start",
-      }}
-    >
-      <div
-        style={{
-          maxHeight: "320px",
-          overflowY: "auto",
-          paddingRight: SPACE.sm,
-        }}
-      >
-        <div
-          style={{
-            whiteSpace: "pre-wrap",
-            color: COLORS.body,
-            fontSize: TEXT.detail,
-            lineHeight: 1.6,
-          }}
-        >
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: isMobile ? "1fr" : "1fr 280px",
+    gap: isMobile ? SPACE.md : SPACE.lg,
+    alignItems: "start",
+  }}
+>
+<div
+  style={{
+    maxHeight: isMobile ? "none" : "320px",
+    overflowY: isMobile ? "visible" : "auto",
+    paddingRight: isMobile ? 0 : SPACE.sm,
+  }}
+>
+<div
+  style={{
+    whiteSpace: "pre-wrap",
+    color: COLORS.body,
+    fontSize: STATE4_TEXT.detail,
+    lineHeight: STATE4_TEXT.lineHeight,
+  }}
+>
           {log.map((line, index) =>
             line === "" ? (
               <div key={index} style={{ height: "10px" }} />
@@ -1693,42 +1793,52 @@ style={{
         </div>
       </div>
 
-      <aside
-        style={{
-          borderLeft: `1px solid ${COLORS.border}`,
-          paddingLeft: SPACE.lg,
-        }}
-      >
-        <div
-          style={{
-            marginBottom: SPACE.sm,
-            color: COLORS.text,
-            fontSize: TEXT.section,
-            fontWeight: 700,
-          }}
-        >
-          Available commands:
-        </div>
+<aside
+  style={{
+    borderLeft: isMobile ? "none" : `1px solid ${COLORS.border}`,
+    borderTop: isMobile ? `1px solid ${COLORS.border}` : "none",
+    paddingLeft: isMobile ? 0 : SPACE.lg,
+    paddingTop: isMobile ? SPACE.md : 0,
+  }}
+>
+<div
+  style={{
+    marginBottom: SPACE.sm,
+    color: COLORS.text,
+    fontSize: STATE4_TEXT.section,
+    lineHeight: 1.25,
+    fontWeight: 700,
+  }}
+>
+  Available commands:
+</div>
 
-        {visibleCommands.map((command) => (
-          <div
-            key={command}
-            style={{
-              color: COLORS.body,
-              fontSize: TEXT.detail,
-              marginBottom: SPACE.xs,
-            }}
-          >
-            - {command}
-          </div>
-        ))}
+{visibleCommands.map((command) => (
+  <div
+    key={command}
+    style={{
+      color: COLORS.body,
+      fontSize: STATE4_TEXT.detail,
+      lineHeight: STATE4_TEXT.lineHeight,
+      marginBottom: SPACE.xs,
+    }}
+  >
+    - {command}
+  </div>
+))}
 
         {showProcedureHelp && (
           <button
             type="button"
-            onClick={() => {
-              setProcedureHelpPinned((current) => !current);
-            }}
+onClick={() => {
+  if (isMobile) {
+    setProcedureHelpPinned(true);
+    setShowMobileProcedureHelp(true);
+    return;
+  }
+
+  setProcedureHelpPinned((current) => !current);
+}}
             style={{
               ...BUTTON.secondary,
               width: "100%",
@@ -1741,7 +1851,7 @@ style={{
           </button>
         )}
 
-        {procedureHelpOpen && (
+        {procedureHelpOpen && !isMobile && (
           <div
             style={{
               marginTop: SPACE.md,
@@ -1776,21 +1886,23 @@ style={{
   </section>
 )}
 
-{state.executionState === "RUNNING" && (
-  <section
-    style={{
-      marginBottom: SPACE.md,
-      padding: SPACE.lg,
-      border: `1px solid ${COLORS.successDark}`,
-      borderRadius: RADIUS.card,
-      background: "rgba(22, 101, 52, 0.08)",
-    }}
-  >
+{state.executionState === "RUNNING" &&
+  !(isMobile && showMobileProcedureHelp) && (
+<section
+  style={{
+    marginBottom: SPACE.md,
+    padding: isMobile ? SPACE.md : SPACE.lg,
+    border: `1px solid ${COLORS.successDark}`,
+    borderRadius: RADIUS.card,
+    background: "rgba(22, 101, 52, 0.08)",
+  }}
+>
 <h3
   style={{
     margin: `0 0 ${SPACE.sm}`,
     color: COLORS.text,
-    fontSize: TEXT.section,
+    fontSize: STATE4_TEXT.section,
+    lineHeight: 1.25,
   }}
 >
   Current Decision
@@ -1800,7 +1912,8 @@ style={{
   style={{
     marginBottom: SPACE.md,
     color: COLORS.text,
-    fontSize: TEXT.section,
+    fontSize: STATE4_TEXT.section,
+    lineHeight: 1.25,
     fontWeight: 700,
   }}
 >
@@ -1809,7 +1922,13 @@ style={{
         : "What’s your next step?"}
     </div>
 
-    <div style={{ display: "flex", gap: SPACE.sm }}>
+    <div
+  style={{
+    display: "flex",
+    flexDirection: isMobile ? "column" : "row",
+    gap: SPACE.sm,
+  }}
+>
       <input
         value={input}
         onChange={(e) => setInput(e.target.value)}
@@ -1833,11 +1952,12 @@ style={{
 
       <button
         onClick={runCommand}
-        style={{
-          ...BUTTON.secondary,
-          border: `1px solid ${COLORS.successDark}`,
-          background: "rgba(22, 163, 74, 0.35)",
-        }}
+style={{
+  ...BUTTON.secondary,
+  width: isMobile ? "100%" : "auto",
+  border: `1px solid ${COLORS.successDark}`,
+  background: "rgba(22, 163, 74, 0.35)",
+}}
       >
         Enter
       </button>
@@ -1847,11 +1967,12 @@ style={{
   style={{
     marginTop: SPACE.sm,
     color: COLORS.muted,
-    fontSize: TEXT.label,
+    fontSize: STATE4_TEXT.detail,
+    lineHeight: STATE4_TEXT.lineHeight,
   }}
 >
-      Type a procedure you believe is the best next step.
-    </div>
+  Type a procedure you believe is the best next step.
+</div>
     </section>
 )}
 {state.executionState === "COMPLETED" && (
@@ -2183,6 +2304,7 @@ style={{
           setState(out.state);
           setLog(buildLogBlock(out.message || ""));
           setProcedureHelpPinned(false);
+          setShowMobileProcedureHelp(false);
         }}
           style={BUTTON.secondary}
       >
@@ -2195,6 +2317,7 @@ style={{
           setShowSelector(true);
           setLog(["Select a scenario to begin"]);
           setProcedureHelpPinned(false);
+          setShowMobileProcedureHelp(false);
         }}
         style={BUTTON.primary}
       >
@@ -2212,6 +2335,7 @@ style={{
           setOpenScenarioTypeId(null);
           setOpenBranchId(null);
           setProcedureHelpPinned(false);
+          setShowMobileProcedureHelp(false);
         }}
           style={BUTTON.secondary}
       >

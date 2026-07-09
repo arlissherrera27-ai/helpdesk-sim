@@ -1976,21 +1976,21 @@ style={{
     </section>
 )}
 {state.executionState === "COMPLETED" && (
-  <section
-    style={{
-  ...CARD.base,
-  marginBottom: SPACE.lg,
-  padding: SPACE.xl,
-}}
-  >
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: LAYOUT.completedHero,
-        gap: SPACE.xl,
-        alignItems: "center",
-      }}
-    >
+<section
+  style={{
+    ...CARD.base,
+    marginBottom: SPACE.lg,
+    padding: isMobile ? SPACE.lg : SPACE.xl,
+  }}
+>
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: isMobile ? "1fr" : LAYOUT.completedHero,
+    gap: isMobile ? SPACE.lg : SPACE.xl,
+    alignItems: "center",
+  }}
+>
       <div>
         <div
           style={{
@@ -2035,12 +2035,14 @@ style={{
         </div>
       </div>
 
-      <div
-        style={{
-          borderLeft: `1px solid ${COLORS.border}`,
-          paddingLeft: SPACE.xl,
-        }}
-      >
+<div
+  style={{
+    borderLeft: isMobile ? "none" : `1px solid ${COLORS.border}`,
+    borderTop: isMobile ? `1px solid ${COLORS.border}` : "none",
+    paddingLeft: isMobile ? 0 : SPACE.xl,
+    paddingTop: isMobile ? SPACE.lg : 0,
+  }}
+>
         <h3
           style={{
             marginTop: 0,
@@ -2074,10 +2076,10 @@ style={{
 )}
 {state.executionState === "COMPLETED" && (
   <div>
-    <div
+<div
   style={{
     display: "grid",
-    gridTemplateColumns: LAYOUT.completedSummaryCards,
+    gridTemplateColumns: isMobile ? "1fr" : LAYOUT.completedSummaryCards,
     gap: SPACE.md,
     marginBottom: SPACE.md,
   }}
@@ -2171,7 +2173,7 @@ style={{
   style={{
     ...CARD.base,
     marginBottom: SPACE.md,
-    padding: SPACE.lg,
+    padding: isMobile ? SPACE.md : SPACE.lg,
   }}
 >
   <h3
@@ -2246,7 +2248,7 @@ style={{
   style={{
     ...CARD.base,
     marginBottom: SPACE.md,
-    padding: SPACE.lg,
+    padding: isMobile ? SPACE.md : SPACE.lg,
   }}
 >
   <h3
@@ -2282,16 +2284,17 @@ style={{
   </div>
 </section>
 
-    <section
-      style={{
-        display: "flex",
-        gap: "12px",
-        padding: "18px",
-        border: "1px solid #2a2a2a",
-        borderRadius: "12px",
-        background: "rgba(255,255,255,0.03)",
-      }}
-    >
+<section
+  style={{
+    display: "flex",
+    flexDirection: "row",
+    gap: "12px",
+    padding: isMobile ? SPACE.md : "18px",
+    border: "1px solid #2a2a2a",
+    borderRadius: "12px",
+    background: "rgba(255,255,255,0.03)",
+  }}
+>
       <button
         type="button"
         onClick={() => {

@@ -1,7 +1,11 @@
 import type { Command } from "./types";
 import { lookupCommandDef } from "./commandRegistry";
+import {
+  procedureCatalog,
+  type ProcedureCommandKind,
+} from "./procedureCatalog";
 
-export const COMMAND_ALIASES: Record<string, string> = {
+export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
    // Identity / Authorization
   verify: "verify_identity",
   "verify user": "verify_identity",
@@ -107,6 +111,18 @@ export const COMMAND_ALIASES: Record<string, string> = {
   "check mailbox": "check_mailbox_storage",
   "mailbox check": "check_mailbox_storage",
 
+  "check archive policy": "check_archive_policy",
+  "archive policy check": "check_archive_policy",
+  "check mailbox archive policy": "check_archive_policy",
+  "mailbox archive policy check": "check_archive_policy",
+  "review archive policy": "check_archive_policy",
+
+  "apply archive policy": "apply_archive_policy",
+  "archive policy apply": "apply_archive_policy",
+  "apply mailbox archive policy": "apply_archive_policy",
+  "mailbox archive policy apply": "apply_archive_policy",
+  "enable archive policy": "apply_archive_policy",
+
   "archive old emails": "archive_old_emails",
   "old emails archive": "archive_old_emails",
   "archive emails": "archive_old_emails",
@@ -136,6 +152,16 @@ export const COMMAND_ALIASES: Record<string, string> = {
   "shared mailbox access grant": "grant_shared_mailbox_access",
   "restore shared mailbox access": "grant_shared_mailbox_access",
   "add shared mailbox access": "grant_shared_mailbox_access",
+
+  "check outlook mailbox configuration": "check_outlook_mailbox_configuration",
+  "outlook mailbox configuration check": "check_outlook_mailbox_configuration",
+  "check outlook profile": "check_outlook_mailbox_configuration",
+  "outlook profile check": "check_outlook_mailbox_configuration",
+
+  "add shared mailbox to outlook profile": "add_shared_mailbox_to_outlook_profile",
+  "shared mailbox add to outlook profile": "add_shared_mailbox_to_outlook_profile",
+  "add mailbox to outlook profile": "add_shared_mailbox_to_outlook_profile",
+  "add outlook mailbox": "add_shared_mailbox_to_outlook_profile",
 
   "test shared mailbox access": "test_shared_mailbox_access",
   "shared mailbox access test": "test_shared_mailbox_access",
@@ -209,6 +235,24 @@ export const COMMAND_ALIASES: Record<string, string> = {
   "mfa status check": "check_mfa_status",
   "check mfa code": "check_mfa_status",
 
+  "check registered mfa device": "check_registered_mfa_device",
+  "registered mfa device check": "check_registered_mfa_device",
+  "check registered device": "check_registered_mfa_device",
+  "registered device check": "check_registered_mfa_device",
+  "check mfa device": "check_registered_mfa_device",
+  "mfa device check": "check_registered_mfa_device",
+  "review mfa device": "check_registered_mfa_device",
+  "check authentication device": "check_registered_mfa_device",
+
+  "remove old mfa device": "remove_old_mfa_device",
+  "old mfa device remove": "remove_old_mfa_device",
+  "remove old device": "remove_old_mfa_device",
+  "old device remove": "remove_old_mfa_device",
+  "remove registered mfa device": "remove_old_mfa_device",
+  "delete old mfa device": "remove_old_mfa_device",
+  "unregister old mfa device": "remove_old_mfa_device",
+  "remove previous mfa device": "remove_old_mfa_device",
+
   "reset mfa status": "reset_mfa_method",
   "mfa status reset": "reset_mfa_method",
   "reset mfa": "reset_mfa_method",
@@ -280,9 +324,10 @@ export const COMMAND_ALIASES: Record<string, string> = {
   "internet test": "test_connection",
   "confirm internet": "test_connection",
 
-  "test connection": "confirm_connection",
-  "connection test": "confirm_connection",
-  "test_connection": "confirm_connection",
+  "test connection": "test_connection",
+  "connection test": "test_connection",
+  "test_connection": "test_connection",
+
   "confirm connection": "confirm_connection",
   "test vpn connection": "confirm_connection",
   "vpn connection test": "confirm_connection",
@@ -462,6 +507,18 @@ export const COMMAND_ALIASES: Record<string, string> = {
   // Printer
   "check printer": "check_printer_status",
   "printer check": "check_printer_status",
+
+  "check default printer": "check_default_printer",
+  "default printer check": "check_default_printer",
+  "check printer default": "check_default_printer",
+  "printer default check": "check_default_printer",
+
+  "set default printer": "set_default_printer",
+  "default printer set": "set_default_printer",
+  "change default printer": "set_default_printer",
+  "switch default printer": "set_default_printer",
+  "select default printer": "set_default_printer",
+
   "restart printer": "restart_printer",
   "printer restart": "restart_printer",
   "test printer": "print_test_page",
@@ -600,16 +657,35 @@ export const COMMAND_ALIASES: Record<string, string> = {
   "install permissions check": "check_install_permissions",
   "check software install permissions": "check_install_permissions",
   "software install permissions check": "check_install_permissions",
+  "check software installation permissions": "check_install_permissions",
+  "software installation permissions check": "check_install_permissions",
+
+  "check software request status": "check_software_request_status",
+  "software request status check": "check_software_request_status",
+  "check software request": "check_software_request_status",
+  "software request check": "check_software_request_status",
+  "review software request": "check_software_request_status",
+
+  "approve software request": "approve_software_request",
+  "software request approve": "approve_software_request",
+  "approve request": "approve_software_request",
+  "request approve": "approve_software_request",
 
   "grant install permissions": "grant_install_permissions",
   "install permissions grant": "grant_install_permissions",
   "grant software install permissions": "grant_install_permissions",
   "software install permissions grant": "grant_install_permissions",
+  "grant software installation permissions": "grant_install_permissions",
+  "software installation permissions grant": "grant_install_permissions",
 
   "test software install": "test_software_install",
+  "test software installation": "test_software_install",
   "software install test": "test_software_install",
+  "software installation test": "test_software_install",
   "test install": "test_software_install",
+  "test installation": "test_software_install",
   "install test": "test_software_install",
+  "installation test": "test_software_install",
 
   // Attachment Too Large
   "check attachment": "check_attachment_size",
@@ -687,6 +763,49 @@ export const COMMAND_ALIASES: Record<string, string> = {
   "confirm webcam": "test_webcam",
 };
 
+type ProcedureCommand = Extract<
+  Command,
+  { kind: ProcedureCommandKind }
+>;
+
+// Trip wire: catalog procedures must remain simple, non-argument commands.
+// If a future procedure requires additional fields, it must receive explicit
+// parser construction rather than silently using the generic constructor.
+type InvalidSimpleProcedureCommand = {
+  [Kind in ProcedureCommandKind]:
+    Extract<Command, { kind: Kind }> extends {
+      kind: Kind;
+      readOnly: false;
+    }
+      ? Exclude<
+          keyof Extract<Command, { kind: Kind }>,
+          "kind" | "readOnly"
+        > extends never
+        ? never
+        : Kind
+      : Kind;
+}[ProcedureCommandKind];
+
+export const SIMPLE_PROCEDURE_COMMAND_COVERAGE:
+  InvalidSimpleProcedureCommand extends never
+    ? true
+    : never = true;
+
+function isProcedureCommandKind(
+  kind: string,
+): kind is ProcedureCommandKind {
+  return Object.prototype.hasOwnProperty.call(procedureCatalog, kind);
+}
+
+function createProcedureCommand(
+  kind: ProcedureCommandKind,
+): ProcedureCommand {
+  return {
+    kind,
+    readOnly: false,
+  } as ProcedureCommand;
+}
+
 // Parser only labels intent.
 // It does not decide legitimacy.
 export function parseCommand(inputRaw: string): Command {
@@ -731,219 +850,33 @@ export function parseCommand(inputRaw: string): Command {
     return { kind: "unknown", rawInput: inputRaw };
   }
 
-  // Construct command for non-arg verbs
+   // Every catalog procedure currently has the same command shape.
+  // Procedure identity and eligibility come from procedureCatalog.ts.
+  if (isProcedureCommandKind(verbKind)) {
+    return createProcedureCommand(verbKind);
+  }
+
+  // System/control commands retain explicit construction because their
+  // read-only status, arguments, or behavior differ from procedures.
   switch (verbKind) {
     case "start":
       return { kind: "start", readOnly: false };
+
     case "restart":
       return { kind: "restart", readOnly: false };
+
     case "quit":
       return { kind: "quit", readOnly: false };
-    case "verify_identity":
-      return { kind: "verify_identity", readOnly: false };
-    case "send_reset_code":
-      return { kind: "send_reset_code", readOnly: false };
 
-    case "verify_alternate_contact":
-      return { kind: "verify_alternate_contact", readOnly: false };
-
-    case "update_recovery_email":
-      return { kind: "update_recovery_email", readOnly: false };
-
-    case "confirm_reset":
-      return { kind: "confirm_reset", readOnly: false };
-    case "set_new_password":
-      return { kind: "set_new_password", readOnly: false };
-    case "test_sign_in":
-      return { kind: "test_sign_in", readOnly: false };
-    case "request_unlock":
-      return { kind: "request_unlock", readOnly: false };
-    case "confirm_unlock":
-      return { kind: "confirm_unlock", readOnly: false };
-    case "check_vpn_access":
-      return { kind: "check_vpn_access", readOnly: false };
-    case "enable_vpn_access":
-      return { kind: "enable_vpn_access", readOnly: false };
-    case "confirm_connection":
-      return { kind: "confirm_connection", readOnly: false };
-    case "check_email_status":
-      return { kind: "check_email_status", readOnly: false };
-    case "enable_email_client":
-      return { kind: "enable_email_client", readOnly: false };
-    case "send_test_email":
-      return { kind: "send_test_email", readOnly: false };
-    case "check_mailbox_storage":
-      return { kind: "check_mailbox_storage", readOnly: false };
-    case "archive_old_emails":
-      return { kind: "archive_old_emails", readOnly: false };
-    case "check_email_login_status":
-     return { kind: "check_email_login_status", readOnly: false };
-    case "reset_email_session":
-     return { kind: "reset_email_session", readOnly: false };
-    case "test_email_login":
-     return { kind: "test_email_login", readOnly: false };
-    case "check_sync_settings":
-     return { kind: "check_sync_settings", readOnly: false };
-    case "resync_email_client":
-     return { kind: "resync_email_client", readOnly: false };
-    case "test_email_sync":
-     return { kind: "test_email_sync", readOnly: false };
-    case "check_attachment_size":
-     return { kind: "check_attachment_size", readOnly: false };
-    case "compress_attachment":
-     return { kind: "compress_attachment", readOnly: false };
-    case "check_shared_mailbox_membership":
-      return { kind: "check_shared_mailbox_membership", readOnly: false };
-    case "grant_shared_mailbox_access":
-      return { kind: "grant_shared_mailbox_access", readOnly: false };
-    case "test_shared_mailbox_access":
-      return { kind: "test_shared_mailbox_access", readOnly: false }; 
-    case "check_inbox_filters":
-      return { kind: "check_inbox_filters", readOnly: false };
-    case "disable_inbox_filter":
-      return { kind: "disable_inbox_filter", readOnly: false };
-    case "resend_reset_code":
-      return { kind: "resend_reset_code", readOnly: false };
-    case "check_wifi_status":
-      return { kind: "check_wifi_status", readOnly: false };
-    case "enable_wifi":
-      return { kind: "enable_wifi", readOnly: false };
-    case "test_connection": 
-      return { kind: "test_connection", readOnly: false };
-    case "check_network_status":
-      return { kind: "check_network_status", readOnly: false };
-    case "check_network_adapter":
-      return { kind: "check_network_adapter", readOnly: false };
-    case "check_network_speed":
-      return { kind: "check_network_speed", readOnly: false };
-    case "check_ethernet_connection":
-      return { kind: "check_ethernet_connection", readOnly: false };
-    case "check_file_open_error":
-      return { kind: "check_file_open_error", readOnly: false };
-    case "check_file_association":
-      return { kind: "check_file_association", readOnly: false };
-    case "repair_file_association":
-      return { kind: "repair_file_association", readOnly: false };
-    case "test_file_open":
-      return { kind: "test_file_open", readOnly: false };
-      case "reconnect_ethernet_cable":
-      return { kind: "reconnect_ethernet_cable", readOnly: false };
-    case "restart_network_adapter":
-      return { kind: "restart_network_adapter", readOnly: false };
-    case "test_internet_connection":
-      return { kind: "test_internet_connection", readOnly: false };  
-    case "check_running_apps":
-      return { kind: "check_running_apps", readOnly: false };
-    case "close_unnecessary_apps":
-      return { kind: "close_unnecessary_apps", readOnly: false };
-    case "test_performance":
-      return { kind: "test_performance", readOnly: false };
-    case "check_printer_status":
-      return { kind: "check_printer_status", readOnly: false };
-    case "restart_printer":
-      return { kind: "restart_printer", readOnly: false };
-    case "print_test_page":
-      return { kind: "print_test_page", readOnly: false };
-    case "check_disk_space":
-      return { kind: "check_disk_space", readOnly: false };
-    case "clear_temp_files":
-      return { kind: "clear_temp_files", readOnly: false };
-    case "confirm_storage_available":
-      return { kind: "confirm_storage_available", readOnly: false };
-    case "check_memory_usage":
-      return { kind: "check_memory_usage", readOnly: false };
-    case "close_memory_heavy_apps":
-      return { kind: "close_memory_heavy_apps", readOnly: false };
-    case "check_device_connection":
-      return { kind: "check_device_connection", readOnly: false };
-    case "reconnect_device":
-      return { kind: "reconnect_device", readOnly: false };
-    case "test_input_device":
-      return { kind: "test_input_device", readOnly: false };
-    case "check_app_status":
-      return { kind: "check_app_status", readOnly: false };
-    case "restart_application":
-      return { kind: "restart_application", readOnly: false };
-    case "test_application_launch":
-      return { kind: "test_application_launch", readOnly: false };
-    case "check_license_assignment":
-      return { kind: "check_license_assignment", readOnly: false };
-    case "assign_software_license":
-      return { kind: "assign_software_license", readOnly: false };
-    case "check_software_version":
-      return { kind: "check_software_version", readOnly: false };
-    case "install_software_update":
-      return { kind: "install_software_update", readOnly: false };
-    case "check_microphone_settings":
-      return { kind: "check_microphone_settings", readOnly: false };
-    case "enable_microphone":
-      return { kind: "enable_microphone", readOnly: false };
-    case "test_microphone":
-      return { kind: "test_microphone", readOnly: false };
-    case "check_shared_drive_permissions":
-      return { kind: "check_shared_drive_permissions", readOnly: false };
-    case "grant_shared_drive_access":
-      return { kind: "grant_shared_drive_access", readOnly: false };
-    case "add_user_to_group":
-      return { kind: "add_user_to_group", readOnly: false };
-    case "test_shared_drive_access":
-      return { kind: "test_shared_drive_access", readOnly: false };
-    case "check_network_drive_mapping":
-      return { kind: "check_network_drive_mapping", readOnly: false };
-    case "remap_network_drive":
-      return { kind: "remap_network_drive", readOnly: false };
-    case "test_network_drive_access":
-      return { kind: "test_network_drive_access", readOnly: false };
-    case "check_user_permissions":
-      return { kind: "check_user_permissions", readOnly: false };
-    case "grant_required_permission":
-      return { kind: "grant_required_permission", readOnly: false };
-    case "test_permission_access":
-      return { kind: "test_permission_access", readOnly: false };
-    case "check_folder_permissions":
-      return { kind: "check_folder_permissions", readOnly: false };
-    case "grant_folder_access":
-      return { kind: "grant_folder_access", readOnly: false };
-    case "test_folder_access":
-      return { kind: "test_folder_access", readOnly: false };
-    case "check_webcam_settings":
-      return { kind: "check_webcam_settings", readOnly: false };
-    case "enable_webcam":
-      return { kind: "enable_webcam", readOnly: false };
-    case "test_webcam":
-      return { kind: "test_webcam", readOnly: false };
-    case "check_mfa_status":
-      return { kind: "check_mfa_status", readOnly: false };
-    case "reset_mfa_method":
-      return { kind: "reset_mfa_method", readOnly: false };
-    case "test_mfa_login":
-      return { kind: "test_mfa_login", readOnly: false };
-    case "check_browser_extensions":
-      return { kind: "check_browser_extensions", readOnly: false };
-    case "disable_unnecessary_extensions":
-      return { kind: "disable_unnecessary_extensions", readOnly: false };
-    case "test_browser_performance":
-      return { kind: "test_browser_performance", readOnly: false };
-    case "check_install_permissions":
-      return { kind: "check_install_permissions", readOnly: false };
-    case "grant_install_permissions":
-      return { kind: "grant_install_permissions", readOnly: false };
-    case "test_software_install":
-      return { kind: "test_software_install", readOnly: false };
-    case "check_display_connection":
-      return { kind: "check_display_connection", readOnly: false };
-    case "check_display_settings":
-      return { kind: "check_display_settings", readOnly: false };
-    case "detect_second_monitor":
-      return { kind: "detect_second_monitor", readOnly: false };
-    case "test_dual_display":
-      return { kind: "test_dual_display", readOnly: false };
     case "help":
       return { kind: "help", readOnly: true };
+
     case "status":
       return { kind: "status", readOnly: true };
+
     case "debug":
       return { kind: "debug", readOnly: true };
+
     default:
       return { kind: "unknown", rawInput: inputRaw };
   }

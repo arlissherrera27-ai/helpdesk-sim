@@ -1,6 +1,14 @@
 import type { ExecutionPlan, SimState, StatePatch } from "./types";
 import { getScenarioDefaults } from "./scenarioRegistry";
 
+function assertNever(value: never): never {
+  throw new Error(
+    `[EXECUTE INVARIANT] Unhandled execution plan: ${
+      (value as ExecutionPlan).kind
+    }`
+  );
+}
+
 // Executor: converts an authorized plan into a patch.
 // No legitimacy decisions. No mutation here.
 export function executePlan(state: SimState, plan: ExecutionPlan): StatePatch {
@@ -765,34 +773,43 @@ case "SendTestEmail": {
     };
   }
 
-    if (facts.kind === "not_receiving_email") {
-    if (!facts.filter_disabled) {
-      return {
-        error: {
-          code: "SEND_TEST_EMAIL_FILTER_ACTIVE",
-          message: "Must disable inbox filter before testing email.",
-          failingCommand: "send_test_email",
-        },
-      };
-    }
-
+if (
+  facts.kind === "not_receiving_email" ||
+  facts.kind ===
+    "not_receiving_email_inbox_rule_redirecting"
+) {
+  if (!facts.filter_disabled) {
     return {
-      scenarioFacts: {
-        ...facts,
-        can_receive_email: true,
+      error: {
+        code: "SEND_TEST_EMAIL_FILTER_ACTIVE",
+        message: "Must disable inbox filter before testing email.",
+        failingCommand: "send_test_email",
       },
-      result: { totalScore: 0, mistakes: 0, completion: "PASS" },
-      executionState: "COMPLETED",
-      error: null,
     };
   }
 
-    if (facts.kind === "mailbox_full") {
+  return {
+    scenarioFacts: {
+      ...facts,
+      can_receive_email: true,
+    },
+    result: { totalScore: 0, mistakes: 0, completion: "PASS" },
+    executionState: "COMPLETED",
+    error: null,
+  };
+}
+
+  if (
+    facts.kind === "mailbox_full" ||
+    facts.kind ===
+      "mailbox_full_archive_policy_not_applied"
+  ) {
     if (!facts.old_emails_archived) {
       return {
         error: {
           code: "SEND_TEST_EMAIL_MAILBOX_STILL_FULL",
-          message: "Must archive old emails before testing email delivery.",
+          message:
+            "Must archive old emails before testing email delivery.",
           failingCommand: "send_test_email",
         },
       };
@@ -803,7 +820,11 @@ case "SendTestEmail": {
         ...facts,
         mailbox_receiving_email: true,
       },
-      result: { totalScore: 0, mistakes: 0, completion: "PASS" },
+      result: {
+        totalScore: 0,
+        mistakes: 0,
+        completion: "PASS",
+      },
       executionState: "COMPLETED",
       error: null,
     };
@@ -844,11 +865,40 @@ case "SendTestEmail": {
 case "CheckMailboxStorage": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "mailbox_full") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "mailbox_full" &&
+      facts.kind !==
+        "mailbox_full_archive_policy_not_applied"
+    )
+  ) {
     return {
       error: {
         code: "CHECK_MAILBOX_STORAGE_WRONG_SCENARIO",
-        message: "check_mailbox_storage is only valid in mailbox_full scenario.",
+        message:
+          "check_mailbox_storage is only valid in mailbox-full scenarios.",
+        failingCommand: "check_mailbox_storage",
+      },
+    };
+  }
+
+  if (!facts.identity_verified) {
+    return {
+      error: {
+        code: "CHECK_MAILBOX_STORAGE_IDENTITY_NOT_VERIFIED",
+        message:
+          "Must verify identity before checking mailbox storage.",
+        failingCommand: "check_mailbox_storage",
+      },
+    };
+  }
+
+  if (facts.mailbox_storage_checked) {
+    return {
+      error: {
+        code: "CHECK_MAILBOX_STORAGE_ALREADY_DONE",
+        message: "Mailbox storage has already been checked.",
         failingCommand: "check_mailbox_storage",
       },
     };
@@ -863,14 +913,165 @@ case "CheckMailboxStorage": {
   };
 }
 
+case "CheckArchivePolicy": {
+  const facts = state.scenarioFacts;
+
+  if (
+    !facts ||
+    facts.kind !==
+      "mailbox_full_archive_policy_not_applied"
+  ) {
+    return {
+      error: {
+        code: "CHECK_ARCHIVE_POLICY_WRONG_SCENARIO",
+        message:
+          "check_archive_policy is only valid in the archive-policy mailbox challenge.",
+        failingCommand: "check_archive_policy",
+      },
+    };
+  }
+
+  if (!facts.identity_verified) {
+    return {
+      error: {
+        code: "CHECK_ARCHIVE_POLICY_IDENTITY_NOT_VERIFIED",
+        message:
+          "Must verify identity before checking the archive policy.",
+        failingCommand: "check_archive_policy",
+      },
+    };
+  }
+
+  if (!facts.mailbox_storage_checked) {
+    return {
+      error: {
+        code: "CHECK_ARCHIVE_POLICY_STORAGE_NOT_CHECKED",
+        message:
+          "Must check mailbox storage before checking the archive policy.",
+        failingCommand: "check_archive_policy",
+      },
+    };
+  }
+
+  if (facts.archive_policy_checked) {
+    return {
+      error: {
+        code: "CHECK_ARCHIVE_POLICY_ALREADY_DONE",
+        message: "The archive policy has already been checked.",
+        failingCommand: "check_archive_policy",
+      },
+    };
+  }
+
+  return {
+    scenarioFacts: {
+      ...facts,
+      archive_policy_checked: true,
+    },
+    error: null,
+  };
+}
+
+case "ApplyArchivePolicy": {
+  const facts = state.scenarioFacts;
+
+  if (
+    !facts ||
+    facts.kind !==
+      "mailbox_full_archive_policy_not_applied"
+  ) {
+    return {
+      error: {
+        code: "APPLY_ARCHIVE_POLICY_WRONG_SCENARIO",
+        message:
+          "apply_archive_policy is only valid in the archive-policy mailbox challenge.",
+        failingCommand: "apply_archive_policy",
+      },
+    };
+  }
+
+  if (!facts.archive_policy_checked) {
+    return {
+      error: {
+        code: "APPLY_ARCHIVE_POLICY_NOT_CHECKED",
+        message:
+          "Must check the archive policy before applying it.",
+        failingCommand: "apply_archive_policy",
+      },
+    };
+  }
+
+  if (facts.archive_policy_applied) {
+    return {
+      error: {
+        code: "APPLY_ARCHIVE_POLICY_ALREADY_DONE",
+        message: "The archive policy has already been applied.",
+        failingCommand: "apply_archive_policy",
+      },
+    };
+  }
+
+  return {
+    scenarioFacts: {
+      ...facts,
+      archive_policy_applied: true,
+    },
+    error: null,
+  };
+}
+
 case "ArchiveOldEmails": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "mailbox_full") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "mailbox_full" &&
+      facts.kind !==
+        "mailbox_full_archive_policy_not_applied"
+    )
+  ) {
     return {
       error: {
         code: "ARCHIVE_OLD_EMAILS_WRONG_SCENARIO",
-        message: "archive_old_emails is only valid in mailbox_full scenario.",
+        message:
+          "archive_old_emails is only valid in mailbox-full scenarios.",
+        failingCommand: "archive_old_emails",
+      },
+    };
+  }
+
+  if (!facts.mailbox_storage_checked) {
+    return {
+      error: {
+        code: "ARCHIVE_OLD_EMAILS_STORAGE_NOT_CHECKED",
+        message:
+          "Must check mailbox storage before archiving old emails.",
+        failingCommand: "archive_old_emails",
+      },
+    };
+  }
+
+  if (
+    facts.kind ===
+      "mailbox_full_archive_policy_not_applied" &&
+    !facts.archive_policy_applied
+  ) {
+    return {
+      error: {
+        code: "ARCHIVE_OLD_EMAILS_POLICY_NOT_APPLIED",
+        message:
+          "The archive policy must be applied before old emails can be archived.",
+        failingCommand: "archive_old_emails",
+      },
+    };
+  }
+
+  if (facts.old_emails_archived) {
+    return {
+      error: {
+        code: "ARCHIVE_OLD_EMAILS_ALREADY_DONE",
+        message: "Old emails have already been archived.",
         failingCommand: "archive_old_emails",
       },
     };
@@ -890,12 +1091,19 @@ case "ArchiveOldEmails": {
 case "CheckSharedMailboxMembership": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "shared_mailbox_missing") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "shared_mailbox_missing" &&
+      facts.kind !==
+        "shared_mailbox_outlook_profile_not_updated"
+    )
+  ) {
     return {
       error: {
         code: "CHECK_SHARED_MAILBOX_MEMBERSHIP_WRONG_SCENARIO",
         message:
-          "check_shared_mailbox_membership is only valid in shared_mailbox_missing scenario.",
+          "check_shared_mailbox_membership is only valid in shared mailbox scenarios.",
         failingCommand: "check_shared_mailbox_membership",
       },
     };
@@ -933,15 +1141,144 @@ case "GrantSharedMailboxAccess": {
   };
 }
 
+case "CheckOutlookMailboxConfiguration": {
+  const facts = state.scenarioFacts;
+
+  if (
+    !facts ||
+    facts.kind !==
+      "shared_mailbox_outlook_profile_not_updated"
+  ) {
+    return {
+      error: {
+        code:
+          "CHECK_OUTLOOK_MAILBOX_CONFIGURATION_WRONG_SCENARIO",
+        message:
+          "check_outlook_mailbox_configuration is only valid in the Outlook profile shared mailbox challenge.",
+        failingCommand:
+          "check_outlook_mailbox_configuration",
+      },
+    };
+  }
+
+  if (!facts.shared_mailbox_access_tested) {
+    return {
+      error: {
+        code:
+          "CHECK_OUTLOOK_MAILBOX_CONFIGURATION_ACCESS_NOT_TESTED",
+        message:
+          "Must test shared mailbox access before checking the Outlook mailbox configuration.",
+        failingCommand:
+          "check_outlook_mailbox_configuration",
+      },
+    };
+  }
+
+  return {
+    scenarioFacts: {
+      ...facts,
+      outlook_mailbox_configuration_checked: true,
+    },
+    error: null,
+  };
+}
+
+case "AddSharedMailboxToOutlookProfile": {
+  const facts = state.scenarioFacts;
+
+  if (
+    !facts ||
+    facts.kind !==
+      "shared_mailbox_outlook_profile_not_updated"
+  ) {
+    return {
+      error: {
+        code:
+          "ADD_SHARED_MAILBOX_TO_OUTLOOK_PROFILE_WRONG_SCENARIO",
+        message:
+          "add_shared_mailbox_to_outlook_profile is only valid in the Outlook profile shared mailbox challenge.",
+        failingCommand:
+          "add_shared_mailbox_to_outlook_profile",
+      },
+    };
+  }
+
+  if (!facts.outlook_mailbox_configuration_checked) {
+    return {
+      error: {
+        code:
+          "ADD_SHARED_MAILBOX_TO_OUTLOOK_PROFILE_CONFIGURATION_NOT_CHECKED",
+        message:
+          "Must check the Outlook mailbox configuration before adding the shared mailbox.",
+        failingCommand:
+          "add_shared_mailbox_to_outlook_profile",
+      },
+    };
+  }
+
+  return {
+    scenarioFacts: {
+      ...facts,
+      shared_mailbox_added_to_outlook_profile: true,
+    },
+    error: null,
+  };
+}
+
 case "TestSharedMailboxAccess": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "shared_mailbox_missing") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "shared_mailbox_missing" &&
+      facts.kind !==
+        "shared_mailbox_outlook_profile_not_updated"
+    )
+  ) {
     return {
       error: {
         code: "TEST_SHARED_MAILBOX_ACCESS_WRONG_SCENARIO",
         message:
-          "test_shared_mailbox_access is only valid in shared_mailbox_missing scenario.",
+          "test_shared_mailbox_access is only valid in shared mailbox scenarios.",
+        failingCommand: "test_shared_mailbox_access",
+      },
+    };
+  }
+
+  if (facts.kind === "shared_mailbox_missing") {
+    return {
+      scenarioFacts: {
+        ...facts,
+        shared_mailbox_working: true,
+      },
+      result: {
+        totalScore: 0,
+        mistakes: 0,
+        completion: "PASS",
+      },
+      executionState: "COMPLETED",
+      error: null,
+    };
+  }
+
+  if (!facts.shared_mailbox_access_tested) {
+    return {
+      scenarioFacts: {
+        ...facts,
+        shared_mailbox_access_tested: true,
+        shared_mailbox_working: false,
+      },
+      error: null,
+    };
+  }
+
+  if (!facts.shared_mailbox_added_to_outlook_profile) {
+    return {
+      error: {
+        code: "TEST_SHARED_MAILBOX_ACCESS_PROFILE_NOT_UPDATED",
+        message:
+          "The shared mailbox must be added to the Outlook profile before access can be verified.",
         failingCommand: "test_shared_mailbox_access",
       },
     };
@@ -952,7 +1289,11 @@ case "TestSharedMailboxAccess": {
       ...facts,
       shared_mailbox_working: true,
     },
-    result: { totalScore: 0, mistakes: 0, completion: "PASS" },
+    result: {
+      totalScore: 0,
+      mistakes: 0,
+      completion: "PASS",
+    },
     executionState: "COMPLETED",
     error: null,
   };
@@ -1009,11 +1350,19 @@ case "CompressAttachment": {
 case "CheckSyncSettings": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "email_client_not_syncing") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "email_client_not_syncing" &&
+      facts.kind !==
+        "email_client_not_syncing_cached_session_stuck"
+    )
+  ) {
     return {
       error: {
         code: "CHECK_SYNC_SETTINGS_WRONG_SCENARIO",
-        message: "check_sync_settings is only valid in email_client_not_syncing scenario.",
+        message:
+          "check_sync_settings is only valid in email sync scenarios.",
         failingCommand: "check_sync_settings",
       },
     };
@@ -1031,11 +1380,19 @@ case "CheckSyncSettings": {
 case "ResyncEmailClient": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "email_client_not_syncing") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "email_client_not_syncing" &&
+      facts.kind !==
+        "email_client_not_syncing_cached_session_stuck"
+    )
+  ) {
     return {
       error: {
         code: "RESYNC_EMAIL_CLIENT_WRONG_SCENARIO",
-        message: "resync_email_client is only valid in email_client_not_syncing scenario.",
+        message:
+          "resync_email_client is only valid in email sync scenarios.",
         failingCommand: "resync_email_client",
       },
     };
@@ -1053,11 +1410,19 @@ case "ResyncEmailClient": {
 case "TestEmailSync": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "email_client_not_syncing") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "email_client_not_syncing" &&
+      facts.kind !==
+        "email_client_not_syncing_cached_session_stuck"
+    )
+  ) {
     return {
       error: {
         code: "TEST_EMAIL_SYNC_WRONG_SCENARIO",
-        message: "test_email_sync is only valid in email_client_not_syncing scenario.",
+        message:
+          "test_email_sync is only valid in email sync scenarios.",
         failingCommand: "test_email_sync",
       },
     };
@@ -1068,7 +1433,11 @@ case "TestEmailSync": {
       ...facts,
       email_sync_working: true,
     },
-    result: { totalScore: 0, mistakes: 0, completion: "PASS" },
+    result: {
+      totalScore: 0,
+      mistakes: 0,
+      completion: "PASS",
+    },
     executionState: "COMPLETED",
     error: null,
   };
@@ -1079,11 +1448,19 @@ case "TestEmailSync": {
 case "CheckEmailLoginStatus": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "email_login_issue") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "email_login_issue" &&
+      facts.kind !==
+        "email_client_not_syncing_cached_session_stuck"
+    )
+  ) {
     return {
       error: {
         code: "CHECK_EMAIL_LOGIN_STATUS_WRONG_SCENARIO",
-        message: "check_email_login_status is only valid in email_login_issue scenario.",
+        message:
+          "check_email_login_status is only valid in email session scenarios.",
         failingCommand: "check_email_login_status",
       },
     };
@@ -1101,11 +1478,19 @@ case "CheckEmailLoginStatus": {
 case "ResetEmailSession": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "email_login_issue") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "email_login_issue" &&
+      facts.kind !==
+        "email_client_not_syncing_cached_session_stuck"
+    )
+  ) {
     return {
       error: {
         code: "RESET_EMAIL_SESSION_WRONG_SCENARIO",
-        message: "reset_email_session is only valid in email_login_issue scenario.",
+        message:
+          "reset_email_session is only valid in email session scenarios.",
         failingCommand: "reset_email_session",
       },
     };
@@ -1153,7 +1538,10 @@ case "CheckInboxFilters": {
     !facts ||
     (
       facts.kind !== "not_receiving_email" &&
-      facts.kind !== "password_reset_recovery_email_never_arrives"
+      facts.kind !==
+        "not_receiving_email_inbox_rule_redirecting" &&
+      facts.kind !==
+        "password_reset_recovery_email_never_arrives"
     )
   ) {
     return {
@@ -1201,7 +1589,10 @@ case "DisableInboxFilter": {
     !facts ||
     (
       facts.kind !== "not_receiving_email" &&
-      facts.kind !== "password_reset_recovery_email_never_arrives"
+      facts.kind !==
+        "not_receiving_email_inbox_rule_redirecting" &&
+      facts.kind !==
+        "password_reset_recovery_email_never_arrives"
     )
   ) {
     return {
@@ -1227,7 +1618,22 @@ case "DisableInboxFilter": {
   }
 
   if (
-    facts.kind === "password_reset_recovery_email_never_arrives" &&
+    facts.kind ===
+      "not_receiving_email_inbox_rule_redirecting" &&
+    !facts.inbox_filter_checked
+  ) {
+    return {
+      error: {
+        code: "DISABLE_INBOX_FILTER_NOT_CHECKED",
+        message: "Must check inbox filters before disabling the filter.",
+        failingCommand: "disable_inbox_filter",
+      },
+    };
+  }
+
+  if (
+    facts.kind ===
+      "password_reset_recovery_email_never_arrives" &&
     !facts.inbox_filter_checked
   ) {
     return {
@@ -1243,6 +1649,20 @@ case "DisableInboxFilter": {
     return {
       scenarioFacts: {
         ...facts,
+        filter_disabled: true,
+      },
+      error: null,
+    };
+  }
+
+  if (
+    facts.kind ===
+      "not_receiving_email_inbox_rule_redirecting"
+  ) {
+    return {
+      scenarioFacts: {
+        ...facts,
+        inbox_filter_enabled: false,
         filter_disabled: true,
       },
       error: null,
@@ -1501,11 +1921,17 @@ case "CloseMemoryHeavyApps": {
 case "CheckPrinterStatus": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "printer_not_working") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "printer_not_working" &&
+      facts.kind !== "printer_wrong_default_printer"
+    )
+  ) {
     return {
       error: {
         code: "CHECK_PRINTER_STATUS_WRONG_SCENARIO",
-        message: "check_printer_status is only valid in printer_not_working scenario.",
+        message: "check_printer_status is only valid in printer scenarios.",
         failingCommand: "check_printer_status",
       },
     };
@@ -1515,6 +1941,58 @@ case "CheckPrinterStatus": {
     scenarioFacts: {
       ...facts,
       printer_checked: true,
+    },
+    error: null,
+  };
+}
+
+case "CheckDefaultPrinter": {
+  const facts = state.scenarioFacts;
+
+  if (
+    !facts ||
+    facts.kind !== "printer_wrong_default_printer"
+  ) {
+    return {
+      error: {
+        code: "CHECK_DEFAULT_PRINTER_WRONG_SCENARIO",
+        message:
+          "check_default_printer is only valid in printer_wrong_default_printer scenario.",
+        failingCommand: "check_default_printer",
+      },
+    };
+  }
+
+  return {
+    scenarioFacts: {
+      ...facts,
+      default_printer_checked: true,
+    },
+    error: null,
+  };
+}
+
+case "SetDefaultPrinter": {
+  const facts = state.scenarioFacts;
+
+  if (
+    !facts ||
+    facts.kind !== "printer_wrong_default_printer"
+  ) {
+    return {
+      error: {
+        code: "SET_DEFAULT_PRINTER_WRONG_SCENARIO",
+        message:
+          "set_default_printer is only valid in printer_wrong_default_printer scenario.",
+        failingCommand: "set_default_printer",
+      },
+    };
+  }
+
+  return {
+    scenarioFacts: {
+      ...facts,
+      correct_default_printer_set: true,
     },
     error: null,
   };
@@ -1545,11 +2023,17 @@ case "RestartPrinter": {
 case "PrintTestPage": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "printer_not_working") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "printer_not_working" &&
+      facts.kind !== "printer_wrong_default_printer"
+    )
+  ) {
     return {
       error: {
         code: "PRINT_TEST_PAGE_WRONG_SCENARIO",
-        message: "print_test_page is only valid in printer_not_working scenario.",
+        message: "print_test_page is only valid in printer scenarios.",
         failingCommand: "print_test_page",
       },
     };
@@ -2381,8 +2865,9 @@ case "CheckMfaStatus": {
   if (
   !facts ||
   (
-    facts.kind !== "mfa_code_not_working" &&
-    facts.kind !== "vpn_mfa_dependency_missing"
+facts.kind !== "mfa_code_not_working" &&
+facts.kind !== "vpn_mfa_dependency_missing" &&
+facts.kind !== "mfa_code_old_phone_still_registered"
   )
 ) {
     return {
@@ -2403,14 +2888,67 @@ case "CheckMfaStatus": {
   };
 }
 
+case "CheckRegisteredMfaDevice": {
+  const facts = state.scenarioFacts;
+
+  if (
+    !facts ||
+    facts.kind !== "mfa_code_old_phone_still_registered"
+  ) {
+    return {
+      error: {
+        code: "CHECK_REGISTERED_MFA_DEVICE_WRONG_SCENARIO",
+        message:
+          "check_registered_mfa_device is only valid in mfa_code_old_phone_still_registered scenario.",
+        failingCommand: "check_registered_mfa_device",
+      },
+    };
+  }
+
+  return {
+    scenarioFacts: {
+      ...facts,
+      registered_mfa_device_checked: true,
+    },
+    error: null,
+  };
+}
+
+case "RemoveOldMfaDevice": {
+  const facts = state.scenarioFacts;
+
+  if (
+    !facts ||
+    facts.kind !== "mfa_code_old_phone_still_registered"
+  ) {
+    return {
+      error: {
+        code: "REMOVE_OLD_MFA_DEVICE_WRONG_SCENARIO",
+        message:
+          "remove_old_mfa_device is only valid in mfa_code_old_phone_still_registered scenario.",
+        failingCommand: "remove_old_mfa_device",
+      },
+    };
+  }
+
+  return {
+    scenarioFacts: {
+      ...facts,
+      old_mfa_device_removed: true,
+    },
+    error: null,
+  };
+}
+
 case "ResetMfaMethod": {
   const facts = state.scenarioFacts;
 
   if (
   !facts ||
   (
-    facts.kind !== "mfa_code_not_working" &&
-    facts.kind !== "vpn_mfa_dependency_missing"
+facts.kind !== "mfa_code_not_working" &&
+facts.kind !== "vpn_mfa_dependency_missing" &&
+facts.kind !== "mfa_code_old_phone_still_registered"
   )
 ) {
     return {
@@ -2434,7 +2972,13 @@ case "ResetMfaMethod": {
 case "TestMfaLogin": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "mfa_code_not_working") {
+  if (
+  !facts ||
+  (
+    facts.kind !== "mfa_code_not_working" &&
+    facts.kind !== "mfa_code_old_phone_still_registered"
+  )
+) {
     return {
       error: {
         code: "TEST_MFA_LOGIN_WRONG_SCENARIO",
@@ -2531,11 +3075,40 @@ case "TestBrowserPerformance": {
 case "CheckInstallPermissions": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "cannot_install_software") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "cannot_install_software" &&
+      facts.kind !==
+        "cannot_install_software_admin_approval_required"
+    )
+  ) {
     return {
       error: {
         code: "CHECK_INSTALL_PERMISSIONS_WRONG_SCENARIO",
-        message: "check_install_permissions is only valid in cannot_install_software scenario.",
+        message:
+          "check_install_permissions is only valid in software installation scenarios.",
+        failingCommand: "check_install_permissions",
+      },
+    };
+  }
+
+  if (!facts.identity_verified) {
+    return {
+      error: {
+        code: "CHECK_INSTALL_PERMISSIONS_IDENTITY_NOT_VERIFIED",
+        message:
+          "Must verify identity before checking installation permissions.",
+        failingCommand: "check_install_permissions",
+      },
+    };
+  }
+
+  if (facts.install_permissions_checked) {
+    return {
+      error: {
+        code: "CHECK_INSTALL_PERMISSIONS_ALREADY_DONE",
+        message: "Installation permissions have already been checked.",
         failingCommand: "check_install_permissions",
       },
     };
@@ -2550,14 +3123,165 @@ case "CheckInstallPermissions": {
   };
 }
 
+case "CheckSoftwareRequestStatus": {
+  const facts = state.scenarioFacts;
+
+  if (
+    !facts ||
+    facts.kind !==
+      "cannot_install_software_admin_approval_required"
+  ) {
+    return {
+      error: {
+        code: "CHECK_SOFTWARE_REQUEST_STATUS_WRONG_SCENARIO",
+        message:
+          "check_software_request_status is only valid in the admin approval software installation challenge.",
+        failingCommand: "check_software_request_status",
+      },
+    };
+  }
+
+  if (!facts.identity_verified) {
+    return {
+      error: {
+        code: "CHECK_SOFTWARE_REQUEST_STATUS_IDENTITY_NOT_VERIFIED",
+        message:
+          "Must verify identity before checking the software request.",
+        failingCommand: "check_software_request_status",
+      },
+    };
+  }
+
+  if (!facts.install_permissions_checked) {
+    return {
+      error: {
+        code: "CHECK_SOFTWARE_REQUEST_STATUS_PERMISSIONS_NOT_CHECKED",
+        message:
+          "Must check installation permissions before checking the software request.",
+        failingCommand: "check_software_request_status",
+      },
+    };
+  }
+
+  if (facts.software_request_checked) {
+    return {
+      error: {
+        code: "CHECK_SOFTWARE_REQUEST_STATUS_ALREADY_DONE",
+        message: "The software request status has already been checked.",
+        failingCommand: "check_software_request_status",
+      },
+    };
+  }
+
+  return {
+    scenarioFacts: {
+      ...facts,
+      software_request_checked: true,
+    },
+    error: null,
+  };
+}
+
+case "ApproveSoftwareRequest": {
+  const facts = state.scenarioFacts;
+
+  if (
+    !facts ||
+    facts.kind !==
+      "cannot_install_software_admin_approval_required"
+  ) {
+    return {
+      error: {
+        code: "APPROVE_SOFTWARE_REQUEST_WRONG_SCENARIO",
+        message:
+          "approve_software_request is only valid in the admin approval software installation challenge.",
+        failingCommand: "approve_software_request",
+      },
+    };
+  }
+
+  if (!facts.software_request_checked) {
+    return {
+      error: {
+        code: "APPROVE_SOFTWARE_REQUEST_STATUS_NOT_CHECKED",
+        message:
+          "Must check the software request status before approving it.",
+        failingCommand: "approve_software_request",
+      },
+    };
+  }
+
+  if (facts.software_request_approved) {
+    return {
+      error: {
+        code: "APPROVE_SOFTWARE_REQUEST_ALREADY_DONE",
+        message: "The software request has already been approved.",
+        failingCommand: "approve_software_request",
+      },
+    };
+  }
+
+  return {
+    scenarioFacts: {
+      ...facts,
+      software_request_approved: true,
+    },
+    error: null,
+  };
+}
+
 case "GrantInstallPermissions": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "cannot_install_software") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "cannot_install_software" &&
+      facts.kind !==
+        "cannot_install_software_admin_approval_required"
+    )
+  ) {
     return {
       error: {
         code: "GRANT_INSTALL_PERMISSIONS_WRONG_SCENARIO",
-        message: "grant_install_permissions is only valid in cannot_install_software scenario.",
+        message:
+          "grant_install_permissions is only valid in software installation scenarios.",
+        failingCommand: "grant_install_permissions",
+      },
+    };
+  }
+
+  if (!facts.install_permissions_checked) {
+    return {
+      error: {
+        code: "GRANT_INSTALL_PERMISSIONS_NOT_CHECKED",
+        message:
+          "Must check installation permissions before granting them.",
+        failingCommand: "grant_install_permissions",
+      },
+    };
+  }
+
+  if (
+    facts.kind ===
+      "cannot_install_software_admin_approval_required" &&
+    !facts.software_request_approved
+  ) {
+    return {
+      error: {
+        code: "GRANT_INSTALL_PERMISSIONS_REQUEST_NOT_APPROVED",
+        message:
+          "The software request must be approved before installation permissions can be granted.",
+        failingCommand: "grant_install_permissions",
+      },
+    };
+  }
+
+  if (facts.install_permissions_granted) {
+    return {
+      error: {
+        code: "GRANT_INSTALL_PERMISSIONS_ALREADY_DONE",
+        message: "Installation permissions have already been granted.",
         failingCommand: "grant_install_permissions",
       },
     };
@@ -2575,11 +3299,40 @@ case "GrantInstallPermissions": {
 case "TestSoftwareInstall": {
   const facts = state.scenarioFacts;
 
-  if (!facts || facts.kind !== "cannot_install_software") {
+  if (
+    !facts ||
+    (
+      facts.kind !== "cannot_install_software" &&
+      facts.kind !==
+        "cannot_install_software_admin_approval_required"
+    )
+  ) {
     return {
       error: {
         code: "TEST_SOFTWARE_INSTALL_WRONG_SCENARIO",
-        message: "test_software_install is only valid in cannot_install_software scenario.",
+        message:
+          "test_software_install is only valid in software installation scenarios.",
+        failingCommand: "test_software_install",
+      },
+    };
+  }
+
+  if (!facts.install_permissions_granted) {
+    return {
+      error: {
+        code: "TEST_SOFTWARE_INSTALL_PERMISSIONS_NOT_GRANTED",
+        message:
+          "Must grant installation permissions before testing the installation.",
+        failingCommand: "test_software_install",
+      },
+    };
+  }
+
+  if (facts.software_install_working) {
+    return {
+      error: {
+        code: "TEST_SOFTWARE_INSTALL_ALREADY_DONE",
+        message: "The software installation has already been tested.",
         failingCommand: "test_software_install",
       },
     };
@@ -2590,7 +3343,11 @@ case "TestSoftwareInstall": {
       ...facts,
       software_install_working: true,
     },
-    result: { totalScore: 0, mistakes: 0, completion: "PASS" },
+    result: {
+      totalScore: 0,
+      mistakes: 0,
+      completion: "PASS",
+    },
     executionState: "COMPLETED",
     error: null,
   };
@@ -3041,6 +3798,7 @@ case "TestFileOpen": {
       };
     }
   }
-  // Safety tripwire: should be unreachable if ExecutionPlan union is exhaustive
-  throw new Error(`Unsupported plan: ${(plan as any).kind}`);
+
+
+  return assertNever(plan);
 }

@@ -1,5 +1,15 @@
-import type { Command, Decision, SimState } from "./types";
+import type {
+  Command,
+  Decision,
+  ExecutionPlan,
+  SimState,
+} from "./types";
 import { isValidScenarioId } from "./scenarios";
+import {
+  procedureCatalog,
+  type ProcedureCommandKind,
+  type ProcedurePlanKind,
+} from "./procedureCatalog";
 
 const PROCEDURE_NOT_RECOGNIZED =
   "Unknown procedure: that procedure was not recognized for this step.\n\n" +
@@ -16,6 +26,39 @@ function denyProcedure(commandKind: string): Decision {
     `Last entered procedure:\n"${commandKind}"\n\n` +
     PROCEDURE_DENIED,
     denyType: "PROCEDURE_DENIED",
+  };
+}
+
+type ProcedureExecutionPlan = Extract<
+  ExecutionPlan,
+  { kind: ProcedurePlanKind }
+>;
+
+// Trip wire: procedure plans must remain simple plans containing only `kind`.
+// If a future procedure plan requires extra data, TypeScript stops this helper
+// from silently constructing an incomplete plan.
+type ProcedurePlanWithRequiredFields = {
+  [Plan in ProcedureExecutionPlan as Plan["kind"]]:
+    Exclude<keyof Plan, "kind"> extends never
+      ? never
+      : Plan["kind"];
+}[ProcedureExecutionPlan["kind"]];
+
+export const SIMPLE_PROCEDURE_PLAN_COVERAGE:
+  ProcedurePlanWithRequiredFields extends never
+    ? true
+    : never = true;
+
+function allowProcedure(
+  commandKind: ProcedureCommandKind
+): Decision {
+  const planKind = procedureCatalog[commandKind].plan;
+
+  return {
+    kind: "ALLOW",
+    plan: {
+      kind: planKind,
+    } as ProcedureExecutionPlan,
   };
 }
 
@@ -85,6 +128,90 @@ function isSharedDriveProcedureScenario(
   return (
     facts?.kind === "shared_drive_access_issue" ||
     facts?.kind === "shared_drive_group_membership_missing"
+  );
+}
+
+function isInstallSoftwareProcedureScenario(
+  facts: SimState["scenarioFacts"]
+): facts is Extract<
+  NonNullable<SimState["scenarioFacts"]>,
+  {
+    kind:
+      | "cannot_install_software"
+      | "cannot_install_software_admin_approval_required";
+  }
+> {
+  return (
+    facts?.kind === "cannot_install_software" ||
+    facts?.kind ===
+      "cannot_install_software_admin_approval_required"
+  );
+}
+
+function isMailboxFullProcedureScenario(
+  facts: SimState["scenarioFacts"]
+): facts is Extract<
+  NonNullable<SimState["scenarioFacts"]>,
+  {
+    kind:
+      | "mailbox_full"
+      | "mailbox_full_archive_policy_not_applied";
+  }
+> {
+  return (
+    facts?.kind === "mailbox_full" ||
+    facts?.kind ===
+      "mailbox_full_archive_policy_not_applied"
+  );
+}
+
+function isSharedMailboxProcedureScenario(
+  facts: SimState["scenarioFacts"]
+): facts is Extract<
+  NonNullable<SimState["scenarioFacts"]>,
+  {
+    kind:
+      | "shared_mailbox_missing"
+      | "shared_mailbox_outlook_profile_not_updated";
+  }
+> {
+  return (
+    facts?.kind === "shared_mailbox_missing" ||
+    facts?.kind ===
+      "shared_mailbox_outlook_profile_not_updated"
+  );
+}
+
+function isEmailSyncProcedureScenario(
+  facts: SimState["scenarioFacts"]
+): facts is Extract<
+  NonNullable<SimState["scenarioFacts"]>,
+  {
+    kind:
+      | "email_client_not_syncing"
+      | "email_client_not_syncing_cached_session_stuck";
+  }
+> {
+  return (
+    facts?.kind === "email_client_not_syncing" ||
+    facts?.kind ===
+      "email_client_not_syncing_cached_session_stuck"
+  );
+}
+
+function isPrinterProcedureScenario(
+  facts: SimState["scenarioFacts"]
+): facts is Extract<
+  NonNullable<SimState["scenarioFacts"]>,
+  {
+    kind:
+      | "printer_not_working"
+      | "printer_wrong_default_printer";
+  }
+> {
+  return (
+    facts?.kind === "printer_not_working" ||
+    facts?.kind === "printer_wrong_default_printer"
   );
 }
 
@@ -200,7 +327,7 @@ if (runningCheck) {
     }
 
     // Allow: this will reach engine, which emits effects, and update() applies them
-    return { kind: "ALLOW", plan: { kind: "VerifyIdentity" } };
+    return allowProcedure(command.kind);
  }
 
 // --- ACCOUNT / ACCESS COMMANDS --- //
@@ -231,7 +358,7 @@ if (state.scenarioFacts.unlock_requested === true) {
   return denyProcedure(command.kind);
 }
 
-      return { kind: "ALLOW", plan: { kind: "RequestUnlock" } };
+      return allowProcedure(command.kind);
     }
 
     // confirm_unlock gating rule
@@ -338,10 +465,7 @@ if (identityCheck) {
         return denyProcedure(command.kind);
       }
 
-      return {
-        kind: "ALLOW",
-        plan: { kind: "VerifyAlternateContact" },
-      };
+return allowProcedure(command.kind);
     }
 
     // update_recovery_email gating rule
@@ -376,10 +500,7 @@ if (identityCheck) {
         return denyProcedure(command.kind);
       }
 
-      return {
-        kind: "ALLOW",
-        plan: { kind: "UpdateRecoveryEmail" },
-      };
+return allowProcedure(command.kind);
     }
 
     // resend_reset_code gating rule
@@ -726,20 +847,28 @@ if (runningCheck) {
     return { kind: "ALLOW", plan: { kind: "SendTestEmail" } };
   }
 
-    if (state.scenarioFacts.kind === "not_receiving_email") {
-    if (!state.scenarioFacts.filter_disabled) {
-      return denyProcedure(command.kind);
-    }
-
-    return { kind: "ALLOW", plan: { kind: "SendTestEmail" } };
+if (
+  state.scenarioFacts.kind === "not_receiving_email" ||
+  state.scenarioFacts.kind ===
+    "not_receiving_email_inbox_rule_redirecting"
+) {
+  if (!state.scenarioFacts.filter_disabled) {
+    return denyProcedure(command.kind);
   }
 
-  if (state.scenarioFacts.kind === "mailbox_full") {
+  return { kind: "ALLOW", plan: { kind: "SendTestEmail" } };
+}
+
+  if (
+    state.scenarioFacts.kind === "mailbox_full" ||
+    state.scenarioFacts.kind ===
+      "mailbox_full_archive_policy_not_applied"
+  ) {
     if (!state.scenarioFacts.old_emails_archived) {
       return denyProcedure(command.kind);
     }
 
-    return { kind: "ALLOW", plan: { kind: "SendTestEmail" } };
+return allowProcedure(command.kind);
   }
 
   return denyProcedure(command.kind);
@@ -750,38 +879,118 @@ if (runningCheck) {
 if (command.kind === "check_mailbox_storage") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "mailbox_full") {
+  if (
+    !state.scenarioFacts ||
+    !isMailboxFullProcedureScenario(state.scenarioFacts)
+  ) {
     return denyProcedure(command.kind);
   }
 
-const identityCheck = mustHaveIdentityVerified(
-  state,
-  command.kind
-);
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
 
-if (identityCheck) {
-  return identityCheck;
-}
+  if (identityCheck) {
+    return identityCheck;
+  }
 
   if (state.scenarioFacts.mailbox_storage_checked) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "CheckMailboxStorage" } };
+return allowProcedure(command.kind);
+}
+
+if (command.kind === "check_archive_policy") {
+  const runningCheck = mustBeRunning(state);
+
+  if (runningCheck) {
+    return runningCheck;
+  }
+
+  if (
+    !state.scenarioFacts ||
+    state.scenarioFacts.kind !==
+      "mailbox_full_archive_policy_not_applied"
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
+
+  if (identityCheck) {
+    return identityCheck;
+  }
+
+  if (!state.scenarioFacts.mailbox_storage_checked) {
+    return denyProcedure(command.kind);
+  }
+
+  if (state.scenarioFacts.archive_policy_checked) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
+}
+
+if (command.kind === "apply_archive_policy") {
+  const runningCheck = mustBeRunning(state);
+
+  if (runningCheck) {
+    return runningCheck;
+  }
+
+  if (
+    !state.scenarioFacts ||
+    state.scenarioFacts.kind !==
+      "mailbox_full_archive_policy_not_applied"
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
+
+  if (identityCheck) {
+    return identityCheck;
+  }
+
+  if (!state.scenarioFacts.mailbox_storage_checked) {
+    return denyProcedure(command.kind);
+  }
+
+  if (!state.scenarioFacts.archive_policy_checked) {
+    return denyProcedure(command.kind);
+  }
+
+  if (state.scenarioFacts.archive_policy_applied) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "archive_old_emails") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "mailbox_full") {
+  if (
+    !state.scenarioFacts ||
+    !isMailboxFullProcedureScenario(state.scenarioFacts)
+  ) {
     return denyProcedure(command.kind);
   }
 
@@ -789,11 +998,19 @@ if (runningCheck) {
     return denyProcedure(command.kind);
   }
 
+  if (
+    state.scenarioFacts.kind ===
+      "mailbox_full_archive_policy_not_applied" &&
+    !state.scenarioFacts.archive_policy_applied
+  ) {
+    return denyProcedure(command.kind);
+  }
+
   if (state.scenarioFacts.old_emails_archived) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "ArchiveOldEmails" } };
+return allowProcedure(command.kind);
 }
 
 // --- EMAIL LOGIN ISSUE COMMANDS --- //
@@ -801,38 +1018,60 @@ if (runningCheck) {
 if (command.kind === "check_email_login_status") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "email_login_issue") {
+  if (
+    !state.scenarioFacts ||
+    (
+      state.scenarioFacts.kind !== "email_login_issue" &&
+      state.scenarioFacts.kind !==
+        "email_client_not_syncing_cached_session_stuck"
+    )
+  ) {
     return denyProcedure(command.kind);
   }
 
-const identityCheck = mustHaveIdentityVerified(
-  state,
-  command.kind
-);
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
 
-if (identityCheck) {
-  return identityCheck;
-}
+  if (identityCheck) {
+    return identityCheck;
+  }
+
+  if (
+    state.scenarioFacts.kind ===
+      "email_client_not_syncing_cached_session_stuck" &&
+    !state.scenarioFacts.sync_settings_checked
+  ) {
+    return denyProcedure(command.kind);
+  }
 
   if (state.scenarioFacts.email_login_checked) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "CheckEmailLoginStatus" } };
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "reset_email_session") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "email_login_issue") {
+  if (
+    !state.scenarioFacts ||
+    (
+      state.scenarioFacts.kind !== "email_login_issue" &&
+      state.scenarioFacts.kind !==
+        "email_client_not_syncing_cached_session_stuck"
+    )
+  ) {
     return denyProcedure(command.kind);
   }
 
@@ -844,7 +1083,7 @@ if (runningCheck) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "ResetEmailSession" } };
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "test_email_login") {
@@ -870,34 +1109,44 @@ if (runningCheck) {
 if (command.kind === "check_sync_settings") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "email_client_not_syncing") {
+  if (
+    !state.scenarioFacts ||
+    !isEmailSyncProcedureScenario(state.scenarioFacts)
+  ) {
     return denyProcedure(command.kind);
   }
 
-const identityCheck = mustHaveIdentityVerified(
-  state,
-  command.kind
-);
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
 
-if (identityCheck) {
-  return identityCheck;
-}
+  if (identityCheck) {
+    return identityCheck;
+  }
 
-  return { kind: "ALLOW", plan: { kind: "CheckSyncSettings" } };
+  if (state.scenarioFacts.sync_settings_checked) {
+    return denyProcedure(command.kind);
+  }
+
+ return allowProcedure(command.kind);
 }
 
 if (command.kind === "resync_email_client") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "email_client_not_syncing") {
+  if (
+    !state.scenarioFacts ||
+    !isEmailSyncProcedureScenario(state.scenarioFacts)
+  ) {
     return denyProcedure(command.kind);
   }
 
@@ -905,17 +1154,32 @@ if (runningCheck) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "ResyncEmailClient" } };
+  if (
+    state.scenarioFacts.kind ===
+      "email_client_not_syncing_cached_session_stuck" &&
+    !state.scenarioFacts.email_session_reset
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  if (state.scenarioFacts.email_client_resynced) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "test_email_sync") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "email_client_not_syncing") {
+  if (
+    !state.scenarioFacts ||
+    !isEmailSyncProcedureScenario(state.scenarioFacts)
+  ) {
     return denyProcedure(command.kind);
   }
 
@@ -923,7 +1187,11 @@ if (runningCheck) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "TestEmailSync" } };
+  if (state.scenarioFacts.email_sync_working) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
 // --- ATTACHMENT TOO LARGE COMMANDS --- //
@@ -981,37 +1249,44 @@ if (runningCheck) {
 if (command.kind === "check_shared_mailbox_membership") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "shared_mailbox_missing") {
+  if (
+    !state.scenarioFacts ||
+    !isSharedMailboxProcedureScenario(state.scenarioFacts)
+  ) {
     return denyProcedure(command.kind);
   }
 
-const identityCheck = mustHaveIdentityVerified(
-  state,
-  command.kind
-);
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
 
-if (identityCheck) {
-  return identityCheck;
-}
+  if (identityCheck) {
+    return identityCheck;
+  }
 
-  return {
-    kind: "ALLOW",
-    plan: { kind: "CheckSharedMailboxMembership" },
-  };
+  if (state.scenarioFacts.shared_mailbox_membership_checked) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "grant_shared_mailbox_access") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "shared_mailbox_missing") {
+  if (
+    !state.scenarioFacts ||
+    state.scenarioFacts.kind !== "shared_mailbox_missing"
+  ) {
     return denyProcedure(command.kind);
   }
 
@@ -1019,31 +1294,126 @@ if (runningCheck) {
     return denyProcedure(command.kind);
   }
 
-  return {
-    kind: "ALLOW",
-    plan: { kind: "GrantSharedMailboxAccess" },
-  };
+  if (state.scenarioFacts.shared_mailbox_access_granted) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
+}
+
+if (command.kind === "check_outlook_mailbox_configuration") {
+  const runningCheck = mustBeRunning(state);
+
+  if (runningCheck) {
+    return runningCheck;
+  }
+
+  if (
+    !state.scenarioFacts ||
+    state.scenarioFacts.kind !==
+      "shared_mailbox_outlook_profile_not_updated"
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
+
+  if (identityCheck) {
+    return identityCheck;
+  }
+
+  if (!state.scenarioFacts.shared_mailbox_access_tested) {
+    return denyProcedure(command.kind);
+  }
+
+  if (
+    state.scenarioFacts.outlook_mailbox_configuration_checked
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
+}
+
+if (
+  command.kind ===
+  "add_shared_mailbox_to_outlook_profile"
+) {
+  const runningCheck = mustBeRunning(state);
+
+  if (runningCheck) {
+    return runningCheck;
+  }
+
+  if (
+    !state.scenarioFacts ||
+    state.scenarioFacts.kind !==
+      "shared_mailbox_outlook_profile_not_updated"
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  if (
+    !state.scenarioFacts.outlook_mailbox_configuration_checked
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  if (
+    state.scenarioFacts.shared_mailbox_added_to_outlook_profile
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "test_shared_mailbox_access") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "shared_mailbox_missing") {
+  if (
+    !state.scenarioFacts ||
+    !isSharedMailboxProcedureScenario(state.scenarioFacts)
+  ) {
     return denyProcedure(command.kind);
   }
 
-  if (!state.scenarioFacts.shared_mailbox_access_granted) {
+  if (state.scenarioFacts.kind === "shared_mailbox_missing") {
+    if (!state.scenarioFacts.shared_mailbox_access_granted) {
+      return denyProcedure(command.kind);
+    }
+
+ return allowProcedure(command.kind);
+  }
+
+  if (!state.scenarioFacts.shared_mailbox_access_tested) {
+    if (
+      !state.scenarioFacts.shared_mailbox_membership_checked
+    ) {
+      return denyProcedure(command.kind);
+    }
+
+return allowProcedure(command.kind);
+  }
+
+  if (
+    !state.scenarioFacts.shared_mailbox_added_to_outlook_profile
+  ) {
     return denyProcedure(command.kind);
   }
 
-  return {
-    kind: "ALLOW",
-    plan: { kind: "TestSharedMailboxAccess" },
-  };
+  if (state.scenarioFacts.shared_mailbox_working) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
 // --- NETWORK / CONNECTIVITY COMMANDS --- //
@@ -1152,7 +1522,7 @@ if (identityCheck) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "CheckWifiStatus" } };
+  return allowProcedure(command.kind);
 }
 
 if (command.kind === "enable_wifi") { // ← ADD
@@ -1174,7 +1544,7 @@ if (runningCheck) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "EnableWifi" } };
+  return allowProcedure(command.kind);
 }
 
 if (command.kind === "test_connection") {
@@ -1384,42 +1754,122 @@ if (state.scenarioFacts.memory_ok) {
 
 // --- HARDWARE / PERIPHERALS COMMANDS --- //
 
-// printer_not_working
+// printer_not_working + printer_wrong_default_printer
 if (command.kind === "check_printer_status") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "printer_not_working") {
+  if (
+    !state.scenarioFacts ||
+    !isPrinterProcedureScenario(state.scenarioFacts)
+  ) {
     return denyProcedure(command.kind);
   }
 
-const identityCheck = mustHaveIdentityVerified(
-  state,
-  command.kind
-);
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
 
-if (identityCheck) {
-  return identityCheck;
-}
+  if (identityCheck) {
+    return identityCheck;
+  }
 
   if (state.scenarioFacts.printer_checked) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "CheckPrinterStatus" } };
+return allowProcedure(command.kind);
+}
+
+if (command.kind === "check_default_printer") {
+  const runningCheck = mustBeRunning(state);
+
+  if (runningCheck) {
+    return runningCheck;
+  }
+
+  if (
+    !state.scenarioFacts ||
+    state.scenarioFacts.kind !==
+      "printer_wrong_default_printer"
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
+
+  if (identityCheck) {
+    return identityCheck;
+  }
+
+  if (!state.scenarioFacts.printer_checked) {
+    return denyProcedure(command.kind);
+  }
+
+  if (state.scenarioFacts.default_printer_checked) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
+}
+
+if (command.kind === "set_default_printer") {
+  const runningCheck = mustBeRunning(state);
+
+  if (runningCheck) {
+    return runningCheck;
+  }
+
+  if (
+    !state.scenarioFacts ||
+    state.scenarioFacts.kind !==
+      "printer_wrong_default_printer"
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
+
+  if (identityCheck) {
+    return identityCheck;
+  }
+
+  if (!state.scenarioFacts.printer_checked) {
+    return denyProcedure(command.kind);
+  }
+
+  if (!state.scenarioFacts.default_printer_checked) {
+    return denyProcedure(command.kind);
+  }
+
+  if (state.scenarioFacts.correct_default_printer_set) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "restart_printer") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "printer_not_working") {
+  if (
+    !state.scenarioFacts ||
+    state.scenarioFacts.kind !== "printer_not_working"
+  ) {
     return denyProcedure(command.kind);
   }
 
@@ -1431,25 +1881,44 @@ if (runningCheck) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "RestartPrinter" } };
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "print_test_page") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "printer_not_working") {
+  if (
+    !state.scenarioFacts ||
+    !isPrinterProcedureScenario(state.scenarioFacts)
+  ) {
     return denyProcedure(command.kind);
   }
 
-  if (!state.scenarioFacts.printer_restarted) {
+  if (state.scenarioFacts.kind === "printer_not_working") {
+    if (!state.scenarioFacts.printer_restarted) {
+      return denyProcedure(command.kind);
+    }
+
+    if (state.scenarioFacts.printer_working) {
+      return denyProcedure(command.kind);
+    }
+
+ return allowProcedure(command.kind);
+  }
+
+  if (!state.scenarioFacts.correct_default_printer_set) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "PrintTestPage" } };
+  if (state.scenarioFacts.printer_working) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
 // disk_space_full
@@ -1516,10 +1985,7 @@ if (runningCheck) {
     return denyProcedure(command.kind);
   }
 
-  return {
-    kind: "ALLOW",
-    plan: { kind: "ConfirmStorageAvailable" },
-  };
+return allowProcedure(command.kind);
 }
 
 // --- DEVICE / PERFORMANCE COMMANDS --- //
@@ -1572,10 +2038,7 @@ if (runningCheck) {
     return denyProcedure(command.kind);
   }
 
-  return {
-    kind: "ALLOW",
-    plan: { kind: "CloseMemoryHeavyApps" },
-  };
+return allowProcedure(command.kind);
 }
 
 // mouse_keyboard_not_working
@@ -1720,10 +2183,7 @@ if (identityCheck) {
     return denyProcedure(command.kind);
   }
 
-  return {
-    kind: "ALLOW",
-    plan: { kind: "CheckLicenseAssignment" },
-  };
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "assign_software_license") {
@@ -1748,10 +2208,7 @@ if (runningCheck) {
     return denyProcedure(command.kind);
   }
 
-  return {
-    kind: "ALLOW",
-    plan: { kind: "AssignSoftwareLicense" },
-  };
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "restart_application") {
@@ -2035,10 +2492,7 @@ if (identityCheck) {
     return denyProcedure(command.kind);
   }
 
-  return {
-    kind: "ALLOW",
-    plan: { kind: "AddUserToGroup" },
-  };
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "test_shared_drive_access") {
@@ -2378,61 +2832,155 @@ if (runningCheck) {
 if (command.kind === "check_mfa_status") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
   if (
-  !state.scenarioFacts ||
-  (
-    state.scenarioFacts.kind !== "mfa_code_not_working" &&
-    state.scenarioFacts.kind !== "vpn_mfa_dependency_missing"
-  )
-) {
+    !state.scenarioFacts ||
+    (
+      state.scenarioFacts.kind !== "mfa_code_not_working" &&
+      state.scenarioFacts.kind !== "vpn_mfa_dependency_missing" &&
+      state.scenarioFacts.kind !==
+        "mfa_code_old_phone_still_registered"
+    )
+  ) {
     return denyProcedure(command.kind);
   }
 
-const identityCheck = mustHaveIdentityVerified(
-  state,
-  command.kind
-);
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
 
-if (identityCheck) {
-  return identityCheck;
+  if (identityCheck) {
+    return identityCheck;
+  }
+
+  if (
+    state.scenarioFacts.kind === "vpn_mfa_dependency_missing" &&
+    !state.scenarioFacts.vpn_access_enabled
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  if (state.scenarioFacts.mfa_status_checked) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
-if (
-  state.scenarioFacts.kind === "vpn_mfa_dependency_missing" &&
-  !state.scenarioFacts.vpn_access_enabled
-) {
-  return denyProcedure(command.kind);
+if (command.kind === "check_registered_mfa_device") {
+  const runningCheck = mustBeRunning(state);
+
+  if (runningCheck) {
+    return runningCheck;
+  }
+
+  if (
+    !state.scenarioFacts ||
+    state.scenarioFacts.kind !==
+      "mfa_code_old_phone_still_registered"
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
+
+  if (identityCheck) {
+    return identityCheck;
+  }
+
+  if (!state.scenarioFacts.mfa_status_checked) {
+    return denyProcedure(command.kind);
+  }
+
+  if (state.scenarioFacts.registered_mfa_device_checked) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
-if (state.scenarioFacts.mfa_status_checked) {
-  return denyProcedure(command.kind);
-}
+if (command.kind === "remove_old_mfa_device") {
+  const runningCheck = mustBeRunning(state);
 
-  return { kind: "ALLOW", plan: { kind: "CheckMfaStatus" } };
+  if (runningCheck) {
+    return runningCheck;
+  }
+
+  if (
+    !state.scenarioFacts ||
+    state.scenarioFacts.kind !==
+      "mfa_code_old_phone_still_registered"
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
+
+  if (identityCheck) {
+    return identityCheck;
+  }
+
+  if (!state.scenarioFacts.mfa_status_checked) {
+    return denyProcedure(command.kind);
+  }
+
+  if (!state.scenarioFacts.registered_mfa_device_checked) {
+    return denyProcedure(command.kind);
+  }
+
+  if (state.scenarioFacts.old_mfa_device_removed) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "reset_mfa_method") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-if (
-  !state.scenarioFacts ||
-  (
-    state.scenarioFacts.kind !== "mfa_code_not_working" &&
-    state.scenarioFacts.kind !== "vpn_mfa_dependency_missing"
-  )
-) {
-  return denyProcedure(command.kind);
-}
+  if (
+    !state.scenarioFacts ||
+    (
+      state.scenarioFacts.kind !== "mfa_code_not_working" &&
+      state.scenarioFacts.kind !== "vpn_mfa_dependency_missing" &&
+      state.scenarioFacts.kind !==
+        "mfa_code_old_phone_still_registered"
+    )
+  ) {
+    return denyProcedure(command.kind);
+  }
 
   if (!state.scenarioFacts.mfa_status_checked) {
+    return denyProcedure(command.kind);
+  }
+
+  if (
+    state.scenarioFacts.kind ===
+      "mfa_code_old_phone_still_registered" &&
+    !state.scenarioFacts.registered_mfa_device_checked
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  if (
+    state.scenarioFacts.kind ===
+      "mfa_code_old_phone_still_registered" &&
+    !state.scenarioFacts.old_mfa_device_removed
+  ) {
     return denyProcedure(command.kind);
   }
 
@@ -2440,28 +2988,36 @@ if (
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "ResetMfaMethod" } };
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "test_mfa_login") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-if (
-  !state.scenarioFacts ||
-  state.scenarioFacts.kind !== "mfa_code_not_working"
-) {
-  return denyProcedure(command.kind);
-}
+  if (
+    !state.scenarioFacts ||
+    (
+      state.scenarioFacts.kind !== "mfa_code_not_working" &&
+      state.scenarioFacts.kind !==
+        "mfa_code_old_phone_still_registered"
+    )
+  ) {
+    return denyProcedure(command.kind);
+  }
 
   if (!state.scenarioFacts.mfa_method_reset) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "TestMfaLogin" } };
+  if (state.scenarioFacts.mfa_working) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
 // browser_running_slow
@@ -2537,38 +3093,118 @@ if (runningCheck) {
 if (command.kind === "check_install_permissions") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "cannot_install_software") {
+  if (
+    !state.scenarioFacts ||
+    !isInstallSoftwareProcedureScenario(state.scenarioFacts)
+  ) {
     return denyProcedure(command.kind);
   }
 
-const identityCheck = mustHaveIdentityVerified(
-  state,
-  command.kind
-);
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
 
-if (identityCheck) {
-  return identityCheck;
-}
+  if (identityCheck) {
+    return identityCheck;
+  }
 
   if (state.scenarioFacts.install_permissions_checked) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "CheckInstallPermissions" } };
+return allowProcedure(command.kind);
+}
+
+if (command.kind === "check_software_request_status") {
+  const runningCheck = mustBeRunning(state);
+
+  if (runningCheck) {
+    return runningCheck;
+  }
+
+  if (
+    !state.scenarioFacts ||
+    state.scenarioFacts.kind !==
+      "cannot_install_software_admin_approval_required"
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
+
+  if (identityCheck) {
+    return identityCheck;
+  }
+
+  if (!state.scenarioFacts.install_permissions_checked) {
+    return denyProcedure(command.kind);
+  }
+
+  if (state.scenarioFacts.software_request_checked) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
+}
+
+if (command.kind === "approve_software_request") {
+  const runningCheck = mustBeRunning(state);
+
+  if (runningCheck) {
+    return runningCheck;
+  }
+
+  if (
+    !state.scenarioFacts ||
+    state.scenarioFacts.kind !==
+      "cannot_install_software_admin_approval_required"
+  ) {
+    return denyProcedure(command.kind);
+  }
+
+  const identityCheck = mustHaveIdentityVerified(
+    state,
+    command.kind
+  );
+
+  if (identityCheck) {
+    return identityCheck;
+  }
+
+  if (!state.scenarioFacts.install_permissions_checked) {
+    return denyProcedure(command.kind);
+  }
+
+  if (!state.scenarioFacts.software_request_checked) {
+    return denyProcedure(command.kind);
+  }
+
+  if (state.scenarioFacts.software_request_approved) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "grant_install_permissions") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "cannot_install_software") {
+  if (
+    !state.scenarioFacts ||
+    !isInstallSoftwareProcedureScenario(state.scenarioFacts)
+  ) {
     return denyProcedure(command.kind);
   }
 
@@ -2576,21 +3212,32 @@ if (runningCheck) {
     return denyProcedure(command.kind);
   }
 
+  if (
+    state.scenarioFacts.kind ===
+      "cannot_install_software_admin_approval_required" &&
+    !state.scenarioFacts.software_request_approved
+  ) {
+    return denyProcedure(command.kind);
+  }
+
   if (state.scenarioFacts.install_permissions_granted) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "GrantInstallPermissions" } };
+return allowProcedure(command.kind);
 }
 
 if (command.kind === "test_software_install") {
   const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+  if (runningCheck) {
+    return runningCheck;
+  }
 
-  if (!state.scenarioFacts || state.scenarioFacts.kind !== "cannot_install_software") {
+  if (
+    !state.scenarioFacts ||
+    !isInstallSoftwareProcedureScenario(state.scenarioFacts)
+  ) {
     return denyProcedure(command.kind);
   }
 
@@ -2598,7 +3245,11 @@ if (runningCheck) {
     return denyProcedure(command.kind);
   }
 
-  return { kind: "ALLOW", plan: { kind: "TestSoftwareInstall" } };
+  if (state.scenarioFacts.software_install_working) {
+    return denyProcedure(command.kind);
+  }
+
+return allowProcedure(command.kind);
 }
 
 // second_monitor_not_detected

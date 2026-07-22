@@ -2,7 +2,8 @@ import { useState } from "react";
 import { handleInput } from "./core/engine";
 import { initialState } from "./core/state";
 import type { SimState } from "./core/types";
-import { SCENARIO_LABELS } from "./core/scenarios";
+import { isValidScenarioId } from "./core/scenarios";
+import { getScenarioLabel } from "./core/scenarioRegistry";
 import {
   scenarioTree,
   getPreviewStepLabel,
@@ -261,9 +262,15 @@ const [showMobileProcedureHelp, setShowMobileProcedureHelp] = useState(false);
 
 const [scoringInput, setScoringInput] = useState("");
 const [scoringOutput, setScoringOutput] = useState("");
+
   const mode = state.mode;
 
-  const visibleCommands = getVisibleCommands(state); 
+  const activeScenarioId =
+    state.scenario && isValidScenarioId(state.scenario)
+      ? state.scenario
+      : null;
+
+  const visibleCommands = getVisibleCommands(state);
 
 
   const scenarioProcedureCommands = getScenarioProcedureCommands(state.scenario);
@@ -1670,15 +1677,13 @@ style={{
     lineHeight: 1.25,
   }}
 >
-      {state.scenario
-        ? SCENARIO_LABELS[state.scenario as keyof typeof SCENARIO_LABELS]
-        : "Active Scenario"}{" "}
-      — {state.scenario
-        ? getScenarioTypeDisplayLabel(
-            state.scenario as keyof typeof SCENARIO_LABELS
-          )
-        : "Standard"}
-    </h2>
+{activeScenarioId
+  ? getScenarioLabel(activeScenarioId)
+  : "Active Scenario"}{" "}
+— {activeScenarioId
+  ? getScenarioTypeDisplayLabel(activeScenarioId)
+  : "Standard"}
+</h2>
 
     <p
   style={{
@@ -2013,26 +2018,24 @@ style={{
           You completed the scenario successfully.
         </div>
 
-        <div
-          style={{
-            display: "inline-block",
-            padding: "10px 16px",
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: RADIUS.chip,
-            color: COLORS.text,
-          }}
-        >
-          Scenario:&nbsp;
-          {state.scenario
-            ? SCENARIO_LABELS[state.scenario as keyof typeof SCENARIO_LABELS]
-            : "Completed Scenario"}
-          {" — "}
-          {state.scenario
-            ? getScenarioTypeDisplayLabel(
-                state.scenario as keyof typeof SCENARIO_LABELS
-              )
-            : "Standard"}
-        </div>
+<div
+  style={{
+    display: "inline-block",
+    padding: "10px 16px",
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: RADIUS.chip,
+    color: COLORS.text,
+  }}
+>
+  Scenario:&nbsp;
+{activeScenarioId
+  ? getScenarioLabel(activeScenarioId)
+  : "Completed Scenario"}
+{" — "}
+{activeScenarioId
+  ? getScenarioTypeDisplayLabel(activeScenarioId)
+  : "Standard"}
+</div>
       </div>
 
 <div

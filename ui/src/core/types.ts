@@ -35,6 +35,8 @@ export type Command =
   | { kind: "enable_vpn_access"; readOnly: false }
   | { kind: "confirm_connection"; readOnly: false }
   | { kind: "check_mfa_status"; readOnly: false }
+  | { kind: "check_registered_mfa_device"; readOnly: false }
+  | { kind: "remove_old_mfa_device"; readOnly: false }
   | { kind: "reset_mfa_method"; readOnly: false }
   | { kind: "test_mfa_login"; readOnly: false }
   | { kind: "check_user_permissions"; readOnly: false }
@@ -45,8 +47,12 @@ export type Command =
   | { kind: "add_user_to_group"; readOnly: false }
   | { kind: "test_shared_drive_access"; readOnly: false }
   | { kind: "check_install_permissions"; readOnly: false }
+  | { kind: "check_software_request_status"; readOnly: false }
+  | { kind: "approve_software_request"; readOnly: false }
   | { kind: "grant_install_permissions"; readOnly: false }
   | { kind: "test_software_install"; readOnly: false }
+
+  // EMAIL
 
   // EMAIL
   | { kind: "check_email_status"; readOnly: false }
@@ -56,6 +62,8 @@ export type Command =
   | { kind: "resend_reset_code"; readOnly: false }
   | { kind: "send_test_email"; readOnly: false }
   | { kind: "check_mailbox_storage"; readOnly: false }
+  | { kind: "check_archive_policy"; readOnly: false }
+  | { kind: "apply_archive_policy"; readOnly: false }
   | { kind: "archive_old_emails"; readOnly: false }
   | { kind: "check_email_login_status"; readOnly: false }
   | { kind: "reset_email_session"; readOnly: false }
@@ -67,6 +75,8 @@ export type Command =
   | { kind: "compress_attachment"; readOnly: false }
   | { kind: "check_shared_mailbox_membership"; readOnly: false }
   | { kind: "grant_shared_mailbox_access"; readOnly: false }
+  | { kind: "check_outlook_mailbox_configuration"; readOnly: false }
+  | { kind: "add_shared_mailbox_to_outlook_profile"; readOnly: false }
   | { kind: "test_shared_mailbox_access"; readOnly: false }
 
   // NETWORK / CONNECTIVITY
@@ -108,6 +118,8 @@ export type Command =
 
   // HARDWARE / PERIPHERALS
   | { kind: "check_printer_status"; readOnly: false }
+  | { kind: "check_default_printer"; readOnly: false }
+  | { kind: "set_default_printer"; readOnly: false }
   | { kind: "restart_printer"; readOnly: false }
   | { kind: "print_test_page"; readOnly: false }
   | { kind: "check_device_connection"; readOnly: false }
@@ -136,7 +148,8 @@ export type Command =
 // Decisions are authoritative judgments
 export type DenyType =
   | "UNKNOWN_INPUT"
-  | "PROCEDURE_DENIED";
+  | "PROCEDURE_DENIED"
+  | "REPEATED_PROCEDURE";
 
 export type Decision =
   | { kind: "ALLOW"; plan: ExecutionPlan }
@@ -166,6 +179,8 @@ export type ExecutionPlan =
   | { kind: "EnableVpnAccess" }
   | { kind: "ConfirmConnection" }
   | { kind: "CheckMfaStatus" }
+  | { kind: "CheckRegisteredMfaDevice" }
+  | { kind: "RemoveOldMfaDevice" }
   | { kind: "ResetMfaMethod" }
   | { kind: "TestMfaLogin" }
   | { kind: "CheckUserPermissions" }
@@ -176,8 +191,12 @@ export type ExecutionPlan =
   | { kind: "AddUserToGroup" }
   | { kind: "TestSharedDriveAccess" }
   | { kind: "CheckInstallPermissions" }
+  | { kind: "CheckSoftwareRequestStatus" }
+  | { kind: "ApproveSoftwareRequest" }
   | { kind: "GrantInstallPermissions" }
   | { kind: "TestSoftwareInstall" }
+
+  // EMAIL
 
   // EMAIL
   | { kind: "CheckEmailStatus" }
@@ -187,6 +206,8 @@ export type ExecutionPlan =
   | { kind: "DisableInboxFilter" }
   | { kind: "ResendResetCode" }
   | { kind: "CheckMailboxStorage" }
+  | { kind: "CheckArchivePolicy" }
+  | { kind: "ApplyArchivePolicy" }
   | { kind: "ArchiveOldEmails" }
   | { kind: "CheckEmailLoginStatus" }
   | { kind: "ResetEmailSession" }
@@ -198,6 +219,8 @@ export type ExecutionPlan =
   | { kind: "CompressAttachment" }
   | { kind: "CheckSharedMailboxMembership" }
   | { kind: "GrantSharedMailboxAccess" }
+  | { kind: "CheckOutlookMailboxConfiguration" }
+  | { kind: "AddSharedMailboxToOutlookProfile" }
   | { kind: "TestSharedMailboxAccess" }
 
   // NETWORK / CONNECTIVITY
@@ -239,6 +262,8 @@ export type ExecutionPlan =
 
   // HARDWARE / PERIPHERALS
   | { kind: "CheckPrinterStatus" }
+  | { kind: "CheckDefaultPrinter" }
+  | { kind: "SetDefaultPrinter" }
   | { kind: "RestartPrinter" }
   | { kind: "PrintTestPage" }
   | { kind: "CheckDeviceConnection" }
@@ -350,6 +375,16 @@ export type MfaCodeNotWorkingFacts = {
   mfa_working: boolean;
 };
 
+export type MfaCodeOldPhoneStillRegisteredFacts = {
+  kind: "mfa_code_old_phone_still_registered";
+  identity_verified: boolean;
+  mfa_status_checked: boolean;
+  registered_mfa_device_checked: boolean;
+  old_mfa_device_removed: boolean;
+  mfa_method_reset: boolean;
+  mfa_working: boolean;
+};
+
 export type PermissionsDeniedFacts = {
   kind: "permissions_denied";
   identity_verified: boolean;
@@ -378,6 +413,16 @@ export type CannotInstallSoftwareFacts = {
   kind: "cannot_install_software";
   identity_verified: boolean;
   install_permissions_checked: boolean;
+  install_permissions_granted: boolean;
+  software_install_working: boolean;
+};
+
+export type CannotInstallSoftwareAdminApprovalRequiredFacts = {
+  kind: "cannot_install_software_admin_approval_required";
+  identity_verified: boolean;
+  install_permissions_checked: boolean;
+  software_request_checked: boolean;
+  software_request_approved: boolean;
   install_permissions_granted: boolean;
   software_install_working: boolean;
 };
@@ -416,6 +461,16 @@ export type MailboxFullFacts = {
   mailbox_receiving_email: boolean;
 };
 
+export type MailboxFullArchivePolicyNotAppliedFacts = {
+  kind: "mailbox_full_archive_policy_not_applied";
+  identity_verified: boolean;
+  mailbox_storage_checked: boolean;
+  archive_policy_checked: boolean;
+  archive_policy_applied: boolean;
+  old_emails_archived: boolean;
+  mailbox_receiving_email: boolean;
+};
+
 export type EmailLoginIssueFacts = {
   kind: "email_login_issue";
   identity_verified: boolean;
@@ -428,6 +483,16 @@ export type EmailClientNotSyncingFacts = {
   kind: "email_client_not_syncing";
   identity_verified: boolean;
   sync_settings_checked: boolean;
+  email_client_resynced: boolean;
+  email_sync_working: boolean;
+};
+
+export type EmailClientCachedSessionStuckFacts = {
+  kind: "email_client_not_syncing_cached_session_stuck";
+  identity_verified: boolean;
+  sync_settings_checked: boolean;
+  email_login_checked: boolean;
+  email_session_reset: boolean;
   email_client_resynced: boolean;
   email_sync_working: boolean;
 };
@@ -445,6 +510,16 @@ export type SharedMailboxMissingFacts = {
   identity_verified: boolean;
   shared_mailbox_membership_checked: boolean;
   shared_mailbox_access_granted: boolean;
+  shared_mailbox_working: boolean;
+};
+
+export type SharedMailboxOutlookProfileNotUpdatedFacts = {
+  kind: "shared_mailbox_outlook_profile_not_updated";
+  identity_verified: boolean;
+  shared_mailbox_membership_checked: boolean;
+  shared_mailbox_access_tested: boolean;
+  outlook_mailbox_configuration_checked: boolean;
+  shared_mailbox_added_to_outlook_profile: boolean;
   shared_mailbox_working: boolean;
 };
 
@@ -552,12 +627,20 @@ export type BrowserRunningSlowFacts = {
   browser_performance_ok: boolean;
 };
 
-// HARDWARE / PERIPHERALS
 export type PrinterNotWorkingFacts = {
   kind: "printer_not_working";
   identity_verified: boolean;
   printer_checked: boolean;
   printer_restarted: boolean;
+  printer_working: boolean;
+};
+
+export type PrinterWrongDefaultPrinterFacts = {
+  kind: "printer_wrong_default_printer";
+  identity_verified: boolean;
+  printer_checked: boolean;
+  default_printer_checked: boolean;
+  correct_default_printer_set: boolean;
   printer_working: boolean;
 };
 
@@ -637,20 +720,25 @@ export type ScenarioFacts =
   | VpnAccessIssueFacts
   | VpnMfaDependencyMissingFacts
   | MfaCodeNotWorkingFacts
+  | MfaCodeOldPhoneStillRegisteredFacts
   | PermissionsDeniedFacts
   | SharedDriveAccessIssueFacts
   | SharedDriveGroupMembershipMissingFacts
   | CannotInstallSoftwareFacts
+  | CannotInstallSoftwareAdminApprovalRequiredFacts
 
   // EMAIL
   | EmailNotSendingFacts
   | NotReceivingEmailFacts
   | NotReceivingEmailInboxRuleRedirectingFacts
   | MailboxFullFacts
+  | MailboxFullArchivePolicyNotAppliedFacts
   | EmailLoginIssueFacts
   | EmailClientNotSyncingFacts
+  | EmailClientCachedSessionStuckFacts
   | AttachmentTooLargeFacts
   | SharedMailboxMissingFacts
+  | SharedMailboxOutlookProfileNotUpdatedFacts
 
   // NETWORK / CONNECTIVITY
   | CannotConnectWifiFacts
@@ -672,6 +760,7 @@ export type ScenarioFacts =
 
   // HARDWARE / PERIPHERALS
   | PrinterNotWorkingFacts
+  | PrinterWrongDefaultPrinterFacts
   | MouseKeyboardNotWorkingFacts
   | MicrophoneNotWorkingFacts
   | WebcamNotWorkingFacts

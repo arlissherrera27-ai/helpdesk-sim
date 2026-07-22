@@ -4,9 +4,9 @@ import { decide } from "./decide";
 import { executePlan } from "./execute";
 import { applyPatch } from "./update";
 import { evaluateRun } from "./score";
-import { SCENARIO_LABELS } from "./scenarios";
 
 import {
+  getScenarioLabel,
   getScenarioProofLines,
   getScenarioSuccessLines,
   getScenarioStartPrompt,
@@ -310,9 +310,9 @@ message =
 }\n\n` +
 `Score: ${totalScore} — Mistakes: ${mistakes}\n\n` +
     "Evaluation:\n" +
-    `- Did not complete the ${
+`- Did not complete the ${
   state.scenario
-    ? SCENARIO_LABELS[state.scenario as keyof typeof SCENARIO_LABELS] // ← UPDATE
+    ? getScenarioLabel(state.scenario)
     : "selected"
 } procedure successfully\n` +
     "- Recovery flow was broken before completion\n" +
@@ -428,7 +428,11 @@ case "SendTestEmail":
       "Agent: I’m sending a test email to confirm incoming email is reaching the inbox.\n\n" +
       "System: The test email was delivered successfully. Incoming email is no longer being blocked or redirected away from the inbox.\n\n" +
       "Customer: Great, I received it.";
-  } else if (state.scenario === "mailbox_full") {
+  } else if (
+    state.scenario === "mailbox_full" ||
+    state.scenario ===
+      "mailbox_full_archive_policy_not_applied"
+  ) {
     message =
       "Agent: I’m sending a test email to confirm new messages can be delivered.\n\n" +
       "System: The test email was delivered successfully. Mailbox space is available and new email can arrive normally.\n\n" +
@@ -436,36 +440,115 @@ case "SendTestEmail":
   }
 
   break;
-  
-   case "CheckMailboxStorage":
+
+case "CheckMailboxStorage":
+  if (
+    state.scenario ===
+      "mailbox_full_archive_policy_not_applied"
+  ) {
+    message =
+      "Agent: I’m checking mailbox storage to determine why new email is not arriving.\n\n" +
+      "System: The mailbox has reached its storage limit. The expected archive process has not been clearing older email, so the mailbox cannot accept new messages.\n\n" +
+      "Customer: I thought older email was supposed to archive automatically.\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking mailbox storage to see why new emails are not arriving.\n\n" +
     "System: The mailbox has reached its storage limit. Until space is recovered, new emails cannot be delivered.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "CheckArchivePolicy":
+  message =
+    "Agent: I’m checking whether the required mailbox archive policy is assigned and active.\n\n" +
+    "System: The mailbox does not currently have the required archive policy applied. Without the policy, older email is not being moved into the archive automatically.\n\n" +
+    "Customer: That explains why the mailbox keeps filling up.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "ApplyArchivePolicy":
+  message =
+    "Agent: I’m applying the required archive policy so older email can be moved out of the primary mailbox.\n\n" +
+    "System: The archive policy has been applied successfully. The mailbox is now configured to archive eligible older email.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "ArchiveOldEmails":
+  if (
+    state.scenario ===
+      "mailbox_full_archive_policy_not_applied"
+  ) {
+    message =
+      "Agent: I’m archiving older email now that the required archive policy is in place.\n\n" +
+      "System: Eligible older email has been moved into the archive. Storage space is now available in the primary mailbox for new messages.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m archiving old emails to recover mailbox storage space.\n\n" +
     "System: Old emails have been archived. Mailbox storage is now available for new incoming messages.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "CheckSyncSettings":
+  if (
+    state.scenario ===
+      "email_client_not_syncing_cached_session_stuck"
+  ) {
+    message =
+      "Agent: I’m checking the email synchronization settings to determine why new messages are not updating.\n\n" +
+      "System: The synchronization settings are enabled and configured correctly. The client should be able to update, so another condition is blocking the connection.\n\n" +
+      "Customer: So the sync settings themselves are okay?\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the email synchronization settings.\n\n" +
     "System: Email synchronization is disabled. Because synchronization is disabled, new messages cannot update in the email client.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "ResyncEmailClient":
+  if (
+    state.scenario ===
+      "email_client_not_syncing_cached_session_stuck"
+  ) {
+    message =
+      "Agent: I’m resynchronizing the email client now that the stale session has been cleared.\n\n" +
+      "System: The client has established a fresh mailbox connection and synchronization has restarted successfully.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m restoring email synchronization now.\n\n" +
     "System: Email synchronization has been restored successfully. The client can now update new messages normally.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "TestEmailSync":
+  if (
+    state.scenario ===
+      "email_client_not_syncing_cached_session_stuck"
+  ) {
+    message =
+      "Agent: I’m testing email synchronization after resetting the cached session and reconnecting the client.\n\n" +
+      "System: New messages are updating successfully. The stale-session dependency has been resolved and mailbox synchronization is working normally.\n\n" +
+      "Customer: Great, my new emails are showing up again.";
+    break;
+  }
+
   message =
     "Agent: I’m testing email synchronization now.\n\n" +
     "System: The email client is synchronizing new messages normally. Message updates are being received successfully.\n\n" +
@@ -473,10 +556,23 @@ case "TestEmailSync":
   break;
 
 case "CheckSharedMailboxMembership":
+  if (
+    state.scenario ===
+    "shared_mailbox_outlook_profile_not_updated"
+  ) {
+    message =
+      "Agent: I’m checking whether the user already has permission to the Finance shared mailbox.\n\n" +
+      "System: The user already has the required shared mailbox permissions. Access should be available, so another condition is preventing the mailbox from appearing.\n\n" +
+      "Customer: So I already have access?\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking shared mailbox membership and permissions.\n\n" +
     "System: The user is no longer assigned to the shared mailbox. Without mailbox membership, access is denied.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "GrantSharedMailboxAccess":
@@ -486,7 +582,43 @@ case "GrantSharedMailboxAccess":
     `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
   break;
 
+case "CheckOutlookMailboxConfiguration":
+  message =
+    "Agent: I’m checking the Outlook mailbox configuration to determine why the shared mailbox still is not visible.\n\n" +
+    "System: The mailbox has not been added to the Outlook profile. Although the user already has permission, Outlook cannot display the mailbox until it is added.\n\n" +
+    "Customer: That would explain why I never saw it.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+break;
+
+case "AddSharedMailboxToOutlookProfile":
+  message =
+    "Agent: I’m adding the shared mailbox to the Outlook profile now.\n\n" +
+    "System: The shared mailbox has been added successfully. Outlook is now configured to display the mailbox for this user.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+break;
+
 case "TestSharedMailboxAccess":
+  if (
+    state.scenarioFacts?.kind ===
+    "shared_mailbox_outlook_profile_not_updated"
+  ) {
+    if (!state.scenarioFacts.shared_mailbox_access_tested) {
+      message =
+        "Agent: I’m testing shared mailbox access now.\n\n" +
+        "System: The user still cannot see the shared mailbox even though the required permissions are already assigned. Another configuration issue is preventing Outlook from displaying it.\n\n" +
+        "Customer: It’s still missing.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    message =
+      "Agent: I’m testing shared mailbox access after updating the Outlook profile.\n\n" +
+      "System: The shared mailbox appears successfully in Outlook. The Outlook profile has been updated correctly and access has been restored.\n\n" +
+      "Customer: Great, I can see the Finance mailbox now.";
+    break;
+  }
+
   message =
     "Agent: I’m testing shared mailbox access now.\n\n" +
     "System: The shared mailbox is accessible normally. Mailbox access has been restored successfully.\n\n" +
@@ -508,17 +640,43 @@ case "CompressAttachment":
   break;
 
 case "CheckEmailLoginStatus":
+  if (
+    state.scenario ===
+      "email_client_not_syncing_cached_session_stuck"
+  ) {
+    message =
+      "Agent: I’m checking the email account session to see whether authentication is blocking synchronization.\n\n" +
+      "System: The email client is holding a stale authenticated session. The account appears signed in, but the cached session cannot communicate with the mailbox correctly.\n\n" +
+      "Customer: That would explain why it looks connected but never updates.\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the email login status to see why sign-in is failing.\n\n" +
     "System: The email account session is stuck and cannot complete authentication successfully. The session must be reset before sign-in can proceed.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "ResetEmailSession":
+  if (
+    state.scenario ===
+      "email_client_not_syncing_cached_session_stuck"
+  ) {
+    message =
+      "Agent: I’m resetting the cached email session so the client can establish a clean mailbox connection.\n\n" +
+      "System: The stale authenticated session has been cleared successfully. The client can now establish a fresh connection to the mailbox.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m resetting the email session so the account can sign in cleanly.\n\n" +
     "System: The email session has been reset successfully. The authentication blockage has been cleared.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "TestEmailLogin":
@@ -575,7 +733,7 @@ case "ReconnectEthernetCable":
     "Agent: I’m reconnecting the ethernet cable now.\n\n" +
     "System: The ethernet cable is securely connected and the wired network connection is active. The device can now communicate on the network.\n\n" +
     `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
-  break;     
+  break;
 
 case "CheckNetworkSpeed":
   message =
@@ -659,20 +817,55 @@ case "TestPerformance":
   break;
 
 case "CheckPrinterStatus":
+  if (state.scenario === "printer_wrong_default_printer") {
+    message =
+      "Agent: I’m checking the printer status to confirm whether the office printer is available.\n\n" +
+      "System: The office printer is online and available. The device itself is not preventing the print job from completing.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the printer status to see why it is not printing.\n\n" +
     "System: The printer is currently offline and unavailable to the computer. Print jobs cannot be processed until connectivity is restored.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "CheckDefaultPrinter":
+  message =
+    "Agent: I’m checking which printer is currently set as the default printer.\n\n" +
+    "System: A different printer is currently selected as the default. Print jobs are being sent to the wrong device.\n\n" +
+    "Customer: That explains why nothing was printing here.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "SetDefaultPrinter":
+  message =
+    "Agent: I’m setting the correct office printer as the default printer.\n\n" +
+    "System: The correct office printer has been set as the default. Future print jobs will now be sent to this printer.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "RestartPrinter":
   message =
     "Agent: I’m restarting the printer so it can reconnect properly.\n\n" +
     "System: The printer has restarted successfully and is back online. The device can now accept print jobs again.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "PrintTestPage":
+  if (state.scenario === "printer_wrong_default_printer") {
+    message =
+      "Agent: I’m printing a test page now that the correct default printer has been selected.\n\n" +
+      "System: The test page printed successfully from the correct office printer. The default printer setting has been verified.\n\n" +
+      "Customer: Great, it printed from the right printer.";
+    break;
+  }
+
   message =
     "Agent: I’m printing a test page to confirm the printer is working.\n\n" +
     "System: The test page printed successfully. Printer communication and print functionality have been restored.\n\n" +
@@ -1078,9 +1271,36 @@ case "TestWebcam":
     "Agent: I’m testing the webcam now to confirm video is working.\n\n" +
     "System: The webcam is displaying video normally. Video input functionality has been restored.\n\n" +
     "Customer: Great, it's working now.";
-  break; 
+  break;
+
+case "CheckRegisteredMfaDevice":
+  message =
+    "Agent: I’m checking which device is currently registered for Multi-Factor Authentication.\n\n" +
+    "System: The user’s previous phone is still registered as the active MFA device. Verification prompts will continue going to that phone until it is removed.\n\n" +
+    "Customer: That is my old phone. I don’t have access to it anymore.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "RemoveOldMfaDevice":
+  message =
+    "Agent: I’m removing the outdated phone from the user’s registered MFA devices.\n\n" +
+    "System: The previous phone has been removed successfully. The account can now reset MFA and configure verification on the current device.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+break;
 
 case "TestMfaLogin":
+  if (
+    state.scenario ===
+      "mfa_code_old_phone_still_registered"
+  ) {
+    message =
+      "Agent: I’m testing MFA login now using the user’s current phone.\n\n" +
+      "System: The user successfully completed MFA verification on the current device. Sign-in access has been restored.\n\n" +
+      "Customer: Great, I can sign in with my new phone now.";
+    break;
+  }
+
   message =
     "Agent: I’m testing MFA login now to confirm authentication works end to end.\n\n" +
     "System: MFA authentication is working normally. The user can complete verification and sign in successfully.\n\n" +
@@ -1096,10 +1316,23 @@ case "ResetMfaMethod":
     break;
   }
 
+  if (
+    state.scenario ===
+      "mfa_code_old_phone_still_registered"
+  ) {
+    message =
+      "Agent: I’m resetting the MFA method so authentication can be configured on the user’s current phone.\n\n" +
+      "System: The MFA method has been reset successfully. The account is ready to use the current device for verification.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m resetting the MFA method so the user can authenticate again.\n\n" +
     "System: The MFA method has been reset successfully. The old verification issue has been cleared, and the account can establish a working authentication method.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "CheckMfaStatus":
@@ -1111,10 +1344,23 @@ case "CheckMfaStatus":
     break;
   }
 
+  if (
+    state.scenario ===
+      "mfa_code_old_phone_still_registered"
+  ) {
+    message =
+      "Agent: I’m checking the MFA status to determine why verification is still going to the previous phone.\n\n" +
+      "System: MFA is active, but the account is still associated with an outdated registered device. The registered MFA device must be reviewed before authentication can be reset.\n\n" +
+      "Customer: That sounds like it could still be using my old phone.\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the MFA status to see why the verification code is failing.\n\n" +
     "System: The user’s MFA method is not properly synced with the account. Because the method is out of sync, valid sign-in verification cannot complete.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "CheckBrowserExtensions":
@@ -1139,20 +1385,73 @@ case "TestBrowserPerformance":
   break;
 
 case "CheckInstallPermissions":
+  if (
+    state.scenario ===
+      "cannot_install_software_admin_approval_required"
+  ) {
+    message =
+      "Agent: I’m checking the user’s software installation permissions to determine why the installation is blocked.\n\n" +
+      "System: The user does not currently have permission to install the requested software. The installation request must be reviewed before permissions can be granted.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the user’s install permissions to see why software cannot be installed.\n\n" +
     "System: The user does not currently have permission to install software on this device. That restriction prevents new software from being added.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "CheckSoftwareRequestStatus":
+  message =
+    "Agent: I’m checking the software request status to determine whether the installation has received administrator approval.\n\n" +
+    "System: The software request is still pending administrator approval. Installation permissions cannot be granted until the request is approved.\n\n" +
+    "Customer: I submitted the request earlier, but I didn’t realize it was still waiting for approval.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "ApproveSoftwareRequest":
+  message =
+    "Agent: I’m approving the pending software request so the installation process can continue.\n\n" +
+    "System: The software request has been approved successfully. Installation permissions can now be granted to the user.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "GrantInstallPermissions":
+  if (
+    state.scenario ===
+      "cannot_install_software_admin_approval_required"
+  ) {
+    message =
+      "Agent: I’m granting the required installation permissions now that the software request has been approved.\n\n" +
+      "System: Software installation permissions have been granted successfully following administrator approval. The requested software can now be installed.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m granting the required software installation permissions.\n\n" +
     "System: Software installation permissions have been updated successfully. The user is now allowed to install the required software.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "TestSoftwareInstall":
+  if (
+    state.scenario ===
+      "cannot_install_software_admin_approval_required"
+  ) {
+    message =
+      "Agent: I’m testing the software installation now that approval and installation permissions are in place.\n\n" +
+      "System: The software installs successfully. The pending approval dependency and installation permission restriction have both been resolved.\n\n" +
+      "Customer: Perfect, the installation worked.";
+    break;
+  }
+
   message =
     "Agent: I’m testing the software installation now to confirm it works.\n\n" +
     "System: The software installs successfully. The installation permission issue has been resolved.\n\n" +

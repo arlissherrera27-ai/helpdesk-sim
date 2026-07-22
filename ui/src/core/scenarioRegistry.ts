@@ -1,3 +1,4 @@
+import type { ScenarioId } from "./scenarios";
 import type { ScenarioFacts } from "./types";
 
 type ScenarioProcedureStep = {
@@ -5,9 +6,51 @@ type ScenarioProcedureStep = {
   preview: string;
 };
 
+type ScenarioLevel =
+  | "Beginner"
+  | "Intermediate"
+  | "Advanced";
+
+type ScenarioEstimatedTime =
+  | "3–5 min"
+  | "5–7 min"
+  | "5–8 min"
+  | "8–12 min";
+
+export type ScenarioTypeId =
+  | "standard"
+  | "operational_challenges"
+  | "chaos";
+
+export type ScenarioCategoryId =
+  | "account_access"
+  | "password_reset_challenges"
+  | "vpn_access_challenges"
+  | "shared_drive_access_challenges"
+  | "software_app_challenges"
+  | "software_install_challenges"
+  | "email"
+  | "network"
+  | "files_storage"
+  | "device_performance"
+  | "hardware_peripherals"
+  | "software_applications";
+
+type ScenarioPreviewMetadata = {
+  level: ScenarioLevel;
+  estimatedTime: ScenarioEstimatedTime;
+  description: string;
+  skillFocus: readonly string[];
+  scenarioContext: string;
+  successOutcome: string;
+  selectCommand: string;
+};
+
 type ScenarioDefinition = {
   label: string;
   startPrompt: string;
+  scenarioType: ScenarioTypeId;
+  category: ScenarioCategoryId;
   procedure: readonly ScenarioProcedureStep[];
   completion: {
     command: string;
@@ -16,6 +59,7 @@ type ScenarioDefinition = {
   proofLines: readonly string[];
   successLines: readonly string[];
   defaults: ScenarioFacts;
+  previewMetadata: ScenarioPreviewMetadata;
 };
 
 // Official scenario truth.
@@ -27,6 +71,9 @@ password_reset: {
   startPrompt: `Customer: I lost access to my password. Can you help me?
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "account_access",
 
     procedure: [
       {
@@ -71,23 +118,43 @@ What is your first troubleshooting step?`,
       "Customer: Perfect, I’m back in.",
     ],
 
-    defaults: {
-      kind: "password_reset",
-      identity_verified: false,
-      code_sent: false,
-      has_recovery_email: true,
-      reset_done: false,
-      password_updated: false,
-      can_login_now: false,
-      wrong_attempts: 0,
-    },
-  },
+defaults: {
+  kind: "password_reset",
+  identity_verified: false,
+  code_sent: false,
+  has_recovery_email: true,
+  reset_done: false,
+  password_updated: false,
+  can_login_now: false,
+  wrong_attempts: 0,
+},
+
+previewMetadata: {
+  level: "Beginner",
+  estimatedTime: "3–5 min",
+  description:
+    "Reset the user’s password after verifying identity.",
+  skillFocus: [
+    "Identity Verification",
+    "Account Recovery",
+  ],
+  scenarioContext:
+    "Employee cannot access their company account after forgetting their password.",
+  successOutcome:
+    "The user regains secure account access.",
+  selectCommand:
+    "select password reset",
+},
+},
 
 password_reset_recovery_email_never_arrives: {
   label: "Password Reset — Recovery Email Never Arrives",
   startPrompt: `Customer: I forgot my password and can’t get into my company account.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "password_reset_challenges",
 
     procedure: [
       {
@@ -161,6 +228,24 @@ What is your first troubleshooting step?`,
       can_login_now: false,
       wrong_attempts: 0,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "5–8 min",
+      description:
+        "Complete a password reset when the recovery email is blocked by an inbox filter.",
+      skillFocus: [
+        "Account Recovery",
+        "Email Delivery Troubleshooting",
+        "Dependency Awareness",
+      ],
+      scenarioContext:
+        "A user cannot reset their password because the recovery email never reaches their inbox.",
+      successOutcome:
+        "The blocking inbox filter is corrected, the recovery code is received, and account access is restored.",
+      selectCommand:
+        "select password reset recovery email never arrives",
+    },
   },
 
 account_lockout: {
@@ -168,6 +253,9 @@ account_lockout: {
   startPrompt: `Customer: I’m locked out of my account and can’t sign in.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "account_access",
 
     procedure: [
       {
@@ -204,20 +292,40 @@ What is your first troubleshooting step?`,
       "Customer: Perfect, I can sign in now.",
     ],
 
-    defaults: {
-      kind: "account_lockout",
-      identity_verified: false,
-      unlock_requested: false,
-      account_locked: true,
-      can_login_now: false,
-    },
-  },
+defaults: {
+  kind: "account_lockout",
+  identity_verified: false,
+  unlock_requested: false,
+  account_locked: true,
+  can_login_now: false,
+},
+
+previewMetadata: {
+  level: "Beginner",
+  estimatedTime: "3–5 min",
+  description:
+    "Unlock the user’s account after verifying identity.",
+  skillFocus: [
+    "Identity Verification",
+    "Account Recovery",
+  ],
+  scenarioContext:
+    "Employee is locked out after too many failed sign-in attempts.",
+  successOutcome:
+    "The user regains secure account access.",
+  selectCommand:
+    "select account lockout",
+},
+},
 
 password_reset_recovery_email_outdated: {
   label: "Password Reset — Recovery Email Outdated",
   startPrompt: `Customer: I forgot my password, but I don't have access to my recovery email anymore.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "password_reset_challenges",
 
   procedure: [
     {
@@ -275,16 +383,34 @@ What is your first troubleshooting step?`,
   ],
 
   defaults: {
-  kind: "password_reset_recovery_email_outdated",
-  identity_verified: false,
-  alternate_contact_verified: false,
-  recovery_email_updated: false,
-  code_sent: false,
-  reset_done: false,
-  password_updated: false,
-  can_login_now: false,
-  wrong_attempts: 0,
-},
+    kind: "password_reset_recovery_email_outdated",
+    identity_verified: false,
+    alternate_contact_verified: false,
+    recovery_email_updated: false,
+    code_sent: false,
+    reset_done: false,
+    password_updated: false,
+    can_login_now: false,
+    wrong_attempts: 0,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–8 min",
+    description:
+      "Complete a password reset when the recovery email address is outdated.",
+    skillFocus: [
+      "Account Recovery",
+      "Alternate Contact Verification",
+      "Recovery Information Management",
+    ],
+    scenarioContext:
+      "A user cannot receive a password reset code because they no longer have access to the recovery email on file.",
+    successOutcome:
+      "An approved alternate contact is verified, the recovery email is updated, and account access is restored.",
+    selectCommand:
+      "select password reset recovery email outdated",
+  },
 },
 
 vpn_access_issue: {
@@ -292,6 +418,9 @@ vpn_access_issue: {
   startPrompt: `Customer: I can’t connect to my work network (VPN).
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "account_access",
 
     procedure: [
       {
@@ -340,13 +469,33 @@ What is your first troubleshooting step?`,
       vpn_access_enabled: false,
       can_connect_now: false,
     },
-  },
+  previewMetadata: {
+  level: "Beginner",
+  estimatedTime: "3–5 min",
+  description:
+    "Restore Virtual Private Network (VPN) access so the user can connect to the work network.",
+  skillFocus: [
+    "Remote Access Troubleshooting",
+    "Network Access Verification",
+  ],
+  scenarioContext:
+    "Remote employee cannot connect to the company VPN.",
+  successOutcome:
+    "User successfully connects to the company network.",
+  selectCommand:
+    "select vpn access issue",
+},
+
+},
 
 vpn_mfa_dependency_missing: {
   label: "VPN Access Issue — MFA Dependency Missing",
   startPrompt: `Customer: I can’t connect to the work VPN.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "vpn_access_challenges",
 
     procedure: [
       {
@@ -409,6 +558,24 @@ What is your first troubleshooting step?`,
       mfa_method_reset: false,
       can_connect_now: false,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "5–7 min",
+      description:
+        "Restore VPN access when Multi-Factor Authentication has not been configured.",
+      skillFocus: [
+        "VPN Troubleshooting",
+        "MFA Configuration",
+        "Dependency Awareness",
+      ],
+      scenarioContext:
+        "A user has VPN access assigned but cannot complete the connection because the required MFA method is missing.",
+      successOutcome:
+        "The MFA dependency is resolved and the user successfully connects to the VPN.",
+      selectCommand:
+        "select vpn mfa dependency missing",
+    },
   },
 
 mfa_code_not_working: {
@@ -416,6 +583,9 @@ mfa_code_not_working: {
   startPrompt: `Customer: My MFA code is not working and I can't sign in.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "account_access",
 
   procedure: [
       {
@@ -465,13 +635,125 @@ What is your first troubleshooting step?`,
       mfa_method_reset: false,
       mfa_working: false,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore Multi-Factor Authentication (MFA) access by resetting a failed authentication method.",
+      skillFocus: [
+        "Identity Verification",
+        "MFA Troubleshooting",
+        "Authentication Recovery",
+      ],
+      scenarioContext:
+        "A user cannot sign in because their current MFA authentication method is not working.",
+      successOutcome:
+        "The MFA method is reset and successful sign-in is verified.",
+      selectCommand:
+        "select mfa code not working",
+    },
   },
+
+mfa_code_old_phone_still_registered: {
+  label: "MFA Code Not Working — Old Phone Still Registered",
+  startPrompt: `Customer: I replaced my phone, and now my MFA prompts are still going to the old device.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "vpn_access_challenges",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before changing Multi-Factor Authentication (MFA) device registration.",
+    },
+    {
+      command: "check_mfa_status",
+      preview:
+        "Check the MFA status to confirm why authentication cannot be completed.",
+    },
+    {
+      command: "check_registered_mfa_device",
+      preview:
+        "Check which device is currently registered for MFA.",
+    },
+    {
+      command: "remove_old_mfa_device",
+      preview:
+        "Remove the outdated phone from the user's registered MFA devices.",
+    },
+    {
+      command: "reset_mfa_method",
+      preview:
+        "Reset the MFA method so the user can configure authentication on the current phone.",
+    },
+    {
+      command: "test_mfa_login",
+      preview:
+        "Test MFA login to confirm the user can authenticate successfully.",
+    },
+  ],
+
+  completion: {
+    command: "test_mfa_login",
+    fact: "mfa_working",
+  },
+
+  proofLines: [
+    "Verified the user before changing MFA device registration",
+    "Confirmed the MFA method was still associated with an outdated phone",
+    "Checked the registered MFA device before making changes",
+    "Removed the old phone from the user's MFA registration",
+    "Reset the MFA method after removing the outdated device",
+    "Validated successful MFA login using the current device",
+  ],
+
+  successLines: [
+    "Agent: The old phone has been removed, the MFA method has been reset, and successful sign-in has been verified.",
+    "System: MFA authentication is now associated with the current device and is working normally.",
+    "Customer: Great, I can sign in with my new phone now.",
+  ],
+
+  defaults: {
+    kind: "mfa_code_old_phone_still_registered",
+    identity_verified: false,
+    mfa_status_checked: false,
+    registered_mfa_device_checked: false,
+    old_mfa_device_removed: false,
+    mfa_method_reset: false,
+    mfa_working: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Restore MFA access when authentication prompts are still being sent to an old phone.",
+    skillFocus: [
+      "MFA Troubleshooting",
+      "Device Registration",
+      "Authentication Recovery",
+    ],
+    scenarioContext:
+      "A user replaced their phone, but the old device remains registered for Multi-Factor Authentication.",
+    successOutcome:
+      "The outdated device is removed, MFA is configured on the current phone, and sign-in is verified.",
+    selectCommand:
+      "select mfa code old phone still registered",
+  },
+},
 
 software_app_license_not_assigned: {
   label: "Software License Not Assigned",
   startPrompt: `Customer: The application is installed, but it says I don't have access to use it.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "software_applications",
 
     procedure: [
       {
@@ -519,21 +801,42 @@ What is your first troubleshooting step?`,
       "Customer: Great, it works now.",
     ],
 
-    defaults: {
-      kind: "software_app_license_not_assigned",
-      identity_verified: false,
-      app_status_checked: false,
-      license_assignment_checked: false,
-      software_license_assigned: false,
-      application_working: false,
-    },
+  defaults: {
+    kind: "software_app_license_not_assigned",
+    identity_verified: false,
+    app_status_checked: false,
+    license_assignment_checked: false,
+    software_license_assigned: false,
+    application_working: false,
   },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Resolve an application launch issue caused by a missing software license assignment.",
+    skillFocus: [
+      "Software Licensing",
+      "Application Access",
+      "Entitlement Troubleshooting",
+    ],
+    scenarioContext:
+      "A user cannot open a work application because the required software license is not assigned.",
+    successOutcome:
+      "The required software license is assigned and the application launches successfully.",
+    selectCommand:
+      "select software_app_license_not_assigned",
+  },
+},
 
 email_not_sending: {
   label: "Email Not Sending",
   startPrompt: `Customer: My emails are not sending.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "email",
 
     procedure: [
       {
@@ -583,6 +886,24 @@ What is your first troubleshooting step?`,
       email_client_online: false,
       can_send_email: false,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore outgoing email by bringing the email client back online.",
+      skillFocus: [
+        "Email Troubleshooting",
+        "Client Connectivity",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user reports that emails remain in the Outbox and never send.",
+      successOutcome:
+        "Outgoing email is restored and verified with a successful test message.",
+      selectCommand:
+        "select email not sending",
+    },
   },
 
 not_receiving_email: {
@@ -590,6 +911,9 @@ not_receiving_email: {
   startPrompt: `Customer: I'm not receiving any emails.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "email",
 
     procedure: [
       {
@@ -639,6 +963,24 @@ defaults: {
   filter_disabled: false,
   can_receive_email: false,
 },
+
+previewMetadata: {
+  level: "Beginner",
+  estimatedTime: "3–5 min",
+  description:
+    "Restore incoming email by correcting mailbox filtering.",
+  skillFocus: [
+    "Email Troubleshooting",
+    "Inbox Management",
+    "Operational Verification",
+  ],
+  scenarioContext:
+    "A user reports that new email is no longer arriving in the inbox.",
+  successOutcome:
+    "Incoming email delivery is restored and verified with a successful test message.",
+  selectCommand:
+    "select not receiving email",
+},
   },
 
 not_receiving_email_inbox_rule_redirecting: {
@@ -646,6 +988,9 @@ not_receiving_email_inbox_rule_redirecting: {
   startPrompt: `Customer: I'm not receiving emails I need for work.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "email",
 
   procedure: [
     {
@@ -697,6 +1042,23 @@ What is your first troubleshooting step?`,
     filter_disabled: false,
     can_receive_email: false,
   },
+    previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Resolve an email delivery issue caused by an inbox rule redirecting incoming mail.",
+    skillFocus: [
+      "Email Troubleshooting",
+      "Inbox Rules",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "A user reports that important incoming emails never appear in their inbox.",
+    successOutcome:
+      "The redirecting inbox rule is removed and incoming email delivery is verified.",
+    selectCommand:
+      "select not_receiving_email_inbox_rule_redirecting",
+  },
 },
 
 mailbox_full: {
@@ -704,6 +1066,9 @@ mailbox_full: {
   startPrompt: `Customer: I stopped receiving new emails and my mailbox says it is full.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "email",
 
     procedure: [
       {
@@ -747,19 +1112,130 @@ What is your first troubleshooting step?`,
     ],
 
     defaults: {
-  kind: "mailbox_full",
-  identity_verified: false,
-  mailbox_storage_checked: false,
-  old_emails_archived: false,
-  mailbox_receiving_email: false,
-},
+      kind: "mailbox_full",
+      identity_verified: false,
+      mailbox_storage_checked: false,
+      old_emails_archived: false,
+      mailbox_receiving_email: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Recover mailbox storage so new email can be delivered normally.",
+      skillFocus: [
+        "Mailbox Management",
+        "Storage Recovery",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user's mailbox has reached its storage limit and can no longer receive new messages.",
+      successOutcome:
+        "Mailbox storage is recovered and incoming email delivery resumes.",
+      selectCommand:
+        "select mailbox full",
+    },
   },
+
+mailbox_full_archive_policy_not_applied: {
+  label: "Mailbox Full — Archive Policy Not Applied",
+  startPrompt: `Customer: I stopped receiving new emails and my mailbox says it is full.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "email",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before changing mailbox storage or archive settings.",
+    },
+    {
+      command: "check_mailbox_storage",
+      preview:
+        "Check mailbox storage to confirm the mailbox has reached its limit.",
+    },
+    {
+      command: "check_archive_policy",
+      preview:
+        "Check whether the mailbox archive policy is assigned and active.",
+    },
+    {
+      command: "apply_archive_policy",
+      preview:
+        "Apply the required archive policy so old email can be moved automatically.",
+    },
+    {
+      command: "archive_old_emails",
+      preview:
+        "Archive old emails to recover mailbox storage space.",
+    },
+    {
+      command: "send_test_email",
+      preview:
+        "Send a test email to confirm new messages can be delivered.",
+    },
+  ],
+
+  completion: {
+    command: "send_test_email",
+    fact: "mailbox_receiving_email",
+  },
+
+  proofLines: [
+    "Verified the user before changing mailbox storage or archive settings",
+    "Confirmed the mailbox storage limit had been reached",
+    "Identified that the required archive policy was not applied",
+    "Applied the archive policy before attempting mailbox cleanup",
+    "Archived old email and recovered mailbox storage space",
+    "Verified new email delivery resumed successfully",
+  ],
+
+  successLines: [
+    "Agent: The archive policy has been applied, mailbox space has been recovered, and new email delivery has been verified.",
+    "System: The missing archive policy dependency was resolved before old email was archived and mailbox delivery resumed.",
+    "Customer: Great, I’m receiving emails again.",
+  ],
+
+  defaults: {
+    kind: "mailbox_full_archive_policy_not_applied",
+    identity_verified: false,
+    mailbox_storage_checked: false,
+    archive_policy_checked: false,
+    archive_policy_applied: false,
+    old_emails_archived: false,
+    mailbox_receiving_email: false,
+  },
+    previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Resolve a full mailbox when the archive policy has not been applied.",
+    skillFocus: [
+      "Mailbox Management",
+      "Archive Policy",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "A user cannot receive new email because the mailbox archive policy has not been applied and old email is not being archived automatically.",
+    successOutcome:
+      "The archive policy is applied, old email is archived, and new email delivery resumes successfully.",
+    selectCommand:
+      "select mailbox_full_archive_policy_not_applied",
+  },
+},
 
 email_login_issue: {
   label: "Email Login Issue",
   startPrompt: `Customer: I cannot sign in to my email.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "email",
 
     procedure: [
       {
@@ -803,12 +1279,30 @@ What is your first troubleshooting step?`,
     ],
 
     defaults: {
-  kind: "email_login_issue",
-  identity_verified: false,
-  email_login_checked: false,
-  email_session_reset: false,
-  email_login_working: false,
-},
+      kind: "email_login_issue",
+      identity_verified: false,
+      email_login_checked: false,
+      email_session_reset: false,
+      email_login_working: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore email access by resetting a failed email session.",
+      skillFocus: [
+        "Email Authentication",
+        "Session Recovery",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user cannot sign in to their company email account.",
+      successOutcome:
+        "The email session is reset and successful sign-in is verified.",
+      selectCommand:
+        "select email login issue",
+    },
   },
 
 email_client_not_syncing: {
@@ -817,61 +1311,175 @@ email_client_not_syncing: {
 
 What is your first troubleshooting step?`,
 
-    procedure: [
-      {
-        command: "verify_identity",
-        preview:
-          "Verify the user's identity before troubleshooting email synchronization.",
-      },
-      {
-        command: "check_sync_settings",
-        preview:
-          "Check sync settings to identify why the email client is not updating.",
-      },
-      {
-        command: "resync_email_client",
-        preview:
-          "Resync the email client so new messages can update normally.",
-      },
-      {
-        command: "test_email_sync",
-        preview:
-          "Test email sync to confirm new messages are updating.",
-      },
-    ],
+  scenarioType: "standard",
+  category: "email",
 
-    completion: {
-      command: "test_email_sync",
-      fact: "email_sync_working",
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting email synchronization.",
     },
+    {
+      command: "check_sync_settings",
+      preview:
+        "Check sync settings to identify why the email client is not updating.",
+    },
+    {
+      command: "resync_email_client",
+      preview:
+        "Resync the email client so new messages can update normally.",
+    },
+    {
+      command: "test_email_sync",
+      preview:
+        "Test email sync to confirm new messages are updating.",
+    },
+  ],
 
-    proofLines: [
-      "Verified the user before modifying email synchronization settings",
-      "Confirmed email synchronization was disabled",
-      "Restored synchronization functionality",
-      "Validated successful email synchronization",
-    ],
-
-    successLines: [
-      "Agent: Email synchronization has been restored and verified.",
-      "System: The email client is updating messages normally.",
-      "Customer: Great, my emails are updating again.",
-    ],
-
-    defaults: {
-      kind: "email_client_not_syncing",
-  identity_verified: false,
-  sync_settings_checked: false,
-  email_client_resynced: false,
-  email_sync_working: false,
-},
+  completion: {
+    command: "test_email_sync",
+    fact: "email_sync_working",
   },
+
+  proofLines: [
+    "Verified the user before modifying email synchronization settings",
+    "Confirmed email synchronization was disabled",
+    "Restored synchronization functionality",
+    "Validated successful email synchronization",
+  ],
+
+  successLines: [
+    "Agent: Email synchronization has been restored and verified.",
+    "System: The email client is updating messages normally.",
+    "Customer: Great, my emails are updating again.",
+  ],
+
+  defaults: {
+    kind: "email_client_not_syncing",
+    identity_verified: false,
+    sync_settings_checked: false,
+    email_client_resynced: false,
+    email_sync_working: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "3–5 min",
+    description:
+      "Restore email synchronization so new messages update normally.",
+    skillFocus: [
+      "Email Synchronization",
+      "Client Configuration",
+      "Operational Verification",
+    ],
+    scenarioContext:
+      "A user's email client is open, but new messages are not updating.",
+    successOutcome:
+      "Email synchronization is restored and new message updates are verified.",
+    selectCommand:
+      "select email client not syncing",
+  },
+},
+
+email_client_not_syncing_cached_session_stuck: {
+  label: "Email Client Not Syncing — Cached Session Stuck",
+  startPrompt: `Customer: My email client is open, but new messages are not updating.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "email",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting email synchronization.",
+    },
+    {
+      command: "check_sync_settings",
+      preview:
+        "Check the synchronization settings to confirm they are configured correctly.",
+    },
+    {
+      command: "check_email_login_status",
+      preview:
+        "Check the email account session to identify whether a stale login session is blocking synchronization.",
+    },
+    {
+      command: "reset_email_session",
+      preview:
+        "Reset the stale email session so the client can establish a clean mailbox connection.",
+    },
+    {
+      command: "resync_email_client",
+      preview:
+        "Resync the email client after clearing the stale session.",
+    },
+    {
+      command: "test_email_sync",
+      preview:
+        "Test email synchronization to confirm new messages update normally.",
+    },
+  ],
+
+  completion: {
+    command: "test_email_sync",
+    fact: "email_sync_working",
+  },
+
+  proofLines: [
+    "Verified the user before troubleshooting email synchronization",
+    "Confirmed the synchronization settings were configured correctly",
+    "Identified that a stale authenticated session was blocking mailbox updates",
+    "Reset the stale email session before resynchronizing the client",
+    "Restored email synchronization",
+    "Validated successful message updates",
+  ],
+
+  successLines: [
+    "Agent: The stale email session has been cleared and synchronization has been restored.",
+    "System: The cached-session dependency was resolved before the email client was resynchronized.",
+    "Customer: Great, my new emails are showing up again.",
+  ],
+
+  defaults: {
+    kind: "email_client_not_syncing_cached_session_stuck",
+    identity_verified: false,
+    sync_settings_checked: false,
+    email_login_checked: false,
+    email_session_reset: false,
+    email_client_resynced: false,
+    email_sync_working: false,
+  },
+    previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Resolve an email synchronization issue caused by a stale cached email session.",
+    skillFocus: [
+      "Email Synchronization",
+      "Session Recovery",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "A user reports that their email client is open, but new messages are not updating because a cached authenticated session is preventing synchronization.",
+    successOutcome:
+      "The cached email session is reset, synchronization resumes, and new messages update successfully.",
+    selectCommand:
+      "select email_client_not_syncing_cached_session_stuck",
+  },
+},
 
 attachment_too_large: {
   label: "Attachment Too Large",
   startPrompt: `Customer: My email won't send when I attach this file.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "email",
 
     procedure: [
       {
@@ -915,12 +1523,30 @@ What is your first troubleshooting step?`,
     ],
 
     defaults: {
-  kind: "attachment_too_large",
-  identity_verified: false,
-  attachment_size_checked: false,
-  attachment_compressed: false,
-  test_email_sent: false,
-},
+      kind: "attachment_too_large",
+      identity_verified: false,
+      attachment_size_checked: false,
+      attachment_compressed: false,
+      test_email_sent: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Reduce an oversized email attachment and confirm the message sends successfully.",
+      skillFocus: [
+        "Email Troubleshooting",
+        "Attachment Management",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user cannot send an email because the attached file exceeds the allowed size limit.",
+      successOutcome:
+        "The attachment is reduced to an acceptable size and the email sends successfully.",
+      selectCommand:
+        "select attachment too large",
+    },
   },
 
 shared_mailbox_missing: {
@@ -928,6 +1554,9 @@ shared_mailbox_missing: {
   startPrompt: `Customer: I can't access the shared mailbox anymore.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "email",
 
     procedure: [
       {
@@ -971,19 +1600,131 @@ What is your first troubleshooting step?`,
     ],
 
     defaults: {
-  kind: "shared_mailbox_missing",
-  identity_verified: false,
-  shared_mailbox_membership_checked: false,
-  shared_mailbox_access_granted: false,
-  shared_mailbox_working: false,
-},
+      kind: "shared_mailbox_missing",
+      identity_verified: false,
+      shared_mailbox_membership_checked: false,
+      shared_mailbox_access_granted: false,
+      shared_mailbox_working: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore access to a shared mailbox by correcting missing membership.",
+      skillFocus: [
+        "Shared Mailbox Access",
+        "Permission Management",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user cannot open a shared mailbox because the required mailbox access is missing.",
+      successOutcome:
+        "Shared mailbox access is granted and successfully verified.",
+      selectCommand:
+        "select shared mailbox missing",
+    },
   },
+
+shared_mailbox_outlook_profile_not_updated: {
+  label: "Shared Mailbox Missing — Outlook Profile Not Updated",
+  startPrompt: `Customer: I can't see the Finance shared mailbox in Outlook.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "email",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting shared mailbox access.",
+    },
+    {
+      command: "check_shared_mailbox_membership",
+      preview:
+        "Check the user's shared mailbox membership to confirm access is already assigned.",
+    },
+    {
+      command: "test_shared_mailbox_access",
+      preview:
+        "Test shared mailbox access to confirm the mailbox is still unavailable.",
+    },
+    {
+      command: "check_outlook_mailbox_configuration",
+      preview:
+        "Check the Outlook mailbox configuration to determine whether the shared mailbox is missing from the profile.",
+    },
+    {
+      command: "add_shared_mailbox_to_outlook_profile",
+      preview:
+        "Add the shared mailbox to the Outlook profile after confirming the configuration issue.",
+    },
+    {
+      command: "test_shared_mailbox_access",
+      preview:
+        "Test shared mailbox access again to confirm the mailbox now appears and opens normally.",
+    },
+  ],
+
+  completion: {
+    command: "test_shared_mailbox_access",
+    fact: "shared_mailbox_working",
+  },
+
+  proofLines: [
+    "Verified the user before troubleshooting shared mailbox access",
+    "Confirmed the user already had the required shared mailbox membership",
+    "Verified the mailbox was still unavailable despite correct permissions",
+    "Identified that the shared mailbox had not been added to the Outlook profile",
+    "Added the shared mailbox to the Outlook profile",
+    "Returned to the original issue and confirmed the mailbox opened successfully",
+  ],
+
+  successLines: [
+    "Agent: The Finance shared mailbox has been added to the Outlook profile and access has been verified.",
+    "System: The user already had mailbox permissions, but the Outlook profile had not been updated.",
+    "Customer: Great, I can see the Finance mailbox now.",
+  ],
+
+    defaults: {
+    kind: "shared_mailbox_outlook_profile_not_updated",
+    identity_verified: false,
+    shared_mailbox_membership_checked: false,
+    shared_mailbox_access_tested: false,
+    outlook_mailbox_configuration_checked: false,
+    shared_mailbox_added_to_outlook_profile: false,
+    shared_mailbox_working: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Resolve a missing shared mailbox when mailbox permissions already exist but the Outlook profile has not been updated.",
+    skillFocus: [
+      "Shared Mailbox Access",
+      "Outlook Configuration",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "A user already has permission to the Finance shared mailbox, but it does not appear in Outlook because it has not been added to the Outlook profile.",
+    successOutcome:
+      "The shared mailbox is added to the Outlook profile and access is successfully verified.",
+    selectCommand:
+      "select shared_mailbox_outlook_profile_not_updated",
+},
+},
 
 cannot_connect_wifi: {
   label: "Cannot Connect to Wi-Fi",
   startPrompt: `Customer: I can’t connect to WiFi.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "network",
 
     procedure: [
       {
@@ -1027,12 +1768,30 @@ What is your first troubleshooting step?`,
     ],
 
     defaults: {
-  kind: "cannot_connect_wifi",
-  identity_verified: false,
-  wifi_checked: false,
-  wifi_enabled: false,
-  can_connect_wifi: false,
-},
+      kind: "cannot_connect_wifi",
+      identity_verified: false,
+      wifi_checked: false,
+      wifi_enabled: false,
+      can_connect_wifi: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore wireless connectivity by enabling Wi-Fi and verifying the connection.",
+      skillFocus: [
+        "Wi-Fi Troubleshooting",
+        "Device Connectivity",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user's computer cannot connect to the available wireless network.",
+      successOutcome:
+        "Wi-Fi is enabled and network connectivity is successfully verified.",
+      selectCommand:
+        "select cannot connect wifi",
+    },
   },
 
 internet_no_access: {
@@ -1040,6 +1799,9 @@ internet_no_access: {
   startPrompt: `Customer: My computer is connected to the network, but I cannot access the internet.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "network",
 
     procedure: [
       {
@@ -1095,6 +1857,24 @@ What is your first troubleshooting step?`,
       network_adapter_restarted: false,
       internet_restored: false,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore internet access by checking and restarting the network adapter.",
+      skillFocus: [
+        "Network Troubleshooting",
+        "Adapter Recovery",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A computer is connected to the local network but cannot access internet services.",
+      successOutcome:
+        "The network adapter is restored and internet access is successfully verified.",
+      selectCommand:
+        "select internet no access",
+    },
   },
 
 slow_network_connection: {
@@ -1102,6 +1882,9 @@ slow_network_connection: {
   startPrompt: `Customer: My internet connection is extremely slow today.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "network",
 
     procedure: [
       {
@@ -1157,6 +1940,24 @@ What is your first troubleshooting step?`,
       network_adapter_restarted: false,
       internet_speed_restored: false,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore normal network performance by checking and restarting the network adapter.",
+      skillFocus: [
+        "Network Performance",
+        "Adapter Troubleshooting",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user reports that their internet connection is unusually slow.",
+      successOutcome:
+        "Normal network speed is restored and connectivity is successfully verified.",
+      selectCommand:
+        "select slow network connection",
+    },
   },
 
 ethernet_not_connected: {
@@ -1164,6 +1965,9 @@ ethernet_not_connected: {
   startPrompt: `Customer: My computer says the ethernet cable is disconnected.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "network",
 
     procedure: [
       {
@@ -1207,12 +2011,30 @@ What is your first troubleshooting step?`,
     ],
 
     defaults: {
-  kind: "ethernet_not_connected",
-  identity_verified: false,
-  ethernet_checked: false,
-  ethernet_cable_reconnected: false,
-  ethernet_connection_restored: false,
-},
+      kind: "ethernet_not_connected",
+      identity_verified: false,
+      ethernet_checked: false,
+      ethernet_cable_reconnected: false,
+      ethernet_connection_restored: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore wired network access by reconnecting the ethernet connection.",
+      skillFocus: [
+        "Wired Connectivity",
+        "Physical Connection Troubleshooting",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user's computer reports that the ethernet cable is disconnected.",
+      successOutcome:
+        "The ethernet connection is restored and internet access is successfully verified.",
+      selectCommand:
+        "select ethernet not connected",
+    },
   },
 
 network_drive_missing: {
@@ -1220,6 +2042,9 @@ network_drive_missing: {
   startPrompt: `Customer: I cannot see my team network drive anymore.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "files_storage",
 
     procedure: [
       {
@@ -1263,18 +2088,40 @@ What is your first troubleshooting step?`,
     ],
 
     defaults: {
-  kind: "network_drive_missing",
-  identity_verified: false,
-  network_drive_mapping_checked: false,
-  network_drive_remapped: false,
-  network_drive_access_working: false,
-},
+      kind: "network_drive_missing",
+      identity_verified: false,
+      network_drive_mapping_checked: false,
+      network_drive_remapped: false,
+      network_drive_access_working: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore a missing network drive by checking and repairing its mapping.",
+      skillFocus: [
+        "Network Drive Troubleshooting",
+        "Drive Mapping",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user can no longer see the team network drive they need for work.",
+      successOutcome:
+        "The network drive is remapped and access is successfully verified.",
+      selectCommand:
+        "select network drive missing",
+    },
   },
+
 network_drive_vpn_required_first: {
   label: "Network Drive Missing — VPN Required First",
   startPrompt: `Customer: I cannot see my team network drive anymore.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "files_storage",
 
     procedure: [
       {
@@ -1338,6 +2185,24 @@ What is your first troubleshooting step?`,
       network_drive_remapped: false,
       network_drive_access_working: false,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "5–7 min",
+      description:
+        "Restore a missing network drive after resolving a required VPN dependency.",
+      skillFocus: [
+        "Network Drive Troubleshooting",
+        "VPN Connectivity",
+        "Dependency Awareness",
+      ],
+      scenarioContext:
+        "A user cannot access a network drive because VPN connectivity must be restored before the drive can be mapped.",
+      successOutcome:
+        "VPN access is restored, the network drive is remapped, and access is verified.",
+      selectCommand:
+        "select network drive vpn required first",
+    },
   },
 
 disk_space_full: {
@@ -1345,6 +2210,9 @@ disk_space_full: {
   startPrompt: `Customer: My computer says the disk space is full.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "files_storage",
 
     procedure: [
       {
@@ -1388,12 +2256,30 @@ What is your first troubleshooting step?`,
     ],
 
     defaults: {
-  kind: "disk_space_full",
-  identity_verified: false,
-  disk_checked: false,
-  temp_files_cleared: false,
-  storage_available: false,
-},
+      kind: "disk_space_full",
+      identity_verified: false,
+      disk_checked: false,
+      temp_files_cleared: false,
+      storage_available: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Recover storage space by removing temporary files and verifying availability.",
+      skillFocus: [
+        "Storage Troubleshooting",
+        "Disk Cleanup",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user's computer reports that the disk is full and has little or no available storage.",
+      successOutcome:
+        "Temporary files are removed and sufficient storage space is restored.",
+      selectCommand:
+        "select disk space full",
+    },
   },
 
 cannot_open_file: {
@@ -1401,6 +2287,9 @@ cannot_open_file: {
   startPrompt: `Customer: I cannot open one of my work files.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "files_storage",
 
     procedure: [
       {
@@ -1456,6 +2345,24 @@ What is your first troubleshooting step?`,
       file_association_repaired: false,
       file_opens_successfully: false,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore file access by identifying and repairing an incorrect file association.",
+      skillFocus: [
+        "File Troubleshooting",
+        "Application Association",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user cannot open a work file because the file type is not associated with the correct application.",
+      successOutcome:
+        "The file association is repaired and the file opens successfully.",
+      selectCommand:
+        "select cannot open file",
+    },
   },
 
 folder_access_missing: {
@@ -1463,6 +2370,9 @@ folder_access_missing: {
   startPrompt: `Customer: I cannot access a folder I need for work.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "files_storage",
 
     procedure: [
       {
@@ -1512,6 +2422,24 @@ What is your first troubleshooting step?`,
       folder_access_granted: false,
       folder_access_working: false,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore folder access by checking and granting the required permissions.",
+      skillFocus: [
+        "Folder Permissions",
+        "Access Management",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user cannot open a folder required for their daily work.",
+      successOutcome:
+        "The required folder permissions are granted and access is successfully verified.",
+      selectCommand:
+        "select folder access missing",
+    },
   },
 
 permissions_denied: {
@@ -1519,6 +2447,9 @@ permissions_denied: {
   startPrompt: `Customer: I keep getting a permissions denied message.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "account_access",
 
     procedure: [
       {
@@ -1568,6 +2499,24 @@ What is your first troubleshooting step?`,
       required_permission_granted: false,
       permission_access_working: false,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore access by identifying and granting a missing user permission.",
+      skillFocus: [
+        "Permission Troubleshooting",
+        "Access Management",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user receives a permission-denied message when attempting to access a required work resource.",
+      successOutcome:
+        "The required permission is granted and resource access is successfully verified.",
+      selectCommand:
+        "select permissions denied",
+    },
   },
 
 shared_drive_access_issue: {
@@ -1575,6 +2524,9 @@ shared_drive_access_issue: {
   startPrompt: `Customer: I can’t access the shared drive I need for work.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "account_access",
 
     procedure: [
       {
@@ -1618,12 +2570,30 @@ What is your first troubleshooting step?`,
     ],
 
     defaults: {
-  kind: "shared_drive_access_issue",
-  identity_verified: false,
-  shared_drive_permissions_checked: false,
-  shared_drive_access_granted: false,
-  shared_drive_access_working: false,
-},
+      kind: "shared_drive_access_issue",
+      identity_verified: false,
+      shared_drive_permissions_checked: false,
+      shared_drive_access_granted: false,
+      shared_drive_access_working: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore shared drive access by correcting missing permissions.",
+      skillFocus: [
+        "Shared Drive Troubleshooting",
+        "Access Management",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user cannot access a shared drive required for their work.",
+      successOutcome:
+        "The required shared drive permissions are granted and access is successfully verified.",
+      selectCommand:
+        "select shared drive access issue",
+    },
   },
 
 cannot_install_software: {
@@ -1631,6 +2601,9 @@ cannot_install_software: {
   startPrompt: `Customer: I need to install software, but the installation keeps failing.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "account_access",
 
     procedure: [
       {
@@ -1674,19 +2647,130 @@ What is your first troubleshooting step?`,
     ],
 
     defaults: {
-  kind: "cannot_install_software",
-  identity_verified: false,
-  install_permissions_checked: false,
-  install_permissions_granted: false,
-  software_install_working: false,
-},
+      kind: "cannot_install_software",
+      identity_verified: false,
+      install_permissions_checked: false,
+      install_permissions_granted: false,
+      software_install_working: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore software installation access by correcting missing permissions.",
+      skillFocus: [
+        "Software Installation",
+        "Permission Management",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user cannot install required work software because installation permissions are unavailable.",
+      successOutcome:
+        "Installation permissions are granted and the software installation succeeds.",
+      selectCommand:
+        "select cannot install software",
+    },
   },
+
+cannot_install_software_admin_approval_required: {
+  label: "Cannot Install Software — Admin Approval Required",
+  startPrompt: `Customer: I need to install software for work, but it says administrator approval is required.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "software_install_challenges",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before changing software installation access.",
+    },
+    {
+      command: "check_install_permissions",
+      preview:
+        "Check whether the user has permission to install software.",
+    },
+    {
+      command: "check_software_request_status",
+      preview:
+        "Check whether the software installation request is still waiting for administrator approval.",
+    },
+    {
+      command: "approve_software_request",
+      preview:
+        "Approve the pending software installation request.",
+    },
+    {
+      command: "grant_install_permissions",
+      preview:
+        "Grant installation permissions after the request has been approved.",
+    },
+    {
+      command: "test_software_install",
+      preview:
+        "Test software installation to confirm it works successfully.",
+    },
+  ],
+
+  completion: {
+    command: "test_software_install",
+    fact: "software_install_working",
+  },
+
+  proofLines: [
+    "Verified the user before modifying installation permissions",
+    "Confirmed installation permissions were unavailable",
+    "Identified that administrator approval was still pending",
+    "Approved the pending software request",
+    "Granted installation permissions after approval",
+    "Validated successful software installation",
+  ],
+
+  successLines: [
+    "Agent: The software request has been approved, installation permissions have been granted, and the installation has been verified.",
+    "System: The administrative approval dependency was resolved before software installation completed successfully.",
+    "Customer: Perfect, the installation worked.",
+  ],
+
+  defaults: {
+    kind: "cannot_install_software_admin_approval_required",
+    identity_verified: false,
+    install_permissions_checked: false,
+    software_request_checked: false,
+    software_request_approved: false,
+    install_permissions_granted: false,
+    software_install_working: false,
+  },
+    previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Resolve a blocked software installation when administrator approval is still pending.",
+    skillFocus: [
+      "Software Installation",
+      "Approval Workflow",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "A user cannot install required work software because the software request is still waiting for administrator approval.",
+    successOutcome:
+      "The request is approved, installation permissions are granted, and the software installs successfully.",
+    selectCommand:
+      "select cannot_install_software_admin_approval_required",
+  },
+},
 
 too_many_apps_running: {
   label: "Too Many Apps Running",
   startPrompt: `Customer: My computer is running very slowly today.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "device_performance",
 
     procedure: [
       { command: "verify_identity", preview: "Verify the user's identity before troubleshooting device performance." },
@@ -1716,6 +2800,24 @@ What is your first troubleshooting step?`,
       apps_closed: false,
       performance_ok: false,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore computer performance by closing unnecessary running applications.",
+      skillFocus: [
+        "Performance Troubleshooting",
+        "Resource Management",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user's computer is running slowly because too many applications are consuming system resources.",
+      successOutcome:
+        "Unnecessary applications are closed and normal computer performance is restored.",
+      selectCommand:
+        "select too many apps running",
+    },
   },
 
 low_memory: {
@@ -1723,6 +2825,9 @@ low_memory: {
   startPrompt: `Customer: My computer keeps freezing and feels extremely sluggish.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "device_performance",
 
     procedure: [
       { command: "verify_identity", preview: "Verify the user's identity before troubleshooting memory usage." },
@@ -1746,11 +2851,29 @@ What is your first troubleshooting step?`,
     ],
 
     defaults: {
-      kind: "low_memory",
+      kind: "too_many_apps_running",
       identity_verified: false,
-      memory_checked: false,
-      memory_heavy_apps_closed: false,
-      memory_ok: false,
+      apps_checked: false,
+      apps_closed: false,
+      performance_ok: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore computer performance by closing unnecessary running applications.",
+      skillFocus: [
+        "Performance Troubleshooting",
+        "Resource Management",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user's computer is running slowly because too many applications are consuming system resources.",
+      successOutcome:
+        "Unnecessary applications are closed and normal computer performance is restored.",
+      selectCommand:
+        "select too many apps running",
     },
   },
 
@@ -1759,6 +2882,9 @@ browser_running_slow: {
   startPrompt: `Customer: My web browser has become painfully slow.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "device_performance",
 
     procedure: [
       { command: "verify_identity", preview: "Verify the user's identity before troubleshooting browser performance." },
@@ -1788,6 +2914,24 @@ What is your first troubleshooting step?`,
       unnecessary_extensions_disabled: false,
       browser_performance_ok: false,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore browser performance by disabling unnecessary extensions.",
+      skillFocus: [
+        "Browser Troubleshooting",
+        "Extension Management",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user's web browser has become slow because unnecessary extensions are consuming resources.",
+      successOutcome:
+        "Unnecessary extensions are disabled and normal browser responsiveness is restored.",
+      selectCommand:
+        "select browser running slow",
+    },
   },
 
 printer_not_working: {
@@ -1796,26 +2940,29 @@ printer_not_working: {
 
 What is your first troubleshooting step?`,
 
-    procedure: [
-      { command: "verify_identity", preview: "Verify the user's identity before troubleshooting the printer." },
-      { command: "check_printer_status", preview: "Check printer status to identify why it is not printing." },
-      { command: "restart_printer", preview: "Restart the printer so it can reconnect properly." },
-      { command: "print_test_page", preview: "Print a test page to confirm the printer works." },
-    ],
-        completion: { command: "print_test_page", fact: "printer_working" },
+  scenarioType: "standard",
+  category: "hardware_peripherals",
 
-        proofLines: [
-      "Verified the user before troubleshooting printer access",
-      "Confirmed the printer was unavailable",
-      "Restored printer availability",
-      "Validated printing with a successful test page",
-    ],
+  procedure: [
+    { command: "verify_identity", preview: "Verify the user's identity before troubleshooting the printer." },
+    { command: "check_printer_status", preview: "Check printer status to identify why it is not printing." },
+    { command: "restart_printer", preview: "Restart the printer so it can reconnect properly." },
+    { command: "print_test_page", preview: "Print a test page to confirm the printer works." },
+  ],
+  completion: { command: "print_test_page", fact: "printer_working" },
 
-    successLines: [
-      "Agent: Printer functionality has been restored and verified.",
-      "System: The printer can successfully process print jobs.",
-      "Customer: Great, it printed.",
-    ],
+  proofLines: [
+    "Verified the user before troubleshooting printer access",
+    "Confirmed the printer was unavailable",
+    "Restored printer availability",
+    "Validated printing with a successful test page",
+  ],
+
+  successLines: [
+    "Agent: Printer functionality has been restored and verified.",
+    "System: The printer can successfully process print jobs.",
+    "Customer: Great, it printed.",
+  ],
 
     defaults: {
       kind: "printer_not_working",
@@ -1824,13 +2971,118 @@ What is your first troubleshooting step?`,
       printer_restarted: false,
       printer_working: false,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore printing by restarting the printer and verifying operation.",
+      skillFocus: [
+        "Printer Troubleshooting",
+        "Hardware Recovery",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user cannot print because the office printer is not responding.",
+      successOutcome:
+        "The printer is restored and a successful test page is printed.",
+      selectCommand:
+        "select printer not working",
+    },
   },
+
+printer_wrong_default_printer: {
+  label: "Printer Not Working — Wrong Default Printer",
+  startPrompt: `Customer: I’m sending documents to print, but nothing is coming out of the office printer.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "hardware_peripherals",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting printer settings.",
+    },
+    {
+      command: "check_printer_status",
+      preview:
+        "Check the printer status to confirm the office printer is available.",
+    },
+    {
+      command: "check_default_printer",
+      preview:
+        "Check which printer is currently selected as the default printer.",
+    },
+    {
+      command: "set_default_printer",
+      preview:
+        "Set the correct office printer as the default printer.",
+    },
+    {
+      command: "print_test_page",
+      preview:
+        "Print a test page to confirm jobs are sent to the correct printer.",
+    },
+  ],
+
+  completion: {
+    command: "print_test_page",
+    fact: "printer_working",
+  },
+
+  proofLines: [
+    "Verified the user before changing printer settings",
+    "Confirmed the office printer was available",
+    "Identified that the wrong printer was selected as the default",
+    "Set the correct office printer as the default printer",
+    "Validated printing with a successful test page",
+  ],
+
+  successLines: [
+    "Agent: The correct default printer has been selected and printing has been verified.",
+    "System: Print jobs are now being sent to the correct office printer.",
+    "Customer: Great, it printed from the right printer.",
+  ],
+
+  defaults: {
+    kind: "printer_wrong_default_printer",
+    identity_verified: false,
+    printer_checked: false,
+    default_printer_checked: false,
+    correct_default_printer_set: false,
+    printer_working: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Resolve a printer issue caused by the wrong default printer being selected.",
+    skillFocus: [
+      "Printer Troubleshooting",
+      "Printer Configuration",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "A user reports that documents are not printing because jobs are being sent to the wrong printer.",
+    successOutcome:
+      "The correct default printer is selected and printing is successfully verified.",
+    selectCommand:
+      "select printer_wrong_default_printer",
+  },
+},
 
 mouse_keyboard_not_working: {
   label: "Mouse and Keyboard Not Working",
   startPrompt: `Customer: My mouse and keyboard are not working.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "hardware_peripherals",
 
     procedure: [
       { command: "verify_identity", preview: "Verify the user's identity before troubleshooting input devices." },
@@ -1854,13 +3106,31 @@ successLines: [
   "Customer: Great, they’re working now.",
 ],
 
-defaults: {
-  kind: "mouse_keyboard_not_working",
-  identity_verified: false,
-  device_connection_checked: false,
-  device_reconnected: false,
-  input_device_working: false,
-},
+    defaults: {
+      kind: "mouse_keyboard_not_working",
+      identity_verified: false,
+      device_connection_checked: false,
+      device_reconnected: false,
+      input_device_working: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore input device functionality by reconnecting the mouse and keyboard.",
+      skillFocus: [
+        "Input Device Troubleshooting",
+        "Hardware Connectivity",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user's mouse and keyboard are no longer responding.",
+      successOutcome:
+        "The input devices reconnect successfully and normal operation is verified.",
+      selectCommand:
+        "select mouse keyboard not working",
+    },
   },
 
 microphone_not_working: {
@@ -1868,6 +3138,9 @@ microphone_not_working: {
   startPrompt: `Customer: My microphone is not working during calls.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "hardware_peripherals",
 
     procedure: [
       { command: "verify_identity", preview: "Verify the user's identity before troubleshooting the microphone." },
@@ -1890,13 +3163,31 @@ successLines: [
   "Customer: Great, they can hear me now.",
 ],
 
-defaults: {
-  kind: "microphone_not_working",
-  identity_verified: false,
-  microphone_settings_checked: false,
-  microphone_enabled: false,
-  microphone_working: false,
-},
+    defaults: {
+      kind: "microphone_not_working",
+      identity_verified: false,
+      microphone_settings_checked: false,
+      microphone_enabled: false,
+      microphone_working: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore microphone functionality by correcting microphone settings.",
+      skillFocus: [
+        "Audio Troubleshooting",
+        "Device Configuration",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user's microphone is not capturing audio during calls.",
+      successOutcome:
+        "The microphone is enabled and audio capture is successfully verified.",
+      selectCommand:
+        "select microphone not working",
+    },
   },
 
 webcam_not_working: {
@@ -1904,6 +3195,9 @@ webcam_not_working: {
   startPrompt: `Customer: My webcam is not working during video calls.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "hardware_peripherals",
 
     procedure: [
       { command: "verify_identity", preview: "Verify the user's identity before troubleshooting the webcam." },
@@ -1926,13 +3220,31 @@ successLines: [
   "Customer: Great, it's working now.",
 ],
 
-defaults: {
-  kind: "webcam_not_working",
-  identity_verified: false,
-  webcam_settings_checked: false,
-  webcam_enabled: false,
-  webcam_working: false,
-},
+    defaults: {
+      kind: "webcam_not_working",
+      identity_verified: false,
+      webcam_settings_checked: false,
+      webcam_enabled: false,
+      webcam_working: false,
+    },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore webcam functionality by correcting webcam settings.",
+      skillFocus: [
+        "Video Device Troubleshooting",
+        "Device Configuration",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user's webcam is not working during video meetings.",
+      successOutcome:
+        "The webcam is enabled and video functionality is successfully verified.",
+      selectCommand:
+        "select webcam not working",
+    },
   },
 
 second_monitor_not_detected: {
@@ -1940,6 +3252,9 @@ second_monitor_not_detected: {
   startPrompt: `Customer: My second monitor is not being detected.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "hardware_peripherals",
 
     procedure: [
       { command: "verify_identity", preview: "Verify the user's identity before troubleshooting the display setup." },
@@ -1971,6 +3286,24 @@ proofLines: [
       second_monitor_detected: false,
       dual_display_working: false,
     },
+
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "3–5 min",
+      description:
+        "Restore dual-display functionality by detecting the second monitor.",
+      skillFocus: [
+        "Display Troubleshooting",
+        "Monitor Configuration",
+        "Operational Verification",
+      ],
+      scenarioContext:
+        "A user's second monitor is connected but is not being detected by the computer.",
+      successOutcome:
+        "The second monitor is detected and dual-display functionality is verified.",
+      selectCommand:
+        "select second monitor not detected",
+    },
   },
 
 software_app_not_opening: {
@@ -1978,6 +3311,9 @@ software_app_not_opening: {
   startPrompt: `Customer: My work application will not open.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "software_applications",
 
     procedure: [
       { command: "verify_identity", preview: "Verify the user's identity before troubleshooting the application." },
@@ -2007,6 +3343,24 @@ defaults: {
   application_restarted: false,
   application_working: false,
 },
+
+previewMetadata: {
+  level: "Beginner",
+  estimatedTime: "3–5 min",
+  description:
+    "Restart the affected application and confirm it opens normally.",
+  skillFocus: [
+    "Application Troubleshooting",
+    "Basic Software Recovery",
+    "Operational Verification",
+  ],
+  scenarioContext:
+    "A customer reports that a work application will not open.",
+  successOutcome:
+    "The application launches and responds normally.",
+  selectCommand:
+    "select software app not opening",
+},
   },
 
 application_crash: {
@@ -2014,6 +3368,9 @@ application_crash: {
   startPrompt: `Customer: My work application keeps crashing.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "software_applications",
 
     procedure: [
       { command: "verify_identity", preview: "Verify the user's identity before troubleshooting the application." },
@@ -2043,6 +3400,24 @@ defaults: {
   application_restarted: false,
   application_working: false,
 },
+
+previewMetadata: {
+  level: "Beginner",
+  estimatedTime: "3–5 min",
+  description:
+    "Restart a crashing application and confirm it stays stable.",
+  skillFocus: [
+    "Application Troubleshooting",
+    "Crash Recovery",
+    "Operational Verification",
+  ],
+  scenarioContext:
+    "A customer reports that a work application keeps crashing.",
+  successOutcome:
+    "The application runs normally without crashing.",
+  selectCommand:
+    "select application crash",
+},
   },
 
 software_update_required: {
@@ -2050,6 +3425,9 @@ software_update_required: {
   startPrompt: `Customer: My work application says an update is required.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "software_applications",
 
     procedure: [
       { command: "verify_identity", preview: "Verify the user's identity before making software changes." },
@@ -2079,6 +3457,24 @@ defaults: {
   software_update_installed: false,
   application_working: false,
 },
+
+previewMetadata: {
+  level: "Beginner",
+  estimatedTime: "3–5 min",
+  description:
+    "Install a required software update and confirm the application works.",
+  skillFocus: [
+    "Software Troubleshooting",
+    "Update Management",
+    "Operational Verification",
+  ],
+  scenarioContext:
+    "A customer reports that a work application requires an update before it can be used.",
+  successOutcome:
+    "The required software update is installed and the application works normally.",
+  selectCommand:
+    "select software update required",
+},
   },
 
 shared_drive_group_membership_missing: {
@@ -2086,6 +3482,9 @@ shared_drive_group_membership_missing: {
   startPrompt: `Customer: I can’t access the shared drive I need for work.
 
 What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "shared_drive_access_challenges",
 
     procedure: [
     {
@@ -2136,8 +3535,53 @@ What is your first troubleshooting step?`,
     user_added_to_group: false,
     shared_drive_access_working: false,
   },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Restore shared drive access by resolving a missing group membership dependency.",
+    skillFocus: [
+      "Shared Drive Troubleshooting",
+      "Group Membership",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "A user cannot access a required shared drive because they are not a member of the assigned access group.",
+    successOutcome:
+      "The user is added to the required group and shared drive access is successfully verified.",
+    selectCommand:
+      "select shared drive group membership missing",
+  },
 },
-} as const satisfies Record<string, ScenarioDefinition>;
+
+} as const satisfies Record<ScenarioId, ScenarioDefinition>;
+
+type ObjectEntry<T extends object> = {
+  [K in keyof T]: [K, T[K]];
+}[keyof T];
+
+function getTypedObjectEntries<T extends object>(
+  value: T
+): ObjectEntry<T>[] {
+  return Object.entries(value) as ObjectEntry<T>[];
+}
+
+export type ScenarioRegistryEntry = {
+  id: keyof typeof SCENARIO_REGISTRY;
+  scenarioType: ScenarioTypeId;
+  category: ScenarioCategoryId;
+};
+
+export function getScenarioRegistryEntries(): ScenarioRegistryEntry[] {
+  return getTypedObjectEntries(SCENARIO_REGISTRY).map(
+    ([scenarioId, scenario]) => ({
+      id: scenarioId,
+      scenarioType: scenario.scenarioType,
+      category: scenario.category,
+    })
+  );
+}
 
 export function getScenarioProcedureCommands(
   scenarioId: string | null
@@ -2157,6 +3601,16 @@ export function getScenarioPreviewSteps(scenarioId: string): string[] {
     SCENARIO_REGISTRY[scenarioId as keyof typeof SCENARIO_REGISTRY];
 
   return scenario?.procedure.map((step) => step.preview) ?? [];
+}
+
+export function getScenarioPreviewMetadata(
+  scenarioId: string
+): ScenarioPreviewMetadata | null {
+  const scenario = (
+    SCENARIO_REGISTRY as Record<string, ScenarioDefinition>
+  )[scenarioId];
+
+  return scenario?.previewMetadata ?? null;
 }
 
 export function getScenarioDefaults(scenarioId: string): ScenarioFacts {

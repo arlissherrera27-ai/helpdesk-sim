@@ -19,6 +19,7 @@ type SystemCommandKind =
   | "restart"
   | "quit"
   | "debug"
+  | "view_scorecard"
   | "select"
   | "help"
   | "status"
@@ -28,6 +29,7 @@ type SystemPlanKind =
   | "StartNewAttempt"
   | "SelectScenario"
   | "ReadOnly"
+  | "ViewScorecard"
   | "QuitAttemptToLobby";
 
 export type ProcedureCommandKind = Exclude<
@@ -59,6 +61,12 @@ export const procedureCatalog = {
   test_sign_in: { plan: "TestSignIn" },
   request_unlock: { plan: "RequestUnlock" },
   confirm_unlock: { plan: "ConfirmUnlock" },
+  review_failed_authentication_attempts: {
+    plan: "ReviewFailedAuthenticationAttempts",
+  },
+  update_saved_credentials: {
+    plan: "UpdateSavedCredentials",
+  },
   check_vpn_access: { plan: "CheckVpnAccess" },
   enable_vpn_access: { plan: "EnableVpnAccess" },
   confirm_connection: { plan: "ConfirmConnection" },
@@ -83,6 +91,10 @@ export const procedureCatalog = {
   // EMAIL
   check_email_status: { plan: "CheckEmailStatus" },
   enable_email_client: { plan: "EnableEmailClient" },
+  check_outbox: { plan: "CheckOutbox" },
+  send_stuck_outbox_email: {
+    plan: "SendStuckOutboxEmail",
+  },
   check_inbox_filters: { plan: "CheckInboxFilters" },
   disable_inbox_filter: { plan: "DisableInboxFilter" },
   resend_reset_code: { plan: "ResendResetCode" },
@@ -91,31 +103,70 @@ export const procedureCatalog = {
   check_archive_policy: { plan: "CheckArchivePolicy" },
   apply_archive_policy: { plan: "ApplyArchivePolicy" },
   archive_old_emails: { plan: "ArchiveOldEmails" },
-  check_email_login_status: { plan: "CheckEmailLoginStatus" },
-  reset_email_session: { plan: "ResetEmailSession" },
-  test_email_login: { plan: "TestEmailLogin" },
+check_email_login_status: {
+  plan: "CheckEmailLoginStatus",
+},
+
+check_saved_email_credentials: {
+  plan: "CheckSavedEmailCredentials",
+},
+
+update_saved_email_credentials: {
+  plan: "UpdateSavedEmailCredentials",
+},
+
+reset_email_session: {
+  plan: "ResetEmailSession",
+},
+
+test_email_login: {
+  plan: "TestEmailLogin",
+},
   check_sync_settings: { plan: "CheckSyncSettings" },
   resync_email_client: { plan: "ResyncEmailClient" },
   test_email_sync: { plan: "TestEmailSync" },
   check_attachment_size: { plan: "CheckAttachmentSize" },
   compress_attachment: { plan: "CompressAttachment" },
   check_shared_mailbox_membership: {
-    plan: "CheckSharedMailboxMembership",
-  },
-  grant_shared_mailbox_access: { plan: "GrantSharedMailboxAccess" },
-  check_outlook_mailbox_configuration: {
-    plan: "CheckOutlookMailboxConfiguration",
-  },
+  plan: "CheckSharedMailboxMembership",
+},
+grant_shared_mailbox_access: {
+  plan: "GrantSharedMailboxAccess",
+},
+check_shared_mailbox_automapping: {
+  plan: "CheckSharedMailboxAutomapping",
+},
+enable_shared_mailbox_automapping: {
+  plan: "EnableSharedMailboxAutomapping",
+},
+check_outlook_mailbox_configuration: {
+  plan: "CheckOutlookMailboxConfiguration",
+},
   add_shared_mailbox_to_outlook_profile: {
     plan: "AddSharedMailboxToOutlookProfile",
   },
   test_shared_mailbox_access: { plan: "TestSharedMailboxAccess" },
+  check_email_client_profile: {
+    plan: "CheckEmailClientProfile",
+  },
+  repair_email_client_profile: {
+    plan: "RepairEmailClientProfile",
+  },
 
   // NETWORK / CONNECTIVITY
   check_wifi_status: { plan: "CheckWifiStatus" },
   enable_wifi: { plan: "EnableWifi" },
   test_connection: { plan: "TestConnection" },
+  check_wifi_profile: { plan: "CheckWifiProfile" },
+  remove_corrupted_wifi_profile: {
+    plan: "RemoveCorruptedWifiProfile",
+  },
+  reconnect_wifi: { plan: "ReconnectWifi" },
   check_network_status: { plan: "CheckNetworkStatus" },
+  check_proxy_settings: { plan: "CheckProxySettings" },
+  disable_incorrect_proxy: {
+    plan: "DisableIncorrectProxy",
+  },
   check_network_adapter: { plan: "CheckNetworkAdapter" },
   check_network_speed: { plan: "CheckNetworkSpeed" },
   check_ethernet_connection: { plan: "CheckEthernetConnection" },
@@ -135,6 +186,9 @@ export const procedureCatalog = {
   repair_file_association: { plan: "RepairFileAssociation" },
   test_file_open: { plan: "TestFileOpen" },
   check_folder_permissions: { plan: "CheckFolderPermissions" },
+  check_folder_security_group: {
+  plan: "CheckFolderSecurityGroup",
+},
   grant_folder_access: { plan: "GrantFolderAccess" },
   test_folder_access: { plan: "TestFolderAccess" },
 
@@ -144,6 +198,10 @@ export const procedureCatalog = {
   test_performance: { plan: "TestPerformance" },
   check_memory_usage: { plan: "CheckMemoryUsage" },
   close_memory_heavy_apps: { plan: "CloseMemoryHeavyApps" },
+
+  check_browser_cache: { plan: "CheckBrowserCache" },
+  clear_browser_cache: { plan: "ClearBrowserCache" },
+
   check_browser_extensions: { plan: "CheckBrowserExtensions" },
   disable_unnecessary_extensions: {
     plan: "DisableUnnecessaryExtensions",
@@ -159,16 +217,55 @@ export const procedureCatalog = {
   check_device_connection: { plan: "CheckDeviceConnection" },
   reconnect_device: { plan: "ReconnectDevice" },
   test_input_device: { plan: "TestInputDevice" },
-  check_microphone_settings: { plan: "CheckMicrophoneSettings" },
-  enable_microphone: { plan: "EnableMicrophone" },
-  test_microphone: { plan: "TestMicrophone" },
+  check_microphone_settings: {
+  plan: "CheckMicrophoneSettings",
+},
+
+enable_microphone: {
+  plan: "EnableMicrophone",
+},
+
+test_microphone: {
+  plan: "TestMicrophone",
+},
+
+check_recording_device: {
+  plan: "CheckRecordingDevice",
+},
+
+select_recording_device: {
+  plan: "SelectRecordingDevice",
+},
   check_webcam_settings: { plan: "CheckWebcamSettings" },
   enable_webcam: { plan: "EnableWebcam" },
   test_webcam: { plan: "TestWebcam" },
-  check_display_connection: { plan: "CheckDisplayConnection" },
-  check_display_settings: { plan: "CheckDisplaySettings" },
-  detect_second_monitor: { plan: "DetectSecondMonitor" },
-  test_dual_display: { plan: "TestDualDisplay" },
+  check_display_connection: {
+  plan: "CheckDisplayConnection",
+},
+
+check_display_settings: {
+  plan: "CheckDisplaySettings",
+},
+
+detect_second_monitor: {
+  plan: "DetectSecondMonitor",
+},
+
+check_display_enabled_status: {
+  plan: "CheckDisplayEnabledStatus",
+},
+
+enable_second_display: {
+  plan: "EnableSecondDisplay",
+},
+
+test_dual_display: {
+  plan: "TestDualDisplay",
+},
+  check_audio_output: { plan: "CheckAudioOutput" },
+  check_volume_status: { plan: "CheckVolumeStatus" },
+  select_audio_output: { plan: "SelectAudioOutput" },
+  test_audio: { plan: "TestAudio" },
 
   // SOFTWARE / APPLICATIONS
   check_app_status: { plan: "CheckAppStatus" },

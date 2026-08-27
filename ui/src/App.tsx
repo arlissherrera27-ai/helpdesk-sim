@@ -1,7 +1,30 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { handleInput } from "./core/engine";
 import { initialState } from "./core/state";
 import type { SimState } from "./core/types";
+import type { AppView } from "./appTypes";
+import ProfilePage from "./ProfilePage";
+import CreateProfilePage from "./CreateProfilePage";
+import HistoryPage from "./HistoryPage";
+import AttemptDetailPage from "./AttemptDetailPage";
+import PlaylistsPage from "./PlaylistsPage";
+import PlaylistEditorPage from "./PlaylistEditorPage";
+import PlaylistChooser from "./PlaylistChooser";
+import PlaylistRunSummaryPage from "./PlaylistRunSummaryPage";
+import PlaylistRunDetailPage from "./PlaylistRunDetailPage";
+import { createScenarioAttemptRecord } from "./history/createScenarioAttemptRecord";
+import {
+  appendAttemptRecord,
+  loadAttemptHistoryForProfile,
+} from "./history/historyStore";
+import {
+  COLORS,
+  TEXT,
+  SPACE,
+  RADIUS,
+  CARD,
+  BUTTON,
+} from "./uiSystem";
 import { isValidScenarioId } from "./core/scenarios";
 import { getScenarioLabel } from "./core/scenarioRegistry";
 import {
@@ -11,79 +34,53 @@ import {
 } from "./core/scenarioTree";
 import { COMMAND_ALIASES } from "./core/parse";
 import { getScenarioProcedureCommands } from "./core/scenarioRegistry";
+import type { UserProfile } from "./profile/types";
+import {
+  loadActiveProfile,
+  saveActiveProfile,
+} from "./profile/profileStore";
 
-// ==========================================
-// UI STANDARDS
-// ==========================================
+import {
+  calculateProfileMetrics,
+} from "./profile/calculateProfileMetrics";
 
-const COLORS = {
-  appBg: "#0b0f14",
-  panel: "rgba(255,255,255,0.03)",
-  panelSoft: "rgba(255,255,255,0.02)",
-  border: "#2a2a2a",
-  text: "#f5f7fb",
-  body: "#d1d5db",
-  muted: "#9aa4b2",
-  success: "#22c55e",
-  successDark: "#1f7a3a",
-  practice: "#a78bfa",
-  practiceStrong: "#6d4aff",
-  assessment: "#93c5fd",
-  assessmentStrong: "#60a5fa",
-};
+import type {
+  ScenarioAttemptRecord,
+} from "./history/types";
 
-const TEXT = {
-  label: "12px",
-  detail: "13px",
-  body: "14px",
-  section: "20px",
-  title: "24px",
-  hero: "56px",
-};
+import type {
+  SavedPlaylist,
+  PlaylistRun,
+} from "./playlists/types";
 
-const SPACE = {
-  xs: "4px",
-  sm: "8px",
-  md: "16px",
-  lg: "22px",
-  xl: "28px",
-};
+import {
+  appendSavedPlaylist,
+  replaceSavedPlaylist,
+  loadSavedPlaylistsForProfile,
+  addScenarioToSavedPlaylist,
+  removeScenarioFromSavedPlaylist,
+  moveScenarioInSavedPlaylist,
+  loadPlaylistRunsForProfile,
+  appendPlaylistRun,
+  replacePlaylistRun,
+} from "./playlists/playlistStore";
 
-const RADIUS = {
-  button: "8px",
-  chip: "10px",
-  card: "12px",
-  pill: "999px",
-};
+import {
+  createSavedPlaylist,
+  updateSavedPlaylist,
+  createPlaylistRun,
+} from "./playlists/createPlaylistRecords";
 
-const CARD = {
-  base: {
-    border: `1px solid ${COLORS.border}`,
-    borderRadius: RADIUS.card,
-    background: COLORS.panel,
-  },
-};
+import {
+  abandonPlaylistRunRecord,
+  advancePlaylistRunRecord,
+  attachAttemptToPlaylistRun,
+} from "./playlists/playlistRunLifecycle";
 
-const BUTTON = {
-  secondary: {
-    fontFamily: "monospace",
-    padding: "10px 14px",
-    border: `1px solid ${COLORS.border}`,
-    borderRadius: RADIUS.button,
-    background: "transparent",
-    color: COLORS.text,
-    cursor: "pointer",
-  },
-  primary: {
-    fontFamily: "monospace",
-    padding: "10px 14px",
-    border: `1px solid ${COLORS.practiceStrong}`,
-    borderRadius: RADIUS.button,
-    background: "rgba(109, 74, 255, 0.18)",
-    color: COLORS.text,
-    cursor: "pointer",
-  },
-};
+import {
+  runScenarioValidation,
+  type ScenarioValidationReport,
+} from "./core/scenarioValidation";
 
 const LAYOUT = {
   completedHero: "1fr 340px",
@@ -249,21 +246,430 @@ function getReportDetails(state: SimState) {
 }
 
 export default function App() {
-  const [state, setState] = useState<SimState>(initialState());
-  const [input, setInput] = useState("");
-  const [log, setLog] = useState<string[]>([]);
+const [state, setState] = useState<SimState>(initialState());
+const [appView, setAppView] = useState<AppView>("simulator");
+const [selectedAttemptId, setSelectedAttemptId] =
+  useState<string | null>(null);
+
+const [
+  selectedPlaylistRunId,
+  setSelectedPlaylistRunId,
+] = useState<string | null>(null);
+
+const [selectedPlaylistId, setSelectedPlaylistId] =
+  useState<string | null>(null);
+
+const [activePlaylistRun, setActivePlaylistRun] =
+  useState<PlaylistRun | null>(null);
+
+const [activeProfile, setActiveProfile] =
+  useState<UserProfile | null>(
+    loadActiveProfile()
+  );
+
+  const [playlistRuns, setPlaylistRuns] =
+  useState<PlaylistRun[]>(() => {
+    if (activeProfile === null) {
+      return [];
+    }
+
+    return loadPlaylistRunsForProfile(
+      activeProfile.profileId
+    );
+  });
+
+const [savedPlaylists, setSavedPlaylists] =
+  useState<SavedPlaylist[]>(() => {
+    if (activeProfile === null) {
+      return [];
+    }
+
+    return loadSavedPlaylistsForProfile(
+      activeProfile.profileId
+    );
+  });
+
+const selectedPlaylist =
+  selectedPlaylistId === null
+    ? null
+    : savedPlaylists.find(
+        (playlist) =>
+          playlist.playlistId === selectedPlaylistId
+      ) ?? null;
+
+const [profileHistory, setProfileHistory] =
+  useState<ScenarioAttemptRecord[]>(() => {
+    if (activeProfile === null) {
+      return [];
+    }
+
+    return loadAttemptHistoryForProfile(
+      activeProfile.profileId
+    );
+  });
+
+const profileMetrics =
+  calculateProfileMetrics(profileHistory);
+
+  const selectedAttempt =
+  selectedAttemptId === null
+    ? null
+    : profileHistory.find(
+        (attempt) =>
+          attempt.attemptId === selectedAttemptId
+      ) ?? null;
+
+      const selectedPlaylistRun =
+  selectedPlaylistRunId === null
+    ? null
+    : playlistRuns.find(
+        (run) =>
+          run.playlistRunId ===
+          selectedPlaylistRunId
+      ) ?? null;
+
+const [attemptStartedAt, setAttemptStartedAt] =
+  useState<string | null>(null);
+const [input, setInput] = useState("");
+const [log, setLog] = useState<string[]>([]);
+
+const [
+  scenarioValidationReport,
+  setScenarioValidationReport,
+] = useState<ScenarioValidationReport | null>(null);
+
+    const commandInputRef = useRef<HTMLInputElement>(null);
+  const conversationRef = useRef<HTMLDivElement>(null);
 
 const [showSelector, setShowSelector] = useState(false);
 const [openScenarioTypeId, setOpenScenarioTypeId] = useState<string | null>(null);
 const [openBranchId, setOpenBranchId] = useState<string | null>(null);
+
+const [playlistScenarioId, setPlaylistScenarioId] =
+  useState<string | null>(null);
+
+const [playlistAddTargetId, setPlaylistAddTargetId] =
+  useState<string | null>(null);
+
+const playlistScenario =
+  playlistScenarioId === null
+    ? null
+    : scenarioTree
+        .flatMap((scenarioType) => scenarioType.branches)
+        .flatMap((branch) => branch.scenarios)
+        .find((scenario) => scenario.id === playlistScenarioId) ?? null;
+
 const [procedureHelpPinned, setProcedureHelpPinned] = useState(false);
 
 const [showMobileProcedureHelp, setShowMobileProcedureHelp] = useState(false);
 
-const [scoringInput, setScoringInput] = useState("");
-const [scoringOutput, setScoringOutput] = useState("");
+const scoringOutput = JSON.stringify(
+  {
+    executionState: state.executionState,
+    scenario: state.scenario,
+    mode: state.mode,
+    attempt: state.attempt,
+    score: getReportMeasurements(state).score,
+    mistakes: getReportMeasurements(state).mistakeCount,
+    runLog: state.runLog,
+  },
+  null,
+  2
+);
+
+  useEffect(() => {
+    if (
+      state.executionState === "RUNNING" ||
+      (
+        state.executionState === "LOBBY" &&
+        state.previewScenario !== null &&
+        !showSelector
+      )
+    ) {
+      commandInputRef.current?.focus();
+    }
+  }, [
+    state.executionState,
+    state.scenario,
+    state.previewScenario,
+    showSelector,
+    log.length,
+  ]);
+
+    useEffect(() => {
+    if (state.executionState !== "RUNNING") {
+      return;
+    }
+
+    const conversation = conversationRef.current;
+
+    if (!conversation) {
+      return;
+    }
+
+    conversation.scrollTop = conversation.scrollHeight;
+  }, [log.length, state.executionState]);
 
   const mode = state.mode;
+
+  function persistPlaylistRun(
+  run: PlaylistRun
+): void {
+  const updatedRuns =
+    replacePlaylistRun(run);
+
+  if (activeProfile === null) {
+    setPlaylistRuns([]);
+    return;
+  }
+
+  const ownedRuns =
+    updatedRuns.filter(
+      (item) =>
+        item.profileId ===
+        activeProfile.profileId
+    );
+
+  setPlaylistRuns(ownedRuns);
+}
+
+  function startPlaylistRun(
+  playlist: SavedPlaylist
+): void {
+  if (
+    activeProfile === null ||
+    playlist.profileId !== activeProfile.profileId
+  ) {
+    return;
+  }
+
+  if (playlist.scenarioIds.length === 0) {
+    return;
+  }
+
+  const playlistScenarios =
+    playlist.scenarioIds.map((scenarioId) =>
+      scenarioTree
+        .flatMap(
+          (scenarioType) =>
+            scenarioType.branches
+        )
+        .flatMap(
+          (branch) =>
+            branch.scenarios
+        )
+        .find(
+          (scenario) =>
+            scenario.id === scenarioId
+        )
+    );
+
+  if (
+    playlistScenarios.some(
+      (scenario) =>
+        scenario === undefined ||
+        !scenario.selectCommand
+    )
+  ) {
+    return;
+  }
+
+  const playlistRun =
+    createPlaylistRun({
+      playlist,
+      mode,
+    });
+
+  const updatedRuns =
+  appendPlaylistRun(playlistRun);
+
+const ownedRuns =
+  updatedRuns.filter(
+    (run) =>
+      run.profileId ===
+      activeProfile.profileId
+  );
+
+setPlaylistRuns(ownedRuns);
+setActivePlaylistRun(playlistRun);
+
+  const firstScenario =
+    playlistScenarios[0];
+
+  if (
+    firstScenario === undefined ||
+    !firstScenario.selectCommand
+  ) {
+    return;
+  }
+
+  const cleanState: SimState = {
+  ...initialState(),
+  mode: playlistRun.mode,
+};
+
+const out = handleInput(
+  cleanState,
+  firstScenario.selectCommand
+);
+
+setState(out.state);
+
+setLog(
+  buildLogBlock(
+    buildScenarioPreview(
+      firstScenario,
+      playlistRun.mode
+    )
+  )
+);
+
+setAttemptStartedAt(null);
+setScenarioValidationReport(null);
+setProcedureHelpPinned(false);
+setShowMobileProcedureHelp(false);
+
+setShowSelector(false);
+setOpenScenarioTypeId(null);
+setOpenBranchId(null);
+
+setAppView("simulator");
+}
+
+function advancePlaylistRun(
+  run: PlaylistRun
+): void {
+  const advanceResult =
+    advancePlaylistRunRecord(
+      run,
+      new Date().toISOString()
+    );
+
+  if (
+    advanceResult.kind === "ignored"
+  ) {
+    return;
+  }
+
+  if (
+    advanceResult.kind === "completed"
+  ) {
+    persistPlaylistRun(
+      advanceResult.run
+    );
+
+    setActivePlaylistRun(
+      advanceResult.run
+    );
+
+    setAttemptStartedAt(null);
+    setAppView(
+      "playlist_run_summary"
+    );
+
+    return;
+  }
+
+  const updatedRun =
+    advanceResult.run;
+
+  const nextScenarioId =
+    advanceResult.nextScenarioId;
+
+  const nextScenario =
+    scenarioTree
+      .flatMap(
+        (scenarioType) =>
+          scenarioType.branches
+      )
+      .flatMap(
+        (branch) =>
+          branch.scenarios
+      )
+      .find(
+        (scenario) =>
+          scenario.id ===
+          nextScenarioId
+      );
+
+  if (
+    nextScenario === undefined ||
+    !nextScenario.selectCommand
+  ) {
+    return;
+  }
+
+  persistPlaylistRun(updatedRun);
+  setActivePlaylistRun(updatedRun);
+
+  const cleanState: SimState = {
+    ...initialState(),
+    mode: updatedRun.mode,
+  };
+
+  const selectedOut = handleInput(
+    cleanState,
+    nextScenario.selectCommand
+  );
+
+  const startedAt =
+    new Date().toISOString();
+
+  const startedOut = handleInput(
+    selectedOut.state,
+    "start"
+  );
+
+  setState(startedOut.state);
+
+  setLog(
+    buildLogBlock(
+      startedOut.message || ""
+    )
+  );
+
+  if (
+    startedOut.state.attempt !== null
+  ) {
+    setAttemptStartedAt(startedAt);
+  } else {
+    setAttemptStartedAt(null);
+  }
+
+  setScenarioValidationReport(null);
+  setProcedureHelpPinned(false);
+  setShowMobileProcedureHelp(false);
+
+  setShowSelector(false);
+  setOpenScenarioTypeId(null);
+  setOpenBranchId(null);
+
+  setAppView("simulator");
+}
+
+function abandonPlaylistRun(
+  attemptId?: string
+): void {
+  if (activePlaylistRun === null) {
+    return;
+  }
+
+  const abandonedRun =
+    abandonPlaylistRunRecord(
+      activePlaylistRun,
+      new Date().toISOString(),
+      attemptId
+    );
+
+  if (
+    abandonedRun === activePlaylistRun
+  ) {
+    return;
+  }
+
+  persistPlaylistRun(abandonedRun);
+  setActivePlaylistRun(null);
+}
 
   const activeScenarioId =
     state.scenario && isValidScenarioId(state.scenario)
@@ -313,12 +719,18 @@ const [scoringOutput, setScoringOutput] = useState("");
 
 const out = handleInput(state, trimmed);
 
+const lower = trimmed.toLowerCase();
+const isStart = lower === "start";
+const isQuit = lower === "quit";
+const isRestart = lower === "restart";
+
 const isAcceptedProcedure =
   out.decision.kind === "ALLOW" &&
   out.decision.plan.kind !== "ReadOnly" &&
   out.decision.plan.kind !== "StartNewAttempt" &&
   out.decision.plan.kind !== "SelectScenario" &&
-  out.decision.plan.kind !== "QuitAttemptToLobby";
+  out.decision.plan.kind !== "QuitAttemptToLobby" &&
+  out.decision.plan.kind !== "ViewScorecard";
 
 const expectedStepDuringHelp =
   procedureHelpPinned && state.mode === "practice"
@@ -333,7 +745,7 @@ if (isAcceptedProcedure) {
 const finalStepDuringHelp =
   procedureHelpPinned &&
   state.mode === "practice" &&
-  out.state.executionState === "COMPLETED" &&
+  out.state.executionState === "SCORECARD" &&
   out.decision.kind === "ALLOW" &&
   out.decision.plan.kind !== "ReadOnly"
     ? getPreviewStepLabel(
@@ -342,6 +754,168 @@ const finalStepDuringHelp =
           .toLowerCase()
       )
     : null;
+
+const commandTime = new Date().toISOString();
+
+let playlistRunToAdvance:
+  PlaylistRun | null = null;
+
+if (
+  out.state.executionState === "SCORECARD" &&
+  attemptStartedAt !== null
+) {
+  if (activeProfile !== null) {
+    const attemptRecord = createScenarioAttemptRecord(
+      out.state,
+      {
+        profileId: activeProfile.profileId,
+        startedAt: attemptStartedAt,
+        endedAt: commandTime,
+        endReason: "completed",
+      }
+    );
+
+    if (attemptRecord !== null) {
+  const updatedHistory =
+    appendAttemptRecord(attemptRecord);
+
+  const ownedHistory =
+    updatedHistory.filter(
+      (attempt) =>
+        attempt.profileId ===
+        activeProfile.profileId
+    );
+
+  setProfileHistory(ownedHistory);
+
+  if (
+  activePlaylistRun !== null &&
+  activePlaylistRun.status === "running"
+) {
+  const updatedPlaylistRun =
+  attachAttemptToPlaylistRun(
+    activePlaylistRun,
+    attemptRecord.attemptId
+  );
+
+  persistPlaylistRun(updatedPlaylistRun);
+setActivePlaylistRun(updatedPlaylistRun);
+
+playlistRunToAdvance =
+  updatedPlaylistRun;
+}
+}
+  }
+
+  setAttemptStartedAt(null);
+} else if (
+  isQuit &&
+  out.decision.kind === "ALLOW" &&
+  attemptStartedAt !== null
+) {
+  if (activeProfile !== null) {
+    const attemptRecord = createScenarioAttemptRecord(
+      state,
+      {
+        profileId: activeProfile.profileId,
+        startedAt: attemptStartedAt,
+        endedAt: commandTime,
+        endReason: "quit",
+      }
+    );
+
+    if (attemptRecord !== null) {
+  const updatedHistory =
+    appendAttemptRecord(attemptRecord);
+
+  const ownedHistory =
+    updatedHistory.filter(
+      (attempt) =>
+        attempt.profileId ===
+        activeProfile.profileId
+    );
+
+  setProfileHistory(ownedHistory);
+
+  if (
+    activePlaylistRun !== null &&
+    activePlaylistRun.status === "running"
+  ) {
+    abandonPlaylistRun(
+      attemptRecord.attemptId
+    );
+  }
+}
+  }
+
+  setAttemptStartedAt(null);
+} else if (
+  isRestart &&
+  out.decision.kind === "ALLOW"
+) {
+  if (
+    attemptStartedAt !== null &&
+    activeProfile !== null
+  ) {
+    const attemptRecord = createScenarioAttemptRecord(
+      state,
+      {
+        profileId: activeProfile.profileId,
+        startedAt: attemptStartedAt,
+        endedAt: commandTime,
+        endReason: "restart",
+      }
+    );
+
+    if (attemptRecord !== null) {
+  const updatedHistory =
+    appendAttemptRecord(attemptRecord);
+
+  const ownedHistory =
+    updatedHistory.filter(
+      (attempt) =>
+        attempt.profileId ===
+        activeProfile.profileId
+    );
+
+  setProfileHistory(ownedHistory);
+
+if (
+  activePlaylistRun !== null &&
+  activePlaylistRun.status === "running"
+) {
+  const updatedPlaylistRun =
+    attachAttemptToPlaylistRun(
+      activePlaylistRun,
+      attemptRecord.attemptId
+    );
+
+  persistPlaylistRun(updatedPlaylistRun);
+  setActivePlaylistRun(updatedPlaylistRun);
+}
+}
+  }
+
+  if (out.state.attempt !== null) {
+    setAttemptStartedAt(commandTime);
+  } else {
+    setAttemptStartedAt(null);
+  }
+} else if (
+  isStart &&
+  out.decision.kind === "ALLOW" &&
+  out.state.attempt !== null
+) {
+  setAttemptStartedAt(commandTime);
+}
+
+if (playlistRunToAdvance !== null) {
+  setInput("");
+  advancePlaylistRun(
+    playlistRunToAdvance
+  );
+  return;
+}
 
 setState({
   ...out.state,
@@ -355,16 +929,14 @@ setState({
 });
 
     setLog((prev) => {
-      const lower = trimmed.toLowerCase();
-
-const selectedScenario = scenarioTree
+      const selectedScenario = scenarioTree
   .flatMap((scenarioType) => scenarioType.branches)
   .flatMap((branch) => branch.scenarios)
   .find((scenario) => scenario.selectCommand === lower);
 
-const isStart = lower === "start";
-const isQuit = lower === "quit";
-const isRestart = lower === "restart";
+if (isStart || isQuit || isRestart) {
+  setScenarioValidationReport(null);
+}
 
 if (selectedScenario && out.decision.kind === "ALLOW") {
   return buildLogBlock(buildScenarioPreview(selectedScenario, mode));
@@ -374,7 +946,7 @@ if (selectedScenario && out.decision.kind === "ALLOW") {
         return [...buildLogBlock(out.message || "")]; 
       }
 
-      if (isQuit) {
+if (isQuit) {
   return [];
 }
 
@@ -382,9 +954,10 @@ if (selectedScenario && out.decision.kind === "ALLOW") {
         return [...buildLogBlock(out.message || "")];
       }
 
-const isCompleted = out.state.executionState === "COMPLETED";
+const isScorecard = out.state.executionState === "SCORECARD";
 
-if (isCompleted) {
+if (isScorecard) {
+
   const completedProcedure =
     mode === "practice" &&
     out.decision.kind === "ALLOW" &&
@@ -424,6 +997,29 @@ const previewScenarioDetails = scenarioTree
       scenario.id === state.previewScenario || scenario.id === state.scenario
   );
 
+function runCurrentScenarioValidation() {
+  if (!previewScenarioDetails) {
+    return;
+  }
+
+  const scenarioId = previewScenarioDetails.id;
+  const selectCommand = previewScenarioDetails.selectCommand;
+
+  if (
+    !isValidScenarioId(scenarioId) ||
+    !selectCommand
+  ) {
+    return;
+  }
+
+  const report = runScenarioValidation(
+    scenarioId,
+    selectCommand
+  );
+
+  setScenarioValidationReport(report);
+}
+
 const showState3Preview =
   state.executionState === "LOBBY" &&
   !showSelector &&
@@ -462,9 +1058,9 @@ const STATE4_TEXT = {
         boxSizing: "border-box",
       }}
     >
-<header
-  style={{
-    position: "fixed",
+       <header
+      style={{
+        position: "fixed",
     top: 0,
     left: 0,
     right: 0,
@@ -539,10 +1135,33 @@ const STATE4_TEXT = {
             justifyContent: "flex-end",
           }}
         >
-          {["History", "Profile", "Settings"].map((item) => (
-            <button
-              key={item}
-              type="button"
+          {activeProfile !== null && (
+  <button
+    type="button"
+    onClick={() => setAppView("profile")}
+    style={{
+      fontFamily: "monospace",
+      fontSize: "12px",
+      color: COLORS.assessment,
+      background: "transparent",
+      border: "none",
+      padding: "7px 4px",
+      cursor: "pointer",
+      fontWeight: 700,
+    }}
+  >
+    {activeProfile.displayName}
+  </button>
+)}
+          {["Profile", "Settings"].map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => {
+            if (item === "Profile") {
+              setAppView("profile");
+            }
+          }}
               style={{
                 fontFamily: "monospace",
                 fontSize: "12px",
@@ -557,9 +1176,326 @@ const STATE4_TEXT = {
               {item}
             </button>
           ))}
-        </nav>
+                </nav>
       </header>
 
+      {appView === "profile" && (
+  <ProfilePage
+    activeProfile={activeProfile}
+    metrics={profileMetrics}
+    history={profileHistory}
+    playlists={savedPlaylists}
+    onCreateProfile={() => setAppView("create_profile")}
+    onOpenHistory={() => setAppView("history")}
+    onOpenPlaylists={() => setAppView("playlists")}
+    onBackToSimulator={() => setAppView("simulator")}
+  />
+)}
+
+{appView === "playlists" && (
+  <PlaylistsPage
+    playlists={savedPlaylists}
+    onRunPlaylist={(playlistId) => {
+      const playlist =
+        savedPlaylists.find(
+          (item) =>
+            item.playlistId === playlistId
+        );
+
+      if (!playlist) {
+        return;
+      }
+
+      startPlaylistRun(playlist);
+    }}
+    onCreatePlaylist={() => {
+  setSelectedPlaylistId(null);
+  setPlaylistScenarioId(null);
+  setAppView("playlist_editor");
+}}
+    onOpenPlaylist={(playlistId) => {
+      setSelectedPlaylistId(playlistId);
+      setAppView("playlist_editor");
+    }}
+    onBackToProfile={() =>
+      setAppView("profile")
+    }
+  />
+)}
+
+{appView === "playlist_editor" && (
+  <PlaylistEditorPage
+  playlist={selectedPlaylist}
+  onRemoveScenario={(scenarioId) => {
+  if (
+    activeProfile === null ||
+    selectedPlaylist === null
+  ) {
+    return;
+  }
+
+  const updatedPlaylists =
+    removeScenarioFromSavedPlaylist(
+      selectedPlaylist.playlistId,
+      scenarioId
+    );
+
+  const ownedPlaylists =
+    updatedPlaylists.filter(
+      (playlist) =>
+        playlist.profileId ===
+        activeProfile.profileId
+    );
+
+  setSavedPlaylists(ownedPlaylists);
+}}
+    onMoveScenario={(scenarioId, direction) => {
+      if (
+        activeProfile === null ||
+        selectedPlaylist === null
+      ) {
+        return;
+      }
+
+      const updatedPlaylists =
+        moveScenarioInSavedPlaylist(
+          selectedPlaylist.playlistId,
+          scenarioId,
+          direction
+        );
+
+      const ownedPlaylists =
+        updatedPlaylists.filter(
+          (playlist) =>
+            playlist.profileId ===
+            activeProfile.profileId
+        );
+
+      setSavedPlaylists(ownedPlaylists);
+    }}
+
+    onAddScenario={() => {
+  if (selectedPlaylist === null) {
+    return;
+  }
+
+  const defaultScenarioType =
+    scenarioTree.find(
+      (scenarioType) =>
+        scenarioType.enabled
+    );
+
+  setPlaylistAddTargetId(
+    selectedPlaylist.playlistId
+  );
+
+  setAppView("simulator");
+  setShowSelector(true);
+
+  setOpenScenarioTypeId(
+    defaultScenarioType?.typeId ?? null
+  );
+
+  setOpenBranchId(
+    defaultScenarioType?.branches[0]?.tierId ??
+      null
+  );
+
+  setLog([
+    "Choose a scenario to add to the playlist",
+  ]);
+}}
+
+    onSave={(name) => {
+  if (activeProfile === null) {
+    return;
+  }
+
+  if (selectedPlaylist !== null) {
+    const updatedPlaylist =
+      updateSavedPlaylist(
+        selectedPlaylist,
+        {
+          name,
+          scenarioIds:
+            selectedPlaylist.scenarioIds,
+        }
+      );
+
+    const updatedPlaylists =
+      replaceSavedPlaylist(
+        updatedPlaylist
+      );
+
+    const ownedPlaylists =
+      updatedPlaylists.filter(
+        (item) =>
+          item.profileId ===
+          activeProfile.profileId
+      );
+
+    setSavedPlaylists(ownedPlaylists);
+    setSelectedPlaylistId(null);
+    setPlaylistScenarioId(null);
+    setAppView("playlists");
+    return;
+  }
+
+  const playlist =
+    createSavedPlaylist({
+      profileId:
+        activeProfile.profileId,
+      name,
+      scenarioIds:
+        playlistScenarioId === null
+          ? []
+          : [playlistScenarioId],
+    });
+
+  const updatedPlaylists =
+    appendSavedPlaylist(playlist);
+
+  const ownedPlaylists =
+    updatedPlaylists.filter(
+      (item) =>
+        item.profileId ===
+        activeProfile.profileId
+    );
+
+    setSavedPlaylists(ownedPlaylists);
+  setPlaylistScenarioId(null);
+  setAppView("playlists");
+}}
+
+onBackToPlaylists={() => {
+  setSelectedPlaylistId(null);
+  setPlaylistScenarioId(null);
+  setPlaylistAddTargetId(null);
+  setAppView("playlists");
+}}
+/>
+)}
+
+{appView === "playlist_run_summary" &&
+  activePlaylistRun !== null && (
+    <PlaylistRunSummaryPage
+      run={activePlaylistRun}
+      attempts={profileHistory}
+      onBackToPlaylists={() => {
+        setActivePlaylistRun(null);
+        setAppView("playlists");
+      }}
+    />
+)}
+
+{appView === "history" && (
+  <HistoryPage
+    history={profileHistory}
+    playlistRuns={playlistRuns}
+    onOpenAttempt={(attemptId) => {
+      setSelectedAttemptId(attemptId);
+      setAppView("attempt_detail");
+    }}
+    onOpenPlaylistRun={(playlistRunId) => {
+      setSelectedPlaylistRunId(
+        playlistRunId
+      );
+      setAppView(
+        "playlist_run_detail"
+      );
+    }}
+    onBackToProfile={() =>
+      setAppView("profile")
+    }
+  />
+)}
+
+{appView === "playlist_run_detail" &&
+  selectedPlaylistRun !== null && (
+    <PlaylistRunDetailPage
+      run={selectedPlaylistRun}
+      attempts={profileHistory}
+      onOpenAttempt={(attemptId) => {
+        setSelectedAttemptId(attemptId);
+        setAppView("attempt_detail");
+      }}
+      onBackToHistory={() => {
+        setSelectedPlaylistRunId(null);
+        setAppView("history");
+      }}
+    />
+)}
+
+{appView === "attempt_detail" &&
+  selectedAttempt !== null && (
+    <AttemptDetailPage
+      attempt={selectedAttempt}
+      onBackToHistory={() =>
+        setAppView("history")
+      }
+    />
+)}
+
+{appView === "create_profile" && (
+  <CreateProfilePage
+    onBack={() => setAppView("profile")}
+    onCreate={(profile) => {
+      saveActiveProfile(profile);
+      setActiveProfile(profile);
+      setAppView("profile");
+    }}
+  />
+)}
+
+      {appView === "simulator" && (
+        <>
+        {playlistScenario !== null && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 200,
+      display: "grid",
+      placeItems: "center",
+      padding: "20px",
+      background: "rgba(0, 0, 0, 0.68)",
+    }}
+  >
+    <PlaylistChooser
+  scenarioId={playlistScenario.id}
+  scenarioLabel={playlistScenario.label}
+  playlists={savedPlaylists}
+      onChoosePlaylist={(playlistId) => {
+        if (activeProfile === null) {
+          return;
+        }
+
+        const updatedPlaylists =
+          addScenarioToSavedPlaylist(
+            playlistId,
+            playlistScenario.id
+          );
+
+        const ownedPlaylists =
+          updatedPlaylists.filter(
+            (playlist) =>
+              playlist.profileId ===
+              activeProfile.profileId
+          );
+
+        setSavedPlaylists(ownedPlaylists);
+        setPlaylistScenarioId(null);
+      }}
+      onCreateNewPlaylist={() => {
+  setSelectedPlaylistId(null);
+  setAppView("playlist_editor");
+}}
+      onClose={() => {
+        setPlaylistScenarioId(null);
+      }}
+    />
+  </div>
+)}
       {/* ===== STATE BANNER (Box 2) ===== */}
       {state.executionState === "LOBBY" &&
       state.scenario === null &&
@@ -1219,67 +2155,137 @@ style={{
   .find((scenarioType) => scenarioType.typeId === openScenarioTypeId)
   ?.branches.find((branch) => branch.tierId === openBranchId)
   ?.scenarios.map((scenario) => (
-                    <button
-                      key={scenario.id}
-                      type="button"
-                      onClick={() => {
-                        const command = scenario.selectCommand;
+  <div
+    key={scenario.id}
+    style={{
+      display: "flex",
+      alignItems: "stretch",
+      gap: "8px",
+      marginBottom: SPACE.sm,
+    }}
+  >
+    <button
+      type="button"
+      onClick={() => {
+  if (
+    playlistAddTargetId !== null &&
+    activeProfile !== null
+  ) {
+    const updatedPlaylists =
+      addScenarioToSavedPlaylist(
+        playlistAddTargetId,
+        scenario.id
+      );
 
-                        if (!command) return;
+    const ownedPlaylists =
+      updatedPlaylists.filter(
+        (playlist) =>
+          playlist.profileId ===
+          activeProfile.profileId
+      );
 
-                        const out = handleInput(state, command);
+    setSavedPlaylists(ownedPlaylists);
 
-                        setState(out.state);
-                        setLog(buildLogBlock(buildScenarioPreview(scenario, mode)));
-                        setShowSelector(false);
-                        setOpenScenarioTypeId(null);
-                        setOpenBranchId(null);
-                      }}
-                      style={{
-                        width: "100%",
-                        display: "block",
-                        textAlign: "left",
-                        marginBottom: SPACE.sm,
-                        padding: "14px 16px",
-                        fontFamily: "monospace",
-                        color: "#f5f7fb",
-                        background: "rgba(255, 255, 255, 0.03)",
-                        border: "1px solid #2a2a2a",
-                        borderRadius: "10px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: "15px",
-                          fontWeight: 700,
-                          marginBottom: "6px",
-                        }}
-                      >
-                        {scenario.label}
-                      </div>
+    setPlaylistAddTargetId(null);
+    setShowSelector(false);
+    setOpenScenarioTypeId(null);
+    setOpenBranchId(null);
+    setLog([]);
 
-                      <div
-                        style={{
-                          fontSize: "12px",
-                          color: "#9aa4b2",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        {scenario.level} • {scenario.estimatedTime}
-                      </div>
+    setAppView("playlist_editor");
+    return;
+  }
 
-                      <div
-                        style={{
-                          fontSize: "12px",
-                          color: "#c5cad3",
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {scenario.description}
-                      </div>
-                    </button>
-                  ))
+  const command = scenario.selectCommand;
+
+  if (!command) return;
+
+  const out = handleInput(state, command);
+
+  setState(out.state);
+  setLog(
+    buildLogBlock(
+      buildScenarioPreview(scenario, mode)
+    )
+  );
+  setScenarioValidationReport(null);
+  setShowSelector(false);
+  setOpenScenarioTypeId(null);
+  setOpenBranchId(null);
+}}
+      style={{
+        flex: 1,
+        display: "block",
+        textAlign: "left",
+        padding: "14px 16px",
+        fontFamily: "monospace",
+        color: "#f5f7fb",
+        background: "rgba(255, 255, 255, 0.03)",
+        border: "1px solid #2a2a2a",
+        borderRadius: "10px",
+        cursor: "pointer",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "15px",
+          fontWeight: 700,
+          marginBottom: "6px",
+        }}
+      >
+        {scenario.label}
+      </div>
+
+      <div
+        style={{
+          fontSize: "12px",
+          color: "#9aa4b2",
+          marginBottom: "6px",
+        }}
+      >
+        {scenario.level} • {scenario.estimatedTime}
+      </div>
+
+      <div
+        style={{
+          fontSize: "12px",
+          color: "#c5cad3",
+          lineHeight: 1.5,
+        }}
+      >
+        {scenario.description}
+      </div>
+    </button>
+
+    {activeProfile !== null &&
+  playlistAddTargetId === null && (
+      <button
+        type="button"
+        title="Save to playlist"
+        aria-label={`Save ${scenario.label} to playlist`}
+        onClick={() => {
+          setPlaylistScenarioId(scenario.id);
+        }}
+        style={{
+          width: "44px",
+          flex: "0 0 44px",
+          display: "grid",
+          placeItems: "center",
+          fontFamily: "monospace",
+          fontSize: "22px",
+          fontWeight: 700,
+          color: "#a78bfa",
+          background: "rgba(109, 74, 255, 0.08)",
+          border: "1px solid #2a2a2a",
+          borderRadius: "10px",
+          cursor: "pointer",
+        }}
+      >
+        +
+      </button>
+    )}
+  </div>
+))
               )}
             </div>
           </div>
@@ -1330,6 +2336,7 @@ style={{
     (scenarioType) => scenarioType.enabled
   );
 
+  setScenarioValidationReport(null);
   setShowSelector(true);
   setOpenScenarioTypeId(defaultScenarioType?.typeId ?? null);
   setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
@@ -1544,14 +2551,16 @@ style={{
         
             Next step: type <strong>'start'</strong> to begin.
           </div>
-          <div
+         <div
   style={{
     marginTop: "12px",
     display: "flex",
+    flexDirection: isMobile ? "column" : "row",
     gap: "8px",
   }}
 >
   <input
+    ref={commandInputRef}
     value={input}
     onChange={(e) => setInput(e.target.value)}
     onKeyDown={(e) => {
@@ -1573,6 +2582,7 @@ style={{
   />
 
   <button
+    type="button"
     onClick={runCommand}
     style={{
       fontFamily: "monospace",
@@ -1584,9 +2594,126 @@ style={{
       cursor: "pointer",
     }}
   >
-    Enter
+    Start
+  </button>
+
+  <button
+    type="button"
+    onClick={runCurrentScenarioValidation}
+    style={{
+      fontFamily: "monospace",
+      padding: "10px 16px",
+      border: `1px solid ${COLORS.successDark}`,
+      borderRadius: "8px",
+      background: "rgba(22, 163, 74, 0.18)",
+      color: COLORS.text,
+      cursor: "pointer",
+    }}
+  >
+    Run Combined Test
   </button>
 </div>
+{scenarioValidationReport && (
+  <section
+    style={{
+      marginTop: "14px",
+      padding: "16px",
+      border:
+        scenarioValidationReport.status === "PASS"
+          ? `1px solid ${COLORS.successDark}`
+          : "1px solid #b91c1c",
+      borderRadius: RADIUS.card,
+      background:
+        scenarioValidationReport.status === "PASS"
+          ? "rgba(22, 163, 74, 0.08)"
+          : "rgba(185, 28, 28, 0.08)",
+    }}
+  >
+    <h3
+      style={{
+        margin: `0 0 ${SPACE.md}`,
+        color:
+          scenarioValidationReport.status === "PASS"
+            ? COLORS.success
+            : "#f87171",
+        fontSize: STATE3_TEXT.heading,
+      }}
+    >
+      Combined Test: {scenarioValidationReport.status}
+    </h3>
+
+    {scenarioValidationReport.status === "PASS" ? (
+      <div
+        style={{
+          color: COLORS.body,
+          fontSize: STATE3_TEXT.body,
+          lineHeight: STATE3_TEXT.lineHeight,
+        }}
+      >
+        <div>
+          <strong>Steps matched:</strong>{" "}
+          {scenarioValidationReport.matchedSteps}/
+          {scenarioValidationReport.totalSteps}
+        </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>Expected ALLOW:</strong>{" "}
+          {scenarioValidationReport.expectedAllows}
+        </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>Expected DENY:</strong>{" "}
+          {scenarioValidationReport.expectedDenies}
+        </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>Final completion:</strong>{" "}
+          {scenarioValidationReport.finalCompletion ?? "None"}
+        </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>Final score:</strong>{" "}
+          {scenarioValidationReport.finalScore === null
+            ? "None"
+            : `${scenarioValidationReport.finalScore}/10`}
+        </div>
+      </div>
+    ) : (
+      <div
+        style={{
+          color: COLORS.body,
+          fontSize: STATE3_TEXT.body,
+          lineHeight: STATE3_TEXT.lineHeight,
+        }}
+      >
+        <div>
+          <strong>Failed step:</strong>{" "}
+          {scenarioValidationReport.failure?.stepNumber ?? "Unknown"}
+        </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>Phase:</strong>{" "}
+          {scenarioValidationReport.failure?.phase ?? "Unknown"}
+        </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>Input:</strong>{" "}
+          {scenarioValidationReport.failure?.input ?? "Unknown"}
+        </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>Expected:</strong>{" "}
+          {scenarioValidationReport.failure?.expected ?? "Unknown"}
+        </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>Actual:</strong>{" "}
+          {scenarioValidationReport.failure?.actual ?? "Unknown"}
+        </div>
+      </div>
+    )}
+  </section>
+)}
                 </section>
       )}
       {state.executionState === "RUNNING" &&
@@ -1772,6 +2899,7 @@ style={{
   }}
 >
 <div
+  ref={conversationRef}
   style={{
     maxHeight: isMobile ? "none" : "320px",
     overflowY: isMobile ? "visible" : "auto",
@@ -1935,6 +3063,7 @@ onClick={() => {
   }}
 >
       <input
+        ref={commandInputRef}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => {
@@ -1979,6 +3108,75 @@ style={{
   Type a procedure you believe is the best next step.
 </div>
     </section>
+)}
+{state.executionState === "SCORECARD" && (
+  <section
+    style={{
+      ...CARD.base,
+      marginBottom: SPACE.md,
+      padding: isMobile ? SPACE.md : SPACE.lg,
+    }}
+  >
+    <h2
+      style={{
+        margin: `0 0 ${SPACE.md}`,
+        color: COLORS.success,
+        fontSize: STATE4_TEXT.title,
+        lineHeight: 1.25,
+      }}
+    >
+      Scenario Passed
+    </h2>
+
+    <div
+      ref={conversationRef}
+      style={{
+        maxHeight: isMobile ? "none" : "420px",
+        overflowY: isMobile ? "visible" : "auto",
+        marginBottom: SPACE.lg,
+        padding: SPACE.md,
+        border: `1px solid ${COLORS.border}`,
+        borderRadius: RADIUS.button,
+        background: COLORS.panelSoft,
+      }}
+    >
+      <div
+        style={{
+          whiteSpace: "pre-wrap",
+          color: COLORS.body,
+          fontSize: STATE4_TEXT.detail,
+          lineHeight: STATE4_TEXT.lineHeight,
+        }}
+      >
+        {log.map((line, index) =>
+          line === "" ? (
+            <div key={index} style={{ height: "10px" }} />
+          ) : (
+            <div key={index} style={{ marginBottom: "4px" }}>
+              {line}
+            </div>
+          )
+        )}
+      </div>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => {
+        const out = handleInput(state, "view_scorecard");
+
+        setState(out.state);
+        setProcedureHelpPinned(false);
+        setShowMobileProcedureHelp(false);
+      }}
+      style={{
+        ...BUTTON.primary,
+        width: isMobile ? "100%" : "auto",
+      }}
+    >
+      Go to Scorecard
+    </button>
+  </section>
 )}
 {state.executionState === "COMPLETED" && (
 <section
@@ -2317,36 +3515,45 @@ style={{
         Retry Scenario
       </button>
 
-      <button
-        type="button"
-        onClick={() => {
-          setShowSelector(true);
-          setLog(["Select a scenario to begin"]);
-          setProcedureHelpPinned(false);
-          setShowMobileProcedureHelp(false);
-        }}
-        style={BUTTON.primary}
-      >
-        Choose Another Scenario
-      </button>
+<button
+  type="button"
+  onClick={() => {
+    setShowSelector(true);
+    setLog([
+      "Select a scenario to begin",
+    ]);
+    setProcedureHelpPinned(false);
+    setShowMobileProcedureHelp(false);
+  }}
+  style={BUTTON.primary}
+>
+  Choose Another Scenario
+</button>
 
       <button
-        type="button"
-        onClick={() => {
-          const out = handleInput(state, "quit");
+  type="button"
+  onClick={() => {
+    if (
+      activePlaylistRun !== null &&
+      activePlaylistRun.status === "running"
+    ) {
+      abandonPlaylistRun();
+    }
 
-          setState(out.state);
-          setLog([]);
-          setShowSelector(false);
-          setOpenScenarioTypeId(null);
-          setOpenBranchId(null);
-          setProcedureHelpPinned(false);
-          setShowMobileProcedureHelp(false);
-        }}
-          style={BUTTON.secondary}
-      >
-        Return Home
-      </button>
+    const out = handleInput(state, "quit");
+
+    setState(out.state);
+    setLog([]);
+    setShowSelector(false);
+    setOpenScenarioTypeId(null);
+    setOpenBranchId(null);
+    setProcedureHelpPinned(false);
+    setShowMobileProcedureHelp(false);
+  }}
+  style={BUTTON.secondary}
+>
+  Return Home
+</button>
     </section>
     <section
   style={{
@@ -2366,87 +3573,6 @@ style={{
     Debug Console
   </div>
 
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: SPACE.sm,
-    }}
-  >
-    <input
-      value={scoringInput}
-      onChange={(e) => setScoringInput(e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          const command = scoringInput.trim().toLowerCase();
-
-          if (command === "debug") {
-            setScoringOutput(
-              JSON.stringify(
-                {
-                  executionState: state.executionState,
-                  scenario: state.scenario,
-                  mode: state.mode,
-                  score: reportMeasurements.score,
-                  mistakes: reportMeasurements.mistakeCount,
-                  runLog: state.runLog,
-                },
-                null,
-                2
-              )
-            );
-
-            setScoringInput("");
-          }
-        }
-      }}
-      placeholder="type debug"
-      style={{
-        width: "180px",
-        padding: "6px 10px",
-        fontFamily: "monospace",
-        fontSize: TEXT.label,
-        background: "transparent",
-        color: COLORS.body,
-        border: `1px solid ${COLORS.border}`,
-        borderRadius: RADIUS.button,
-      }}
-    />
-
-    <button
-      type="button"
-      onClick={() => {
-        const command = scoringInput.trim().toLowerCase();
-
-        if (command === "debug") {
-          setScoringOutput(
-            JSON.stringify(
-              {
-                executionState: state.executionState,
-                scenario: state.scenario,
-                mode: state.mode,
-                score: reportMeasurements.score,
-                mistakes: reportMeasurements.mistakeCount,
-                runLog: state.runLog,
-              },
-              null,
-              2
-            )
-          );
-
-          setScoringInput("");
-        }
-      }}
-      style={{
-        ...BUTTON.secondary,
-        padding: "6px 10px",
-        fontSize: TEXT.label,
-      }}
-    >
-      Enter
-    </button>
-  </div>
-
   <pre
     style={{
       marginTop: SPACE.md,
@@ -2463,7 +3589,7 @@ style={{
       background: COLORS.panelSoft,
     }}
   >
-    {scoringOutput || "Debug output will appear here."}
+    {scoringOutput}
   </pre>
 </section>
   </div>
@@ -2481,7 +3607,10 @@ style={{
     
   </div>
 
-</div>
+    </div>
+
+        </>
+      )}
 
   </div>
 );

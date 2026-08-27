@@ -318,6 +318,114 @@ previewMetadata: {
 },
 },
 
+account_lockout_saved_credentials: {
+  label: "Account Lockout — Saved Credentials Keep Relocking Account",
+  startPrompt: `Customer: My account keeps getting locked. IT already unlocked it once today, but it locked again.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "account_access",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before making account access changes.",
+    },
+    {
+      command: "request_unlock",
+      preview:
+        "Request an account unlock after confirming the user is authorized.",
+    },
+    {
+      command: "confirm_unlock",
+      preview:
+        "Confirm the account has been unlocked.",
+    },
+    {
+      command: "test_sign_in",
+      preview:
+        "Test sign-in to verify whether the issue has actually been resolved.",
+    },
+    {
+      command: "review_failed_authentication_attempts",
+      preview:
+        "Review failed authentication attempts to identify what is repeatedly locking the account.",
+    },
+    {
+      command: "update_saved_credentials",
+      preview:
+        "Update the outdated saved credentials causing repeated account lockouts.",
+    },
+    {
+      command: "request_unlock",
+      preview:
+        "Unlock the account again after correcting the underlying cause.",
+    },
+    {
+      command: "confirm_unlock",
+      preview:
+        "Confirm the account unlock completed successfully.",
+    },
+    {
+      command: "test_sign_in",
+      preview:
+        "Verify the customer can now sign in without the account locking again.",
+    },
+  ],
+
+  completion: {
+    command: "test_sign_in",
+    fact: "can_login_now",
+  },
+
+  proofLines: [
+    "Verified account ownership before modifying account access",
+    "Confirmed the account repeatedly relocked after the initial unlock",
+    "Reviewed failed authentication attempts to locate the source",
+    "Updated the outdated saved credentials causing repeated lockouts",
+    "Unlocked the account after correcting the dependency",
+    "Verified successful sign-in without additional lockouts",
+  ],
+
+  successLines: [
+    "Agent: The repeated account lockout has been resolved and sign-in has been verified.",
+    "System: The outdated saved credentials were updated before the account was unlocked again.",
+    "Customer: Great, it's finally staying signed in now.",
+  ],
+
+  defaults: {
+    kind: "account_lockout_saved_credentials",
+    identity_verified: false,
+    account_locked: true,
+    unlock_requested: false,
+    first_sign_in_attempted: false,
+    repeated_authentication_attempts_reviewed: false,
+    saved_credentials_updated: false,
+    account_unlocked_after_fix: false,
+    can_login_now: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Resolve an account that repeatedly locks because another device is using outdated saved credentials.",
+    skillFocus: [
+      "Account Lockout",
+      "Authentication Troubleshooting",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "A user can be unlocked temporarily, but another device immediately locks the account again using an outdated password.",
+    successOutcome:
+      "The source of the repeated authentication failures is corrected and the account remains accessible.",
+    selectCommand:
+      "select account lockout saved credentials",
+  },
+},
+
 password_reset_recovery_email_outdated: {
   label: "Password Reset — Recovery Email Outdated",
   startPrompt: `Customer: I forgot my password, but I don't have access to my recovery email anymore.
@@ -509,11 +617,6 @@ What is your first troubleshooting step?`,
           "Check whether VPN access is assigned to the user account.",
       },
       {
-        command: "enable_vpn_access",
-        preview:
-          "Enable VPN access so the user is allowed to connect remotely.",
-      },
-      {
         command: "check_mfa_status",
         preview:
           "Check whether MFA is configured for the user before VPN sign-in can complete.",
@@ -553,7 +656,7 @@ What is your first troubleshooting step?`,
       kind: "vpn_mfa_dependency_missing",
       identity_verified: false,
       vpn_access_checked: false,
-      vpn_access_enabled: false,
+      vpn_access_enabled: true,
       mfa_status_checked: false,
       mfa_method_reset: false,
       can_connect_now: false,
@@ -897,14 +1000,107 @@ What is your first troubleshooting step?`,
         "Client Connectivity",
         "Operational Verification",
       ],
-      scenarioContext:
-        "A user reports that emails remain in the Outbox and never send.",
+scenarioContext:
+  "A user cannot send outgoing email because the email client is currently offline.",
       successOutcome:
         "Outgoing email is restored and verified with a successful test message.",
       selectCommand:
         "select email not sending",
     },
   },
+
+  email_not_sending_outbox: {
+  label: "Email Not Sending — Stuck in Outbox",
+
+  startPrompt: `Customer: My email is stuck in the Outbox and will not send.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "email",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting the mailbox account.",
+    },
+    {
+      command: "check_email_status",
+      preview:
+        "Check the email client status to confirm the client is online and available.",
+    },
+    {
+      command: "send_test_email",
+      preview:
+        "Send a test email to reproduce the outgoing email problem.",
+    },
+    {
+      command: "check_outbox",
+      preview:
+        "Check the Outbox to identify the message preventing outgoing email from completing.",
+    },
+    {
+      command: "send_stuck_outbox_email",
+      preview:
+        "Release and resend the stuck Outbox message.",
+    },
+    {
+      command: "send_test_email",
+      preview:
+        "Send another test email to confirm outgoing email is working normally.",
+    },
+  ],
+
+  completion: {
+    command: "send_test_email",
+    fact: "can_send_email",
+  },
+
+  proofLines: [
+    "Verified the user before troubleshooting outgoing email",
+    "Confirmed the email client was online and available",
+    "Reproduced the outgoing email failure with a test message",
+    "Checked the Outbox and identified a stuck message",
+    "Released and resent the stuck Outbox message",
+    "Verified outgoing email with a successful final test message",
+  ],
+
+  successLines: [
+    "Agent: The stuck Outbox message has been released and outgoing email has been verified.",
+    "System: Messages can now leave the Outbox and send successfully.",
+    "Customer: Great, my email is sending now.",
+  ],
+
+  defaults: {
+    kind: "email_not_sending_outbox",
+    identity_verified: false,
+    email_status_checked: false,
+    first_send_test_completed: false,
+    outbox_checked: false,
+    stuck_outbox_email_sent: false,
+    can_send_email: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "3–5 min",
+    description:
+      "Restore outgoing email by identifying and releasing a message stuck in the Outbox.",
+    skillFocus: [
+      "Email Troubleshooting",
+      "Outbox Management",
+      "Problem Reproduction",
+      "Operational Verification",
+    ],
+    scenarioContext:
+      "The email client is online, but a message remains stuck in the Outbox and prevents outgoing email from completing normally.",
+    successOutcome:
+      "The stuck message is released and outgoing email is verified with a successful test message.",
+    selectCommand:
+      "select email not sending outbox",
+  },
+},
 
 not_receiving_email: {
   label: "Not Receiving Email",
@@ -915,26 +1111,26 @@ What is your first troubleshooting step?`,
   scenarioType: "standard",
   category: "email",
 
-    procedure: [
+        procedure: [
       {
         command: "verify_identity",
         preview:
           "Verify the user's identity before troubleshooting the mailbox.",
       },
       {
-        command: "check_inbox_filters",
+        command: "check_sync_settings",
         preview:
-          "Check inbox filters to see if incoming email is being redirected.",
+          "Check the mailbox sync status to determine why new email is not updating.",
       },
       {
-        command: "disable_inbox_filter",
+        command: "resync_email_client",
         preview:
-          "Disable the blocking filter so incoming emails reach the inbox.",
+          "Sync the email client to restore incoming message updates.",
       },
       {
         command: "send_test_email",
         preview:
-          "Send a test email to confirm incoming delivery works.",
+          "Send a test email to confirm incoming mail is received.",
       },
     ],
 
@@ -943,11 +1139,11 @@ What is your first troubleshooting step?`,
       fact: "can_receive_email",
     },
 
-    proofLines: [
-      "Verified the user before making email configuration changes",
-      "Investigated incoming email delivery behavior",
-      "Resolved the condition preventing email delivery",
-      "Confirmed email receipt with a successful test message",
+        proofLines: [
+      "Verified the user before troubleshooting the mailbox",
+      "Checked mailbox synchronization status",
+      "Resynchronized the email client",
+      "Confirmed incoming email delivery with a successful test message",
     ],
 
     successLines: [
@@ -959,8 +1155,8 @@ What is your first troubleshooting step?`,
 defaults: {
   kind: "not_receiving_email",
   identity_verified: false,
-  filters_checked: false,
-  filter_disabled: false,
+  sync_settings_checked: false,
+  email_client_resynced: false,
   can_receive_email: false,
 },
 
@@ -968,16 +1164,16 @@ previewMetadata: {
   level: "Beginner",
   estimatedTime: "3–5 min",
   description:
-    "Restore incoming email by correcting mailbox filtering.",
+  "Restore incoming email by checking and resynchronizing the mailbox.",
   skillFocus: [
-    "Email Troubleshooting",
-    "Inbox Management",
-    "Operational Verification",
-  ],
+  "Email Troubleshooting",
+  "Mailbox Synchronization",
+  "Operational Verification",
+],
   scenarioContext:
-    "A user reports that new email is no longer arriving in the inbox.",
+  "A user reports that new email is no longer updating in their mailbox.",
   successOutcome:
-    "Incoming email delivery is restored and verified with a successful test message.",
+  "Mailbox synchronization is restored and incoming email delivery is verified.",
   selectCommand:
     "select not receiving email",
 },
@@ -992,16 +1188,31 @@ What is your first troubleshooting step?`,
   scenarioType: "operational_challenges",
   category: "email",
 
-  procedure: [
+    procedure: [
     {
       command: "verify_identity",
       preview:
         "Verify the user's identity before troubleshooting the mailbox.",
     },
     {
+      command: "check_sync_settings",
+      preview:
+        "Check the mailbox sync status to confirm the client is updating normally.",
+    },
+    {
+      command: "resync_email_client",
+      preview:
+        "Sync the email client to refresh incoming message updates.",
+    },
+    {
+      command: "send_test_email",
+      preview:
+        "Send a test email to verify whether incoming delivery has been restored.",
+    },
+    {
       command: "check_inbox_filters",
       preview:
-        "Check inbox rules or filters to see if incoming email is being redirected.",
+        "Review inbox rules and filters after normal mailbox synchronization does not restore delivery.",
     },
     {
       command: "disable_inbox_filter",
@@ -1011,7 +1222,7 @@ What is your first troubleshooting step?`,
     {
       command: "send_test_email",
       preview:
-        "Send a test email to confirm incoming delivery reaches the inbox.",
+        "Send another test email to confirm incoming delivery reaches the inbox.",
     },
   ],
 
@@ -1020,12 +1231,14 @@ What is your first troubleshooting step?`,
     fact: "can_receive_email",
   },
 
-  proofLines: [
-    "Verified the user before making mailbox changes",
-    "Checked inbox rules and filters before changing mail delivery settings",
-    "Identified that an inbox rule was redirecting incoming mail",
+    proofLines: [
+    "Verified the user before troubleshooting the mailbox",
+    "Confirmed mailbox synchronization settings were checked",
+    "Resynchronized the email client before investigating deeper causes",
+    "Verified incoming email still did not appear after normal synchronization",
+    "Reviewed inbox rules and identified a redirecting rule",
     "Disabled the redirecting inbox rule",
-    "Confirmed incoming email reached the inbox with a test message",
+    "Confirmed incoming email reached the inbox with a successful final test message",
   ],
 
   successLines: [
@@ -1034,28 +1247,33 @@ What is your first troubleshooting step?`,
     "Customer: Great, I can see the email now.",
   ],
 
-  defaults: {
+    defaults: {
     kind: "not_receiving_email_inbox_rule_redirecting",
     identity_verified: false,
+    sync_settings_checked: false,
+    email_client_resynced: false,
+    first_receive_test_completed: false,
     inbox_filter_checked: false,
     inbox_filter_enabled: true,
     filter_disabled: false,
     can_receive_email: false,
   },
-    previewMetadata: {
+
+      previewMetadata: {
     level: "Beginner",
     estimatedTime: "5–7 min",
     description:
-      "Resolve an email delivery issue caused by an inbox rule redirecting incoming mail.",
+      "Resolve an incoming email issue when normal mailbox synchronization does not restore delivery.",
     skillFocus: [
       "Email Troubleshooting",
+      "Mailbox Synchronization",
       "Inbox Rules",
       "Dependency Awareness",
     ],
     scenarioContext:
-      "A user reports that important incoming emails never appear in their inbox.",
+      "A user reports that incoming email is missing even after normal mailbox synchronization is refreshed.",
     successOutcome:
-      "The redirecting inbox rule is removed and incoming email delivery is verified.",
+      "A redirecting inbox rule is identified and disabled after normal synchronization troubleshooting fails.",
     selectCommand:
       "select not_receiving_email_inbox_rule_redirecting",
   },
@@ -1304,6 +1522,99 @@ What is your first troubleshooting step?`,
         "select email login issue",
     },
   },
+
+  email_login_cached_credentials: {
+  label: "Email Login — Cached Credentials",
+
+  startPrompt: `Customer: I changed my password recently, but the email application still will not let me sign in.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "email",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting email authentication.",
+    },
+    {
+      command: "check_email_login_status",
+      preview:
+        "Check the email login status to confirm the account is active but the email client cannot authenticate.",
+    },
+    {
+      command: "test_email_login",
+      preview:
+        "Test email login to reproduce the authentication failure before making changes.",
+    },
+    {
+      command: "check_saved_email_credentials",
+      preview:
+        "Check the saved email credentials to determine whether the client is using an outdated password.",
+    },
+    {
+      command: "update_saved_email_credentials",
+      preview:
+        "Update the saved email credentials with the user's current password.",
+    },
+    {
+      command: "test_email_login",
+      preview:
+        "Test email login again to confirm authentication works with the corrected saved credentials.",
+    },
+  ],
+
+  completion: {
+    command: "test_email_login",
+    fact: "email_login_working",
+  },
+
+  proofLines: [
+    "Verified the user before troubleshooting email authentication",
+    "Confirmed the account was active but email authentication was failing",
+    "Reproduced the email login failure before making changes",
+    "Identified an outdated password stored in the email client",
+    "Updated the saved email credentials with the current password",
+    "Verified successful email login after correcting the saved credentials",
+  ],
+
+  successLines: [
+    "Agent: The outdated saved email credentials have been corrected and sign-in has been verified.",
+    "System: The email application can now authenticate successfully using the current password.",
+    "Customer: Great, I can access my email again.",
+  ],
+
+  defaults: {
+    kind: "email_login_cached_credentials",
+    identity_verified: false,
+    email_login_checked: false,
+    first_email_login_tested: false,
+    saved_email_credentials_checked: false,
+    saved_email_credentials_updated: false,
+    email_login_working: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Restore email access when the client is using an outdated saved password.",
+    skillFocus: [
+      "Email Authentication",
+      "Credential Management",
+      "Problem Reproduction",
+      "Operational Verification",
+    ],
+    scenarioContext:
+      "A user changed their password, but the email application continues submitting an outdated locally saved password.",
+    successOutcome:
+      "The outdated saved credentials are identified, updated, and successful email login is verified.",
+    selectCommand:
+      "select email login cached credentials",
+  },
+},
 
 email_client_not_syncing: {
   label: "Email Client Not Syncing",
@@ -1717,6 +2028,280 @@ What is your first troubleshooting step?`,
 },
 },
 
+shared_mailbox_automapping_missing: {
+  label: "Shared Mailbox — Auto-Mapping Missing",
+
+  startPrompt: `Customer: I was given access to the Finance shared mailbox, but it still does not appear automatically in Outlook.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "email",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting shared mailbox access.",
+    },
+    {
+      command: "check_shared_mailbox_membership",
+      preview:
+        "Check the user's shared mailbox membership to confirm Full Access is already assigned.",
+    },
+    {
+      command: "test_shared_mailbox_access",
+      preview:
+        "Test shared mailbox access to confirm the mailbox still does not appear automatically.",
+    },
+    {
+      command: "check_shared_mailbox_automapping",
+      preview:
+        "Check whether auto-mapping is enabled for the user's shared mailbox permission.",
+    },
+    {
+      command: "enable_shared_mailbox_automapping",
+      preview:
+        "Enable auto-mapping so Outlook can discover and load the shared mailbox automatically.",
+    },
+    {
+      command: "restart_application",
+      preview:
+        "Restart Outlook so the corrected auto-mapping configuration can be discovered.",
+    },
+    {
+      command: "test_shared_mailbox_access",
+      preview:
+        "Test shared mailbox access again to confirm the mailbox appears automatically and opens normally.",
+    },
+  ],
+
+  completion: {
+    command: "test_shared_mailbox_access",
+    fact: "shared_mailbox_working",
+  },
+
+  proofLines: [
+    "Verified the user before troubleshooting shared mailbox access",
+    "Confirmed the user already had the required shared mailbox permission",
+    "Verified the mailbox still did not appear automatically in Outlook",
+    "Identified that shared mailbox auto-mapping was disabled",
+    "Enabled auto-mapping for the shared mailbox permission",
+    "Restarted Outlook after correcting the auto-mapping configuration",
+    "Confirmed the shared mailbox appeared automatically and opened successfully",
+  ],
+
+  successLines: [
+    "Agent: Shared mailbox auto-mapping has been enabled and access has been verified.",
+    "System: Outlook discovered the Finance shared mailbox automatically after the auto-mapping configuration was corrected.",
+    "Customer: Great, the Finance mailbox is showing up now.",
+  ],
+
+  defaults: {
+    kind: "shared_mailbox_automapping_missing",
+    identity_verified: false,
+    shared_mailbox_membership_checked: false,
+    shared_mailbox_access_tested: false,
+    shared_mailbox_automapping_checked: false,
+    shared_mailbox_automapping_enabled: false,
+    application_restarted: false,
+    shared_mailbox_working: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Restore automatic shared mailbox visibility by correcting a disabled auto-mapping configuration.",
+    skillFocus: [
+      "Shared Mailbox Access",
+      "Auto-Mapping",
+      "Outlook Configuration",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "A user already has Full Access to the Finance shared mailbox, but it does not appear automatically in Outlook because auto-mapping is disabled.",
+    successOutcome:
+      "Auto-mapping is enabled, Outlook is restarted, and the shared mailbox appears automatically and opens successfully.",
+    selectCommand:
+      "select shared mailbox automapping missing",
+  },
+},
+
+email_application_will_not_open: {
+  label: "Email Application Will Not Open",
+  startPrompt: `Customer: I can't get my email application to open. Every time I click it, nothing happens.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "email",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting the email application.",
+    },
+    {
+      command: "check_app_status",
+      preview:
+        "Check the email application status to confirm it is not launching.",
+    },
+    {
+      command: "restart_application",
+      preview:
+        "Restart the email application to recover the unresponsive process.",
+    },
+    {
+      command: "test_application_launch",
+      preview:
+        "Test the email application launch to confirm it opens successfully.",
+    },
+  ],
+
+  completion: {
+    command: "test_application_launch",
+    fact: "application_working",
+  },
+
+  proofLines: [
+    "Verified the user before troubleshooting the email application",
+    "Confirmed the email application was unable to launch",
+    "Restarted the unresponsive email application",
+    "Validated successful email application launch",
+  ],
+
+  successLines: [
+    "Agent: The email application has been restarted and access has been verified.",
+    "System: The email application launches successfully.",
+    "Customer: Great, I can access my email now.",
+  ],
+
+  defaults: {
+    kind: "email_application_will_not_open",
+    identity_verified: false,
+    app_status_checked: false,
+    application_restarted: false,
+    application_working: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "3–5 min",
+    description:
+      "Restart an unresponsive email application and confirm it opens normally.",
+    skillFocus: [
+      "Email Application Troubleshooting",
+      "Basic Software Recovery",
+      "Operational Verification",
+    ],
+    scenarioContext:
+      "A customer reports that their workplace email application does not respond when launched.",
+    successOutcome:
+      "The email application launches successfully and the customer regains access to email.",
+    selectCommand:
+      "select email application will not open",
+  },
+},
+
+email_client_corrupted_profile: {
+  label: "Email Client Won't Open — Corrupted Profile",
+
+  startPrompt: `Customer: My email application won't open. I already tried reopening it, but it still won't launch.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "email",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting the email application.",
+    },
+    {
+      command: "check_app_status",
+      preview:
+        "Check the email application status to confirm it is not launching.",
+    },
+    {
+      command: "restart_application",
+      preview:
+        "Restart the application to rule out a temporary process issue.",
+    },
+    {
+      command: "test_application_launch",
+      preview:
+        "Test the application to determine whether the restart resolved the issue.",
+    },
+    {
+      command: "check_email_client_profile",
+      preview:
+        "Check the email client's profile for corruption after the restart fails.",
+    },
+    {
+      command: "repair_email_client_profile",
+      preview:
+        "Repair the corrupted email profile.",
+    },
+    {
+      command: "test_application_launch",
+      preview:
+        "Verify the application launches successfully after the profile repair.",
+    },
+  ],
+
+  completion: {
+    command: "test_application_launch",
+    fact: "application_working",
+  },
+
+  proofLines: [
+    "Verified the user's identity before troubleshooting the application",
+    "Confirmed restarting the application did not resolve the issue",
+    "Identified a corrupted email client profile",
+    "Repaired the corrupted profile",
+    "Verified the application launched successfully",
+  ],
+
+  successLines: [
+    "Agent: The corrupted email profile has been repaired and the application is opening normally.",
+    "System: The application launch issue was caused by a corrupted email client profile.",
+    "Customer: Great, it's opening again.",
+  ],
+
+  defaults: {
+  kind: "email_client_corrupted_profile",
+  identity_verified: false,
+  app_status_checked: false,
+  application_restarted: false,
+  application_launch_tested: false,
+  email_client_profile_checked: false,
+  email_client_profile_repaired: false,
+  application_working: false,
+},
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Resolve an email application that still will not open after a restart by repairing a corrupted profile.",
+    skillFocus: [
+      "Email Troubleshooting",
+      "Application Recovery",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "The email application still fails after a restart because the user's profile is corrupted.",
+    successOutcome:
+      "The profile is repaired and the application launches successfully.",
+    selectCommand:
+      "select email client corrupted profile",
+  },
+},
+
 cannot_connect_wifi: {
   label: "Cannot Connect to Wi-Fi",
   startPrompt: `Customer: I can’t connect to WiFi.
@@ -1793,6 +2378,104 @@ What is your first troubleshooting step?`,
         "select cannot connect wifi",
     },
   },
+
+  cannot_connect_wifi_corrupted_profile: {
+  label: "Wi-Fi — Corrupted Profile",
+  startPrompt: `Customer: My laptop won't connect to Wi-Fi anymore. It worked yesterday, but now it keeps failing to connect.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "network",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting the wireless connection.",
+    },
+    {
+      command: "check_wifi_status",
+      preview:
+        "Check Wi-Fi status to confirm wireless connectivity is enabled.",
+    },
+    {
+      command: "test_connection",
+      preview:
+        "Test the Wi-Fi connection to confirm the connection still fails.",
+    },
+    {
+      command: "check_wifi_profile",
+      preview:
+        "Check the saved Wi-Fi profile for corruption after the initial connection test fails.",
+    },
+    {
+      command: "remove_corrupted_wifi_profile",
+      preview:
+        "Remove the corrupted saved Wi-Fi profile from the device.",
+    },
+    {
+      command: "reconnect_wifi",
+      preview:
+        "Reconnect to the Wi-Fi network and create a clean wireless profile.",
+    },
+    {
+      command: "test_connection",
+      preview:
+        "Test the Wi-Fi connection again to confirm wireless access is restored.",
+    },
+  ],
+
+  completion: {
+    command: "test_connection",
+    fact: "can_connect_wifi",
+  },
+
+  proofLines: [
+    "Verified the user before troubleshooting wireless connectivity",
+    "Confirmed Wi-Fi was enabled but the device still could not connect",
+    "Tested the connection and confirmed the original issue remained",
+    "Identified a corrupted saved Wi-Fi profile",
+    "Removed the corrupted wireless profile",
+    "Reconnected to the wireless network using a clean profile",
+    "Verified successful Wi-Fi connectivity",
+  ],
+
+  successLines: [
+    "Agent: The corrupted Wi-Fi profile has been removed and wireless connectivity has been restored.",
+    "System: The device reconnected using a clean Wi-Fi profile and the connection test completed successfully.",
+    "Customer: Great, I'm connected again.",
+  ],
+
+  defaults: {
+    kind: "cannot_connect_wifi_corrupted_profile",
+    identity_verified: false,
+    wifi_checked: false,
+    first_connection_tested: false,
+    wifi_profile_checked: false,
+    corrupted_wifi_profile_removed: false,
+    wifi_reconnected: false,
+    can_connect_wifi: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Restore Wi-Fi connectivity by removing a corrupted saved wireless profile and reconnecting.",
+    skillFocus: [
+      "Wi-Fi Troubleshooting",
+      "Wireless Profile Management",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "A user's device cannot reconnect to Wi-Fi because the saved wireless profile has become corrupted.",
+    successOutcome:
+      "The corrupted profile is removed, a clean Wi-Fi connection is created, and connectivity is verified.",
+    selectCommand:
+      "select cannot connect wifi corrupted profile",
+  },
+},
 
 internet_no_access: {
   label: "Internet No Access",
@@ -1876,6 +2559,105 @@ What is your first troubleshooting step?`,
         "select internet no access",
     },
   },
+
+  internet_no_access_proxy: {
+  label: "Internet — Proxy",
+
+  startPrompt: `Customer: My computer says it is connected to the network, but websites will not load.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "network",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting internet access.",
+    },
+    {
+      command: "check_network_status",
+      preview:
+        "Check network status to confirm the device is connected locally but cannot reach the internet.",
+    },
+    {
+      command: "test_internet_connection",
+      preview:
+        "Test internet access to confirm the issue remains after the initial network check.",
+    },
+    {
+      command: "check_proxy_settings",
+      preview:
+        "Check the proxy settings to determine whether an incorrect proxy configuration is blocking internet traffic.",
+    },
+    {
+      command: "disable_incorrect_proxy",
+      preview:
+        "Disable the incorrect proxy configuration after confirming it is causing the internet access issue.",
+    },
+    {
+      command: "restart_network_adapter",
+      preview:
+        "Restart the network adapter to refresh the connection after correcting the proxy settings.",
+    },
+    {
+      command: "test_internet_connection",
+      preview:
+        "Test internet access again to confirm online connectivity has been restored.",
+    },
+  ],
+
+  completion: {
+    command: "test_internet_connection",
+    fact: "internet_restored",
+  },
+
+  proofLines: [
+    "Verified the user before troubleshooting internet access",
+    "Confirmed the device was connected to the local network but could not reach the internet",
+    "Tested internet access and confirmed the original issue remained",
+    "Identified an incorrect proxy configuration blocking internet traffic",
+    "Disabled the incorrect proxy configuration",
+    "Restarted the network adapter after correcting the proxy settings",
+    "Verified successful internet access",
+  ],
+
+  successLines: [
+    "Agent: The incorrect proxy configuration has been disabled and internet access has been restored.",
+    "System: The network adapter refreshed successfully after the proxy settings were corrected.",
+    "Customer: Great, websites are loading again.",
+  ],
+
+  defaults: {
+    kind: "internet_no_access_proxy",
+    identity_verified: false,
+    network_checked: false,
+    first_internet_tested: false,
+    proxy_settings_checked: false,
+    incorrect_proxy_disabled: false,
+    network_adapter_restarted: false,
+    internet_restored: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Restore internet access by identifying and disabling an incorrect proxy configuration.",
+    skillFocus: [
+      "Internet Troubleshooting",
+      "Proxy Configuration",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "A user's computer is connected to the local network, but an incorrect proxy configuration is blocking internet traffic.",
+    successOutcome:
+      "The incorrect proxy is disabled, the network connection is refreshed, and internet access is verified.",
+    selectCommand:
+      "select internet no access proxy",
+  },
+},
 
 slow_network_connection: {
   label: "Slow Network Connection",
@@ -2442,6 +3224,98 @@ What is your first troubleshooting step?`,
     },
   },
 
+  folder_access_required_security_group_missing: {
+  label: "Folder Access — Required Security Group Missing",
+
+  startPrompt: `Customer: I can see the shared folder, but every time I try to open it I get an access denied message.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "files_storage",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting folder access.",
+    },
+    {
+      command: "check_folder_permissions",
+      preview:
+        "Check the folder permissions to confirm the access configuration.",
+    },
+    {
+      command: "test_folder_access",
+      preview:
+        "Test folder access to confirm the issue still occurs.",
+    },
+    {
+      command: "check_folder_security_group",
+      preview:
+        "Check whether the user belongs to the required security group for the folder.",
+    },
+    {
+      command: "add_user_to_group",
+      preview:
+        "Add the user to the required security group.",
+    },
+    {
+      command: "test_folder_access",
+      preview:
+        "Test folder access again to confirm access has been restored.",
+    },
+  ],
+
+  completion: {
+    command: "test_folder_access",
+    fact: "folder_access_working",
+  },
+
+  proofLines: [
+    "Verified the user's identity before changing folder access",
+    "Confirmed the folder permissions were configured correctly",
+    "Verified the original access issue still occurred",
+    "Identified the user was missing from the required security group",
+    "Added the user to the required security group",
+    "Verified successful folder access",
+  ],
+
+  successLines: [
+    "Agent: The required security group membership has been updated and folder access has been verified.",
+    "System: The user was added to the required security group and can now access the folder successfully.",
+    "Customer: Great, I can open the folder now.",
+  ],
+
+  defaults: {
+    kind: "folder_access_required_security_group_missing",
+    identity_verified: false,
+    folder_permissions_checked: false,
+    first_folder_access_tested: false,
+    folder_security_group_checked: false,
+    user_added_to_group: false,
+    folder_access_working: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Resolve folder access by identifying a missing required security group membership.",
+    skillFocus: [
+      "Folder Permissions",
+      "Security Groups",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "A user has correct folder permissions configured, but is not a member of the security group required to access the folder.",
+    successOutcome:
+      "The required security group membership is corrected and folder access is verified.",
+    selectCommand:
+      "select folder access required security group missing",
+  },
+},
+
 permissions_denied: {
   label: "Permissions Denied",
   startPrompt: `Customer: I keep getting a permissions denied message.
@@ -2675,7 +3549,7 @@ What is your first troubleshooting step?`,
 
 cannot_install_software_admin_approval_required: {
   label: "Cannot Install Software — Admin Approval Required",
-  startPrompt: `Customer: I need to install software for work, but it says administrator approval is required.
+  startPrompt: `Customer: I need to install software for work, but the installation keeps getting blocked.
 
 What is your first troubleshooting step?`,
 
@@ -2748,16 +3622,16 @@ What is your first troubleshooting step?`,
     level: "Beginner",
     estimatedTime: "5–7 min",
     description:
-      "Resolve a blocked software installation when administrator approval is still pending.",
-    skillFocus: [
-      "Software Installation",
-      "Approval Workflow",
-      "Dependency Awareness",
-    ],
-    scenarioContext:
-      "A user cannot install required work software because the software request is still waiting for administrator approval.",
-    successOutcome:
-      "The request is approved, installation permissions are granted, and the software installs successfully.",
+  "Troubleshoot a blocked software installation by identifying and resolving the dependency preventing installation access.",
+skillFocus: [
+  "Software Installation",
+  "Approval Workflow",
+  "Dependency Awareness",
+],
+scenarioContext:
+  "A user cannot install required work software even though the installation request has already been submitted.",
+successOutcome:
+  "The blocking dependency is resolved, installation permissions are granted, and the software installs successfully.",
     selectCommand:
       "select cannot_install_software_admin_approval_required",
   },
@@ -2793,13 +3667,13 @@ What is your first troubleshooting step?`,
       "Customer: It’s much better now.",
     ],
 
-    defaults: {
-      kind: "too_many_apps_running",
-      identity_verified: false,
-      apps_checked: false,
-      apps_closed: false,
-      performance_ok: false,
-    },
+defaults: {
+  kind: "too_many_apps_running",
+  identity_verified: false,
+  apps_checked: false,
+  apps_closed: false,
+  performance_ok: false,
+},
 
     previewMetadata: {
       level: "Beginner",
@@ -2850,30 +3724,32 @@ What is your first troubleshooting step?`,
       "Customer: It’s much better now.",
     ],
 
-    defaults: {
-      kind: "too_many_apps_running",
-      identity_verified: false,
-      apps_checked: false,
-      apps_closed: false,
-      performance_ok: false,
-    },
+defaults: {
+  kind: "low_memory",
+  identity_verified: false,
+  memory_checked: false,
+  memory_heavy_apps_closed: false,
+  memory_ok: false,
+},
 
     previewMetadata: {
       level: "Beginner",
       estimatedTime: "3–5 min",
       description:
-        "Restore computer performance by closing unnecessary running applications.",
+  "Restore computer performance by reducing excessive memory usage.",
+
       skillFocus: [
         "Performance Troubleshooting",
         "Resource Management",
         "Operational Verification",
       ],
       scenarioContext:
-        "A user's computer is running slowly because too many applications are consuming system resources.",
+  "A user's computer is freezing and running slowly because memory usage is critically high.",
       successOutcome:
-        "Unnecessary applications are closed and normal computer performance is restored.",
+
+  "Memory-heavy applications are closed, memory usage is reduced, and normal computer performance is restored.",
       selectCommand:
-        "select too many apps running",
+        "select low memory",
     },
   },
 
@@ -2886,53 +3762,171 @@ What is your first troubleshooting step?`,
   scenarioType: "standard",
   category: "device_performance",
 
-    procedure: [
-      { command: "verify_identity", preview: "Verify the user's identity before troubleshooting browser performance." },
-      { command: "check_browser_extensions", preview: "Check browser extensions to identify unnecessary performance load." },
-      { command: "disable_unnecessary_extensions", preview: "Disable unnecessary extensions to improve browser responsiveness." },
-      { command: "test_browser_performance", preview: "Test browser performance to confirm it responds normally." },
-    ],
-        completion: { command: "test_browser_performance", fact: "browser_performance_ok" },
-
-    successLines: [
-      "Agent: Browser performance has been restored and verified.",
-      "System: Browser responsiveness has returned to normal.",
-      "Customer: Great, it’s much faster now.",
-    ],
-
-        proofLines: [
-      "Verified the user before troubleshooting browser performance",
-      "Confirmed browser extensions were affecting performance",
-      "Disabled unnecessary browser extensions",
-      "Validated normal browser responsiveness",
-    ],
-
-    defaults: {
-      kind: "browser_running_slow",
-      identity_verified: false,
-      browser_extensions_checked: false,
-      unnecessary_extensions_disabled: false,
-      browser_performance_ok: false,
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting browser performance.",
     },
-
-    previewMetadata: {
-      level: "Beginner",
-      estimatedTime: "3–5 min",
-      description:
-        "Restore browser performance by disabling unnecessary extensions.",
-      skillFocus: [
-        "Browser Troubleshooting",
-        "Extension Management",
-        "Operational Verification",
-      ],
-      scenarioContext:
-        "A user's web browser has become slow because unnecessary extensions are consuming resources.",
-      successOutcome:
-        "Unnecessary extensions are disabled and normal browser responsiveness is restored.",
-      selectCommand:
-        "select browser running slow",
+    {
+      command: "check_browser_cache",
+      preview:
+        "Check the browser cache for accumulated temporary web data that may be affecting performance.",
     },
+    {
+      command: "clear_browser_cache",
+      preview:
+        "Clear the browser cache to remove accumulated temporary web data.",
+    },
+    {
+      command: "test_browser_performance",
+      preview:
+        "Test browser performance to confirm normal responsiveness has been restored.",
+    },
+  ],
+
+  completion: {
+    command: "test_browser_performance",
+    fact: "browser_performance_ok",
   },
+
+  successLines: [
+    "Agent: Browser performance has been restored and verified.",
+    "System: Browser responsiveness has returned to normal after clearing accumulated cached data.",
+    "Customer: Great, it’s much faster now.",
+  ],
+
+  proofLines: [
+    "Verified the user before troubleshooting browser performance",
+    "Checked the browser cache for accumulated temporary web data",
+    "Cleared the browser cache to reduce unnecessary cached data",
+    "Validated normal browser responsiveness",
+  ],
+
+  defaults: {
+    kind: "browser_running_slow",
+    identity_verified: false,
+    browser_cache_checked: false,
+    browser_cache_cleared: false,
+    browser_performance_ok: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "3–5 min",
+    description:
+      "Restore browser performance by checking and clearing accumulated browser cache data.",
+    skillFocus: [
+      "Browser Troubleshooting",
+      "Cache Management",
+      "Operational Verification",
+    ],
+    scenarioContext:
+      "A user's web browser has become slow because accumulated cached web data is affecting browser performance.",
+    successOutcome:
+      "The browser cache is cleared and normal browser responsiveness is restored.",
+    selectCommand:
+      "select browser running slow",
+  },
+},
+
+  browser_running_slow_extension: {
+  label: "Browser Slow — Extension",
+
+  startPrompt: `Customer: My browser has become extremely slow. I already closed it and opened it again, but it is still running badly.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "device_performance",
+
+  procedure: [
+  {
+    command: "verify_identity",
+    preview:
+      "Verify the user's identity before troubleshooting browser performance.",
+  },
+  {
+    command: "check_browser_cache",
+    preview:
+      "Check the browser cache as part of normal browser performance troubleshooting.",
+  },
+  {
+    command: "clear_browser_cache",
+    preview:
+      "Clear accumulated browser cache data before testing performance.",
+  },
+  {
+    command: "test_browser_performance",
+    preview:
+      "Test browser performance to determine whether normal cache troubleshooting resolved the slowdown.",
+  },
+    {
+      command: "check_browser_extensions",
+      preview:
+        "Check installed browser extensions after the restart fails to restore performance.",
+    },
+    {
+      command: "disable_unnecessary_extensions",
+      preview:
+        "Disable the extension causing excessive browser resource usage.",
+    },
+    {
+      command: "test_browser_performance",
+      preview:
+        "Test browser performance again to confirm normal responsiveness has been restored.",
+    },
+  ],
+
+  completion: {
+    command: "test_browser_performance",
+    fact: "browser_performance_ok",
+  },
+
+  proofLines: [
+    "Verified the user before troubleshooting browser performance",
+    "Restarted the browser to rule out a temporary process issue",
+    "Confirmed browser performance remained degraded after the restart",
+    "Identified an unnecessary extension causing excessive resource usage",
+    "Disabled the problematic browser extension",
+    "Returned to the original issue and verified normal browser responsiveness",
+  ],
+
+  successLines: [
+    "Agent: The problematic browser extension has been disabled and browser performance has been verified.",
+    "System: Restarting the browser did not resolve the issue because an extension was consuming excessive resources.",
+    "Customer: Great, the browser is running normally again.",
+  ],
+
+defaults: {
+  kind: "browser_running_slow_extension",
+  identity_verified: false,
+  browser_cache_checked: false,
+  browser_cache_cleared: false,
+  browser_performance_tested_after_cache: false,
+  browser_extensions_checked: false,
+  unnecessary_extensions_disabled: false,
+  browser_performance_ok: false,
+},
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Resolve browser slowness that continues after a restart by identifying and disabling a problematic extension.",
+    skillFocus: [
+      "Browser Troubleshooting",
+      "Extension Management",
+      "Dependency Awareness",
+    ],
+    scenarioContext:
+      "A user's browser remains slow after being restarted because an installed extension is consuming excessive resources.",
+    successOutcome:
+      "The problematic extension is disabled and normal browser performance is restored.",
+    selectCommand:
+      "select browser running slow extension",
+  },
+},
 
 printer_not_working: {
   label: "Printer Not Working",
@@ -3190,6 +4184,92 @@ successLines: [
     },
   },
 
+  microphone_wrong_recording_device: {
+  label: "Microphone — Wrong Recording Device",
+
+  startPrompt: `Customer: My microphone is turned on, but nobody can hear me during calls.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "hardware_peripherals",
+
+  procedure: [
+    {
+      command: "check_microphone_settings",
+      preview:
+        "Check the microphone settings to confirm the microphone is enabled and available.",
+    },
+    {
+      command: "test_microphone",
+      preview:
+        "Test the microphone to reproduce the audio-input failure before changing the recording device.",
+    },
+    {
+      command: "check_recording_device",
+      preview:
+        "Check which recording device is currently selected after the microphone test fails.",
+    },
+    {
+      command: "select_recording_device",
+      preview:
+        "Select the intended microphone as the active recording device.",
+    },
+    {
+      command: "test_microphone",
+      preview:
+        "Test the microphone again to confirm audio input works through the selected recording device.",
+    },
+  ],
+
+  completion: {
+    command: "test_microphone",
+    fact: "microphone_working",
+  },
+
+  proofLines: [
+    "Confirmed the microphone was enabled and available",
+    "Reproduced the audio-input failure before changing the recording device",
+    "Identified that the wrong recording device was selected",
+    "Selected the intended microphone as the active recording device",
+    "Verified successful audio input through the correct microphone",
+  ],
+
+  successLines: [
+    "Agent: The correct recording device has been selected and microphone input has been verified.",
+    "System: Audio is now being captured through the intended microphone.",
+    "Customer: Great, they can hear me now.",
+  ],
+
+  defaults: {
+    kind: "microphone_wrong_recording_device",
+    microphone_settings_checked: false,
+    first_microphone_tested: false,
+    recording_device_checked: false,
+    correct_recording_device_selected: false,
+    microphone_working: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Restore microphone input by identifying and correcting the selected recording device.",
+    skillFocus: [
+      "Microphone Troubleshooting",
+      "Recording Device Selection",
+      "Problem Reproduction",
+      "Operational Verification",
+    ],
+    scenarioContext:
+      "The microphone is enabled, but the computer is using the wrong recording device during calls.",
+    successOutcome:
+      "The intended microphone is selected and successful audio input is verified.",
+    selectCommand:
+      "select microphone wrong recording device",
+  },
+},
+
 webcam_not_working: {
   label: "Webcam Not Working",
   startPrompt: `Customer: My webcam is not working during video calls.
@@ -3305,6 +4385,190 @@ proofLines: [
         "select second monitor not detected",
     },
   },
+
+  second_monitor_display_disabled: {
+  label: "Second Monitor — Display Disabled",
+
+  startPrompt: `Customer: My second monitor is connected and shows up in the display settings, but the screen stays blank.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "hardware_peripherals",
+
+  procedure: [
+    {
+      command: "check_display_connection",
+      preview:
+        "Check the display cable, power, and physical connection to confirm the second monitor is connected correctly.",
+    },
+    {
+      command: "check_display_settings",
+      preview:
+        "Check display settings to confirm the connected monitor appears in the operating system.",
+    },
+    {
+      command: "detect_second_monitor",
+      preview:
+        "Detect the second monitor so the operating system fully registers the connected display.",
+    },
+    {
+      command: "test_dual_display",
+      preview:
+        "Test the dual-display setup to confirm whether the detected monitor is actually active.",
+    },
+    {
+      command: "check_display_enabled_status",
+      preview:
+        "Check whether the detected second display is enabled after the initial dual-display test fails.",
+    },
+    {
+      command: "enable_second_display",
+      preview:
+        "Enable the second display so the operating system can send an active desktop signal to it.",
+    },
+    {
+      command: "test_dual_display",
+      preview:
+        "Test the dual-display setup again to confirm both monitors are active and displaying correctly.",
+    },
+  ],
+
+  completion: {
+    command: "test_dual_display",
+    fact: "dual_display_working",
+  },
+
+  proofLines: [
+    "Confirmed the second monitor was securely connected and receiving power",
+    "Confirmed the operating system recognized the connected monitor",
+    "Detected the second monitor successfully",
+    "Tested the dual-display setup and confirmed the detected monitor remained inactive",
+    "Identified that the second display was disabled in the display configuration",
+    "Enabled the second display",
+    "Verified both monitors were active and displaying correctly",
+  ],
+
+  successLines: [
+    "Agent: The disabled second display has been enabled and dual-display functionality has been verified.",
+    "System: Both monitors are active and the desktop extends successfully across both displays.",
+    "Customer: Great, both screens are working now.",
+  ],
+
+  defaults: {
+    kind: "second_monitor_display_disabled",
+    display_connection_checked: false,
+    display_settings_checked: false,
+    second_monitor_detected: false,
+    first_dual_display_tested: false,
+    display_enabled_status_checked: false,
+    second_display_enabled: false,
+    dual_display_working: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Restore a detected but inactive second monitor by identifying and enabling a disabled display configuration.",
+    skillFocus: [
+      "Display Troubleshooting",
+      "Monitor Configuration",
+      "Problem Reproduction",
+      "Operational Verification",
+    ],
+    scenarioContext:
+      "A second monitor is securely connected and detected by the operating system, but the screen remains blank because the display is disabled.",
+    successOutcome:
+      "The disabled display is identified, enabled, and verified through a successful dual-display test.",
+    selectCommand:
+      "select second monitor display disabled",
+  },
+},
+
+audio_not_working: {
+  label: "No Sound / Audio Not Working",
+  startPrompt: `Customer: I can’t hear any sound from my computer.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "hardware_peripherals",
+
+  procedure: [
+  {
+    command: "verify_identity",
+    preview:
+      "Verify the user's identity before troubleshooting audio settings.",
+  },
+  {
+    command: "check_audio_output",
+    preview:
+      "Check the current audio output device to confirm where sound is being routed.",
+  },
+    {
+      command: "check_volume_status",
+      preview:
+        "Check the system volume and mute status to confirm audio is enabled.",
+    },
+    {
+      command: "select_audio_output",
+      preview:
+        "Select the correct audio output device so sound is routed to the intended speakers or headset.",
+    },
+    {
+      command: "test_audio",
+      preview:
+        "Test audio playback to confirm sound is working normally.",
+    },
+  ],
+
+  completion: {
+    command: "test_audio",
+    fact: "audio_working",
+  },
+
+  proofLines: [
+  "Verified the user before troubleshooting audio settings",
+  "Checked the current audio output before changing sound settings",
+  "Confirmed the system volume and mute status",
+  "Selected the correct audio output device",
+  "Validated successful audio playback",
+],
+
+  successLines: [
+    "Agent: The correct audio output has been selected and sound functionality has been verified.",
+    "System: Audio playback is operating normally through the selected output device.",
+    "Customer: Great, I can hear it now.",
+  ],
+
+  defaults: {
+    kind: "audio_not_working",
+    identity_verified: false,
+    audio_output_checked: false,
+    volume_status_checked: false,
+    audio_output_selected: false,
+    audio_working: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "3–5 min",
+    description:
+      "Restore computer sound by checking volume status and selecting the correct audio output.",
+    skillFocus: [
+      "Audio Troubleshooting",
+      "Output Device Configuration",
+      "Operational Verification",
+    ],
+    scenarioContext:
+      "A user cannot hear computer audio because sound is routed to the wrong output device.",
+    successOutcome:
+      "The correct audio output is selected and sound playback is successfully verified.",
+    selectCommand:
+      "select audio not working",
+  },
+},
 
 software_app_not_opening: {
   label: "Software Application Not Opening",

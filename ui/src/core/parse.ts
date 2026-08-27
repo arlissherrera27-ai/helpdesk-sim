@@ -1,9 +1,13 @@
 import type { Command } from "./types";
-import { lookupCommandDef } from "./commandRegistry";
+import {
+  lookupCommandDef,
+  type SystemCommandKind,
+} from "./commandRegistry";
 import {
   procedureCatalog,
   type ProcedureCommandKind,
 } from "./procedureCatalog";
+
 
 export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
    // Identity / Authorization
@@ -93,12 +97,38 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "check outgoing email": "check_email_status",
   "outgoing email check": "check_email_status",
 
+  "check email client profile": "check_email_client_profile",
+  "email client profile check": "check_email_client_profile",
+  "check email profile": "check_email_client_profile",
+  "email profile check": "check_email_client_profile",
+  "inspect email client profile": "check_email_client_profile",
+
+  "repair email client profile": "repair_email_client_profile",
+  "email client profile repair": "repair_email_client_profile",
+  "repair email profile": "repair_email_client_profile",
+  "fix email client profile": "repair_email_client_profile",
+  "rebuild email client profile": "repair_email_client_profile",
+
   "enable email client": "enable_email_client",
   "email client enable": "enable_email_client",
   "bring email client online": "enable_email_client",
   "bring email online": "enable_email_client",
   "turn on email client": "enable_email_client",
   "email client online": "enable_email_client",
+
+  "check outbox": "check_outbox",
+  "outbox check": "check_outbox",
+  "check email outbox": "check_outbox",
+  "email outbox check": "check_outbox",
+  "inspect outbox": "check_outbox",
+  "review outbox": "check_outbox",
+
+  "send stuck outbox email": "send_stuck_outbox_email",
+  "stuck outbox email send": "send_stuck_outbox_email",
+  "send outbox email": "send_stuck_outbox_email",
+  "outbox email send": "send_stuck_outbox_email",
+  "resend stuck email": "send_stuck_outbox_email",
+  "release stuck email": "send_stuck_outbox_email",
 
   "send test email": "send_test_email",
   "test email send": "send_test_email",
@@ -110,6 +140,8 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "mailbox storage check": "check_mailbox_storage",
   "check mailbox": "check_mailbox_storage",
   "mailbox check": "check_mailbox_storage",
+  "check email storage": "check_mailbox_storage",
+  "check mailbox space": "check_mailbox_storage",
 
   "check archive policy": "check_archive_policy",
   "archive policy check": "check_archive_policy",
@@ -147,11 +179,39 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "shared mailbox membership check": "check_shared_mailbox_membership",
   "check shared mailbox": "check_shared_mailbox_membership",
   "shared mailbox check": "check_shared_mailbox_membership",
+  "check mailbox membership": "check_shared_mailbox_membership",
+  "check shared mailbox access membership": "check_shared_mailbox_membership",
 
   "grant shared mailbox access": "grant_shared_mailbox_access",
   "shared mailbox access grant": "grant_shared_mailbox_access",
   "restore shared mailbox access": "grant_shared_mailbox_access",
   "add shared mailbox access": "grant_shared_mailbox_access",
+
+  "check shared mailbox automapping":
+    "check_shared_mailbox_automapping",
+  "shared mailbox automapping check":
+    "check_shared_mailbox_automapping",
+  "check mailbox automapping":
+    "check_shared_mailbox_automapping",
+  "mailbox automapping check":
+    "check_shared_mailbox_automapping",
+  "check auto mapping":
+    "check_shared_mailbox_automapping",
+  "auto mapping check":
+    "check_shared_mailbox_automapping",
+
+  "enable shared mailbox automapping":
+    "enable_shared_mailbox_automapping",
+  "shared mailbox automapping enable":
+    "enable_shared_mailbox_automapping",
+  "enable mailbox automapping":
+    "enable_shared_mailbox_automapping",
+  "turn on shared mailbox automapping":
+    "enable_shared_mailbox_automapping",
+  "turn on auto mapping":
+    "enable_shared_mailbox_automapping",
+  "restore auto mapping":
+    "enable_shared_mailbox_automapping",
 
   "check outlook mailbox configuration": "check_outlook_mailbox_configuration",
   "outlook mailbox configuration check": "check_outlook_mailbox_configuration",
@@ -173,9 +233,39 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "check email login": "check_email_login_status",
   "email login check": "check_email_login_status",
 
+  "check saved email credentials":
+    "check_saved_email_credentials",
+  "saved email credentials check":
+    "check_saved_email_credentials",
+  "check stored email credentials":
+    "check_saved_email_credentials",
+  "stored email credentials check":
+    "check_saved_email_credentials",
+  "inspect saved email credentials":
+    "check_saved_email_credentials",
+  "review saved email credentials":
+    "check_saved_email_credentials",
+
+  "update saved email credentials":
+    "update_saved_email_credentials",
+  "saved email credentials update":
+    "update_saved_email_credentials",
+  "change saved email credentials":
+    "update_saved_email_credentials",
+  "replace saved email credentials":
+    "update_saved_email_credentials",
+  "update stored email password":
+    "update_saved_email_credentials",
+  "replace stored email password":
+    "update_saved_email_credentials",
+
   "reset email session": "reset_email_session",
   "email session reset": "reset_email_session",
   "reset mailbox session": "reset_email_session",
+  "clear email session": "reset_email_session",
+  "clear mailbox session": "reset_email_session",
+  "refresh email session": "reset_email_session",
+  "restart email session": "reset_email_session",
 
   "test email login": "test_email_login",
   "email login test": "test_email_login",
@@ -196,13 +286,51 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "fix inbox filter": "disable_inbox_filter",
 
     // Account Lockout
+  "request account unlock": "request_unlock",
+  "request user unlock": "request_unlock",
+  "ask for unlock": "request_unlock",
   "request unlock": "request_unlock",
   "unlock request": "request_unlock",
   "unlock requested": "request_unlock",
 
+  "confirm account unlock": "confirm_unlock",
+  "verify unlock": "confirm_unlock",
+  "confirm account is unlocked": "confirm_unlock",
   "confirm unlock": "confirm_unlock",
   "unlock confirm": "confirm_unlock",
   "unlock confirmed": "confirm_unlock",
+
+  "review failed authentication attempts":
+    "review_failed_authentication_attempts",
+  "check failed authentication attempts":
+    "review_failed_authentication_attempts",
+  "review failed sign in attempts":
+    "review_failed_authentication_attempts",
+  "check failed sign in attempts":
+    "review_failed_authentication_attempts",
+  "check failed logins":
+    "review_failed_authentication_attempts",
+  "review failed logins":
+    "review_failed_authentication_attempts",
+  "find lockout source":
+    "review_failed_authentication_attempts",
+  "check lockout source":
+    "review_failed_authentication_attempts",
+
+  "update saved credentials":
+    "update_saved_credentials",
+  "change saved credentials":
+    "update_saved_credentials",
+  "replace saved credentials":
+    "update_saved_credentials",
+  "update stored password":
+    "update_saved_credentials",
+  "change stored password":
+    "update_saved_credentials",
+  "remove saved password":
+    "update_saved_credentials",
+  "fix saved credentials":
+    "update_saved_credentials",
 
     // VPN Access
   "check vpn": "check_vpn_access",
@@ -318,6 +446,22 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "turn wifi on": "enable_wifi",
   "enable wireless": "enable_wifi",
 
+  "check wifi profile": "check_wifi_profile",
+  "wifi profile check": "check_wifi_profile",
+  "check wireless profile": "check_wifi_profile",
+  "wireless profile check": "check_wifi_profile",
+
+  "remove corrupted wifi profile": "remove_corrupted_wifi_profile",
+  "delete corrupted wifi profile": "remove_corrupted_wifi_profile",
+  "forget corrupted wifi profile": "remove_corrupted_wifi_profile",
+  "remove wifi profile": "remove_corrupted_wifi_profile",
+  "forget wifi network": "remove_corrupted_wifi_profile",
+
+  "reconnect wifi": "reconnect_wifi",
+  "wifi reconnect": "reconnect_wifi",
+  "reconnect wireless": "reconnect_wifi",
+  "connect to wifi again": "reconnect_wifi",
+
   "test wifi": "test_connection",
   "wifi test": "test_connection",
   "test internet": "test_connection",
@@ -338,6 +482,18 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "network status check": "check_network_status",
   "check internet status": "check_network_status",
   "internet status check": "check_network_status",
+
+  "check proxy settings": "check_proxy_settings",
+  "proxy settings check": "check_proxy_settings",
+  "check proxy": "check_proxy_settings",
+  "proxy check": "check_proxy_settings",
+  "inspect proxy settings": "check_proxy_settings",
+
+  "disable incorrect proxy": "disable_incorrect_proxy",
+  "disable proxy": "disable_incorrect_proxy",
+  "turn off proxy": "disable_incorrect_proxy",
+  "remove proxy": "disable_incorrect_proxy",
+  "clear proxy settings": "disable_incorrect_proxy",
 
   "check network adapter": "check_network_adapter",
   "network adapter check": "check_network_adapter",
@@ -467,6 +623,19 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "folder access check": "check_folder_permissions",
   "review folder access": "check_folder_permissions",
 
+    "check folder security group":
+    "check_folder_security_group",
+  "folder security group check":
+    "check_folder_security_group",
+  "check security group":
+    "check_folder_security_group",
+  "security group check":
+    "check_folder_security_group",
+  "check group membership":
+    "check_folder_security_group",
+  "group membership check":
+    "check_folder_security_group",
+
   "grant folder access": "grant_folder_access",
   "folder access grant": "grant_folder_access",
   "restore folder access": "grant_folder_access",
@@ -507,6 +676,8 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   // Printer
   "check printer": "check_printer_status",
   "printer check": "check_printer_status",
+  "check printer status": "check_printer_status",
+  "check the printer": "check_printer_status",
 
   "check default printer": "check_default_printer",
   "default printer check": "check_default_printer",
@@ -521,6 +692,8 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
 
   "restart printer": "restart_printer",
   "printer restart": "restart_printer",
+  "restart the printer": "restart_printer",
+  "reboot printer": "restart_printer",
   "test printer": "print_test_page",
   "printer test": "print_test_page",
   "print test": "print_test_page",
@@ -545,10 +718,16 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "confirm performance": "test_performance",
 
   // Running Apps
+  "see running apps": "check_running_apps",
+  "check open apps": "check_running_apps",
+  "check open applications": "check_running_apps",
   "check running apps": "check_running_apps",
   "running apps check": "check_running_apps",
   "close unnecessary apps": "close_unnecessary_apps",
   "close extra apps": "close_unnecessary_apps",
+  "close unused apps": "close_unnecessary_apps",
+  "close unneeded apps": "close_unnecessary_apps",
+  "close extra programs": "close_unnecessary_apps",
 
   // Application
   "check application": "check_app_status",
@@ -635,6 +814,16 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "test keyboard": "test_input_device",
 
   // Browser
+  "check browser cache": "check_browser_cache",
+  "check cache": "check_browser_cache",
+  "review browser cache": "check_browser_cache",
+  "inspect browser cache": "check_browser_cache",
+
+  "clear browser cache": "clear_browser_cache",
+  "clear cache": "clear_browser_cache",
+  "delete browser cache": "clear_browser_cache",
+  "remove cached browser data": "clear_browser_cache",
+
   "check extensions": "check_browser_extensions",
   "extensions check": "check_browser_extensions",
   "check browser extensions": "check_browser_extensions",
@@ -721,6 +910,32 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "display detect": "detect_second_monitor",
   "find second monitor": "detect_second_monitor",
 
+  "check display enabled status":
+    "check_display_enabled_status",
+  "display enabled status check":
+    "check_display_enabled_status",
+  "check second display status":
+    "check_display_enabled_status",
+  "second display status check":
+    "check_display_enabled_status",
+  "check if second display is enabled":
+    "check_display_enabled_status",
+  "check monitor enabled status":
+    "check_display_enabled_status",
+
+  "enable second display":
+    "enable_second_display",
+  "second display enable":
+    "enable_second_display",
+  "turn on second display":
+    "enable_second_display",
+  "activate second display":
+    "enable_second_display",
+  "enable second monitor":
+    "enable_second_display",
+  "turn on second monitor":
+    "enable_second_display",
+
   "test monitor": "test_dual_display",
   "monitor test": "test_dual_display",
   "test dual display": "test_dual_display",
@@ -728,11 +943,42 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "verify second monitor": "test_dual_display",
   "confirm second monitor": "test_dual_display",
 
+    // Audio
+
+  "check audio": "check_audio_output",
+  "audio check": "check_audio_output",
+  "check audio output": "check_audio_output",
+  "audio output check": "check_audio_output",
+  "check sound": "check_audio_output",
+  "sound check": "check_audio_output",
+
+  "check volume": "check_volume_status",
+  "volume check": "check_volume_status",
+  "check volume status": "check_volume_status",
+  "volume status check": "check_volume_status",
+  "check sound level": "check_volume_status",
+
+  "select audio output": "select_audio_output",
+  "audio output select": "select_audio_output",
+  "select sound output": "select_audio_output",
+  "sound output select": "select_audio_output",
+  "change audio output": "select_audio_output",
+  "switch audio output": "select_audio_output",
+
+  "test audio": "test_audio",
+  "audio test": "test_audio",
+  "test sound": "test_audio",
+  "sound test": "test_audio",
+  "verify audio": "test_audio",
+  "confirm audio": "test_audio",
+
   // Microphone / Webcam
   "check microphone": "check_microphone_settings",
   "microphone check": "check_microphone_settings",
   "check mic": "check_microphone_settings",
   "mic check": "check_microphone_settings",
+  "check microphone settings": "check_microphone_settings",
+  "check mic settings": "check_microphone_settings",
 
   "enable microphone": "enable_microphone",
   "microphone enable": "enable_microphone",
@@ -750,13 +996,39 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "confirm mic": "test_microphone",
   "confirm microphone": "test_microphone",
 
+  "check recording device": "check_recording_device",
+  "recording device check": "check_recording_device",
+  "check input device": "check_recording_device",
+  "input device check": "check_recording_device",
+  "check microphone input": "check_recording_device",
+  "microphone input check": "check_recording_device",
+  "check selected microphone": "check_recording_device",
+  "review recording device": "check_recording_device",
+
+  "select recording device": "select_recording_device",
+  "recording device select": "select_recording_device",
+  "select microphone input": "select_recording_device",
+  "microphone input select": "select_recording_device",
+  "choose recording device": "select_recording_device",
+  "switch recording device": "select_recording_device",
+  "select correct microphone": "select_recording_device",
+  "change microphone input": "select_recording_device",
+
+  // Webcam
+  "check webcam settings": "check_webcam_settings",
+  "check camera settings": "check_webcam_settings",
+  "check the webcam": "check_webcam_settings",
   "check webcam": "check_webcam_settings",
   "webcam check": "check_webcam_settings",
 
+  "enable camera": "enable_webcam",
+  "turn on camera": "enable_webcam",
   "enable webcam": "enable_webcam",
   "webcam enable": "enable_webcam",
   "turn on webcam": "enable_webcam",
 
+  "test camera": "test_webcam",
+  "check webcam works": "test_webcam",
   "test webcam": "test_webcam",
   "webcam test": "test_webcam",
   "verify webcam": "test_webcam",
@@ -804,6 +1076,44 @@ function createProcedureCommand(
     kind,
     readOnly: false,
   } as ProcedureCommand;
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unhandled system command: ${String(value)}`);
+}
+
+function createSystemCommand(
+  kind: SystemCommandKind,
+  inputRaw: string,
+): Command {
+  switch (kind) {
+    case "select":
+      return { kind: "unknown", rawInput: inputRaw };
+
+    case "start":
+      return { kind: "start", readOnly: false };
+
+    case "restart":
+      return { kind: "restart", readOnly: false };
+
+    case "quit":
+      return { kind: "quit", readOnly: false };
+
+    case "help":
+      return { kind: "help", readOnly: true };
+
+    case "status":
+      return { kind: "status", readOnly: true };
+
+    case "debug":
+      return { kind: "debug", readOnly: true };
+
+    case "view_scorecard":
+      return { kind: "view_scorecard", readOnly: false };
+
+    default:
+      return assertNever(kind);
+  }
 }
 
 // Parser only labels intent.
@@ -856,28 +1166,5 @@ export function parseCommand(inputRaw: string): Command {
     return createProcedureCommand(verbKind);
   }
 
-  // System/control commands retain explicit construction because their
-  // read-only status, arguments, or behavior differ from procedures.
-  switch (verbKind) {
-    case "start":
-      return { kind: "start", readOnly: false };
-
-    case "restart":
-      return { kind: "restart", readOnly: false };
-
-    case "quit":
-      return { kind: "quit", readOnly: false };
-
-    case "help":
-      return { kind: "help", readOnly: true };
-
-    case "status":
-      return { kind: "status", readOnly: true };
-
-    case "debug":
-      return { kind: "debug", readOnly: true };
-
-    default:
-      return { kind: "unknown", rawInput: inputRaw };
-  }
+  return createSystemCommand(verbKind, inputRaw);
 }

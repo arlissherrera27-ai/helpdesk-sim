@@ -55,6 +55,14 @@ export type EngineOutput = {
   decision: Decision;
 };
 
+function assertNeverPlan(plan: never): never {
+  throw new Error(
+    `[ENGINE MESSAGE INVARIANT] Missing scripted message for execution plan: ${
+      (plan as { kind?: string }).kind ?? "unknown"
+    }`
+  );
+}
+
 // Engine: runs the pipeline (Parse → Decide → Execute → Update).
 export function handleInput(state: SimState, inputRaw: string): EngineOutput {
   const command = parseCommand(inputRaw);
@@ -204,7 +212,11 @@ State: ${state.executionState}${resultLine}`;
 
   let message = "";
 
-if (finalPatch.result) {
+if (
+  finalPatch.result &&
+  nextState.executionState === "COMPLETED"
+) {
+  
   const { completion, totalScore, mistakes } = finalPatch.result;
 
   const fullRunLog = [...state.runLog, logEvent];
@@ -355,37 +367,79 @@ message = registryStartPrompt
   message =
     "Agent: I’m requesting an account unlock after confirming the user is authorized for this account.\n\n" +
     "System: The unlock request has been accepted. The account is eligible to be unlocked after verification.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.continue;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.continue;
   break;
 
-    case "ConfirmUnlock":
-  message =
-    "Agent: I’m completing the account unlock and verifying that access has been restored.\n\n" +
-    "System: The account has been unlocked successfully. Authentication restrictions have been removed and sign-in access is available again.\n\n" +
-    "Customer: Perfect, I can sign in now.\n\n" + NEXT_STEP_PROMPTS.default;
-  break;
+case "ConfirmUnlock":
+  if (
+    state.scenario === "account_lockout_saved_credentials" &&
+    state.scenarioFacts?.kind ===
+      "account_lockout_saved_credentials"
+  ) {
+    if (!state.scenarioFacts.first_sign_in_attempted) {
+      message =
+        "Agent: I’m completing the initial account unlock so access can be tested.\n\n" +
+        "System: The account has been unlocked successfully. Sign-in is available, but the account must still be tested to confirm the lockout does not return.\n\n" +
+        "Customer: Alright, I’ll try signing in.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
 
-  case "CheckVpnAccess":
     message =
-      "Agent: I’m checking whether remote network access is assigned to this user account.\n\n" +
-      "System: VPN access is not currently assigned to the user account. Without that assignment, remote connection attempts will fail.\n\n" +
-      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
-    break;
-
-case "EnableVpnAccess":
-  if (state.scenario === "vpn_mfa_dependency_missing") {
-    message =
-      "Agent: I’m assigning VPN access to the user account now.\n\n" +
-      "System: VPN access has been assigned successfully, but the connection still cannot complete because MFA setup is required.\n\n" +
-      "Customer: It still won’t connect. It says I need to finish MFA setup first.\n\n" +
+      "Agent: I’m completing the second account unlock now that the outdated saved credentials have been corrected.\n\n" +
+      "System: The account has been unlocked successfully after correcting the repeated authentication source. The account is ready for final sign-in verification.\n\n" +
+      "Customer: Okay, I’m ready to try again.\n\n" +
       NEXT_STEP_PROMPTS.default;
     break;
   }
 
   message =
+    "Agent: I’m completing the account unlock and verifying that access has been restored.\n\n" +
+    "System: The account has been unlocked successfully. Authentication restrictions have been removed and sign-in access is available again.\n\n" +
+    "Customer: Perfect, I can sign in now.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "ReviewFailedAuthenticationAttempts":
+  message =
+    "Agent: I’m reviewing the failed authentication attempts to determine why the account locked again.\n\n" +
+    "System: Multiple automatic sign-in attempts are coming from saved credentials stored on another device. Those repeated failures are immediately locking the account again after each unlock.\n\n" +
+    "Customer: That makes sense. I forgot I changed my password on my laptop but not my phone.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "UpdateSavedCredentials":
+  message =
+    "Agent: I’m updating the outdated saved credentials on the affected device.\n\n" +
+    "System: The incorrect saved password has been replaced successfully. The repeated authentication source has been corrected, but the account is still locked and must be unlocked again before final sign-in testing.\n\n" +
+    "Customer: Alright, let’s unlock it again.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+  case "CheckVpnAccess":
+  if (state.scenario === "vpn_mfa_dependency_missing") {
+    message =
+      "Agent: I’m checking whether remote network access is assigned to this user account.\n\n" +
+      "System: VPN access is already assigned correctly. The connection issue is being caused by another dependency.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
+  message =
+    "Agent: I’m checking whether remote network access is assigned to this user account.\n\n" +
+    "System: VPN access is not currently assigned to the user account. Without that assignment, remote connection attempts will fail.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "EnableVpnAccess":
+  message =
     "Agent: I’m assigning VPN access to the user account now.\n\n" +
     "System: VPN access has been assigned successfully. The account is now permitted to connect to the remote work network.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "ConfirmConnection":
@@ -404,10 +458,20 @@ case "ConfirmConnection":
   break;
   
     case "CheckEmailStatus":
+  if (state.scenario === "email_not_sending_outbox") {
+    message =
+      "Agent: I’m checking the email client status to confirm whether the account and client are available for sending.\n\n" +
+      "System: The email client is online and connected successfully. The client itself is available, so the outgoing email failure must be reproduced and investigated further.\n\n" +
+      "Customer: So Outlook is connected, but the message still won’t send?\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the email client status to see why messages are not sending.\n\n" +
     "System: The email client is currently offline. Because the client is offline, outgoing email cannot be transmitted.\n\n" +
-    "Customer: Oh, I didn’t realize that.\n\n" + NEXT_STEP_PROMPTS.default;
+    "Customer: Oh, I didn’t realize that.\n\n" +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "EnableEmailClient":
@@ -417,16 +481,74 @@ case "EnableEmailClient":
     `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` + NEXT_STEP_PROMPTS.default;
   break;
 
+  case "CheckOutbox":
+  message =
+    "Agent: Since the sending failure was reproduced while the email client was online, I’m checking the Outbox for a message that did not complete transmission.\n\n" +
+    "System: A message is stuck in the Outbox and remains in a pending send state. That stuck message is preventing outgoing email from completing normally.\n\n" +
+    "Customer: I can see it sitting there now.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "SendStuckOutboxEmail":
+  message =
+    "Agent: I’m releasing and resending the message that is stuck in the Outbox.\n\n" +
+    "System: The stuck message has been released from its pending state and sent successfully. Outgoing email is ready for final verification.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
 case "SendTestEmail":
+  if (
+    state.scenario === "email_not_sending_outbox" &&
+    state.scenarioFacts?.kind ===
+      "email_not_sending_outbox"
+  ) {
+    if (!state.scenarioFacts.first_send_test_completed) {
+      message =
+        "Agent: I’m sending a test email to reproduce the outgoing email problem.\n\n" +
+        "System: The test message does not leave the Outbox even though the email client is online. The sending failure has been reproduced and the Outbox should be inspected next.\n\n" +
+        "Customer: It’s still sitting there and hasn’t sent.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    message =
+      "Agent: I’m sending another test email after releasing the stuck Outbox message.\n\n" +
+      "System: The test email left the Outbox and sent successfully. Outgoing email is functioning normally again.\n\n" +
+      "Customer: Great, my email is sending now.";
+    break;
+  }
+
   if (state.scenario === "email_not_sending") {
     message =
       "Agent: I’m sending a test email to confirm outgoing email is working.\n\n" +
       "System: The test email was sent successfully. Outgoing email delivery has been restored.\n\n" +
       "Customer: Got it, it works now.";
+  } else if (
+    state.scenario ===
+      "not_receiving_email_inbox_rule_redirecting" &&
+    state.scenarioFacts?.kind ===
+      "not_receiving_email_inbox_rule_redirecting"
+  ) {
+    if (
+      !state.scenarioFacts.first_receive_test_completed
+    ) {
+      message =
+        "Agent: I’m sending a test email to verify incoming delivery after resynchronizing the mailbox.\n\n" +
+        "System: The test message reached the mailbox, but it still does not appear in the Inbox. Normal synchronization troubleshooting did not resolve the issue.\n\n" +
+        "Customer: I still don’t see it in my Inbox.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    message =
+      "Agent: I’m sending another test email to verify incoming delivery after correcting the mailbox rule.\n\n" +
+      "System: The test message now appears in the Inbox successfully.\n\n" +
+      "Customer: Great, I can see it now.";
   } else if (state.scenario === "not_receiving_email") {
     message =
-      "Agent: I’m sending a test email to confirm incoming email is reaching the inbox.\n\n" +
-      "System: The test email was delivered successfully. Incoming email is no longer being blocked or redirected away from the inbox.\n\n" +
+      "Agent: I’m sending a test email to verify incoming delivery.\n\n" +
+      "System: The test message arrived successfully after the mailbox was resynchronized.\n\n" +
       "Customer: Great, I received it.";
   } else if (
     state.scenario === "mailbox_full" ||
@@ -510,6 +632,27 @@ case "CheckSyncSettings":
     break;
   }
 
+  if (
+    state.scenario ===
+      "not_receiving_email_inbox_rule_redirecting"
+  ) {
+    message =
+      "Agent: I’m checking the mailbox synchronization status.\n\n" +
+      "System: The mailbox synchronization settings are available and can be refreshed normally. No obvious synchronization failure has been identified yet.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
+  if (state.scenario === "not_receiving_email") {
+    message =
+      "Agent: I’m checking the mailbox synchronization status.\n\n" +
+      "System: The mailbox is not updating incoming messages normally and needs to be resynchronized.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the email synchronization settings.\n\n" +
     "System: Email synchronization is disabled. Because synchronization is disabled, new messages cannot update in the email client.\n\n" +
@@ -525,6 +668,27 @@ case "ResyncEmailClient":
     message =
       "Agent: I’m resynchronizing the email client now that the stale session has been cleared.\n\n" +
       "System: The client has established a fresh mailbox connection and synchronization has restarted successfully.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
+  if (
+    state.scenario ===
+      "not_receiving_email_inbox_rule_redirecting"
+  ) {
+    message =
+      "Agent: I’m resynchronizing the mailbox to refresh incoming messages.\n\n" +
+      "System: The mailbox synchronization completed successfully. Incoming delivery should now be tested.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
+  if (state.scenario === "not_receiving_email") {
+    message =
+      "Agent: I’m resynchronizing the mailbox to restore incoming message updates.\n\n" +
+      "System: The mailbox has been resynchronized successfully and is ready for an incoming delivery test.\n\n" +
       `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
       NEXT_STEP_PROMPTS.default;
     break;
@@ -558,11 +722,13 @@ case "TestEmailSync":
 case "CheckSharedMailboxMembership":
   if (
     state.scenario ===
-    "shared_mailbox_outlook_profile_not_updated"
+      "shared_mailbox_outlook_profile_not_updated" ||
+    state.scenario ===
+      "shared_mailbox_automapping_missing"
   ) {
     message =
       "Agent: I’m checking whether the user already has permission to the Finance shared mailbox.\n\n" +
-      "System: The user already has the required shared mailbox permissions. Access should be available, so another condition is preventing the mailbox from appearing.\n\n" +
+      "System: The user already has Full Access to the shared mailbox. The permission is assigned correctly, so another configuration condition is preventing the mailbox from appearing in Outlook.\n\n" +
       "Customer: So I already have access?\n\n" +
       NEXT_STEP_PROMPTS.default;
     break;
@@ -580,6 +746,22 @@ case "GrantSharedMailboxAccess":
     "Agent: I’m restoring shared mailbox permissions now.\n\n" +
     "System: Shared mailbox access permissions have been restored successfully. The user is now authorized to open the mailbox.\n\n" +
     `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+  break;
+
+  case "CheckSharedMailboxAutomapping":
+  message =
+    "Agent: Since the user already has Full Access but the mailbox still does not appear automatically, I’m checking the shared mailbox auto-mapping configuration.\n\n" +
+    "System: Auto-mapping is disabled for this shared mailbox permission. Outlook therefore does not discover and load the Finance mailbox automatically even though the user has Full Access.\n\n" +
+    "Customer: That explains why I have access but never see it in Outlook.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "EnableSharedMailboxAutomapping":
+  message =
+    "Agent: I’m enabling auto-mapping for the user’s Finance shared mailbox permission.\n\n" +
+    "System: Shared mailbox auto-mapping has been enabled successfully. Outlook can now discover the mailbox automatically, but the application must be restarted before the updated configuration can be loaded.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "CheckOutlookMailboxConfiguration":
@@ -619,6 +801,26 @@ case "TestSharedMailboxAccess":
     break;
   }
 
+  if (
+    state.scenarioFacts?.kind ===
+    "shared_mailbox_automapping_missing"
+  ) {
+    if (!state.scenarioFacts.shared_mailbox_access_tested) {
+      message =
+        "Agent: I’m testing whether the Finance shared mailbox appears automatically in Outlook.\n\n" +
+        "System: The mailbox still does not appear even though the user has Full Access. The permission exists, but Outlook is not automatically loading the mailbox.\n\n" +
+        "Customer: It’s still not showing up anywhere.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    message =
+      "Agent: I’m testing shared mailbox access after enabling auto-mapping and restarting Outlook.\n\n" +
+      "System: Outlook discovered and loaded the Finance shared mailbox automatically. The mailbox appears in the folder list and opens successfully.\n\n" +
+      "Customer: Great, the Finance mailbox is showing up now.";
+    break;
+  }
+
   message =
     "Agent: I’m testing shared mailbox access now.\n\n" +
     "System: The shared mailbox is accessible normally. Mailbox access has been restored successfully.\n\n" +
@@ -652,10 +854,38 @@ case "CheckEmailLoginStatus":
     break;
   }
 
+  if (
+    state.scenario ===
+      "email_login_cached_credentials"
+  ) {
+    message =
+      "Agent: I’m checking the email login status to confirm whether the account itself is available for authentication.\n\n" +
+      "System: The email account is active and the current password is valid, but the email application is still failing authentication. The failure should be reproduced before checking locally stored credentials.\n\n" +
+      "Customer: The new password works on the website, but the email app still rejects it.\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the email login status to see why sign-in is failing.\n\n" +
     "System: The email account session is stuck and cannot complete authentication successfully. The session must be reset before sign-in can proceed.\n\n" +
     `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+  case "CheckSavedEmailCredentials":
+  message =
+    "Agent: Since the current password works elsewhere but the email application still fails, I’m checking the saved email credentials on this device.\n\n" +
+    "System: The email application is storing the user’s previous password. The outdated saved credential is being submitted automatically during each login attempt.\n\n" +
+    "Customer: That makes sense. I changed my password recently but never updated it in the email app.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "UpdateSavedEmailCredentials":
+  message =
+    "Agent: I’m replacing the outdated saved email password with the user’s current credentials.\n\n" +
+    "System: The locally stored email credentials have been updated successfully. The email application can now authenticate using the current password.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
     NEXT_STEP_PROMPTS.default;
   break;
 
@@ -680,6 +910,30 @@ case "ResetEmailSession":
   break;
 
 case "TestEmailLogin":
+  if (
+    state.scenario ===
+      "email_login_cached_credentials" &&
+    state.scenarioFacts?.kind ===
+      "email_login_cached_credentials"
+  ) {
+    if (
+      !state.scenarioFacts.first_email_login_tested
+    ) {
+      message =
+        "Agent: I’m testing email login to reproduce the authentication failure before changing any saved credentials.\n\n" +
+        "System: The email application still rejects the login even though the account is active and the current password works elsewhere. A locally stored credential may be overriding the password being entered.\n\n" +
+        "Customer: It failed again in the email app, but I can still sign in through the website.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    message =
+      "Agent: I’m testing email login again after updating the saved credentials.\n\n" +
+      "System: Email authentication completed successfully using the current password. The outdated locally stored credential is no longer interfering with sign-in.\n\n" +
+      "Customer: Great, I can access my email again.";
+    break;
+  }
+
   message =
     "Agent: I’m testing email sign-in now.\n\n" +
     "System: Email sign-in is working normally. The user can successfully authenticate and access the mailbox.\n\n" +
@@ -687,24 +941,63 @@ case "TestEmailLogin":
   break;
 
 case "CheckInboxFilters":
+  if (
+    state.scenario ===
+      "not_receiving_email_inbox_rule_redirecting"
+  ) {
+    message =
+      "Agent: I’m reviewing the mailbox inbox rules after normal synchronization troubleshooting did not restore Inbox delivery.\n\n" +
+      "System: An inbox rule is redirecting incoming messages away from the Inbox.\n\n" +
+      "Customer: That explains why I wasn’t seeing them.\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the inbox filters to see if emails are being blocked or redirected.\n\n" +
     "System: A filter is currently redirecting incoming emails away from the inbox. This prevents expected messages from appearing where the user looks for them.\n\n" +
-    "Customer: Oh wow.\n\n" + NEXT_STEP_PROMPTS.default;
+    "Customer: Oh wow.\n\n" +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "DisableInboxFilter":
+  if (
+    state.scenario ===
+      "not_receiving_email_inbox_rule_redirecting"
+  ) {
+    message =
+      "Agent: I’m disabling the inbox rule that is redirecting incoming mail.\n\n" +
+      "System: The redirecting inbox rule has been disabled successfully.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m disabling that filter so incoming emails reach the inbox normally.\n\n" +
     "System: The filter has been removed. Incoming emails will now be delivered to the inbox instead of being redirected.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
-case "CheckWifiStatus": 
+case "CheckWifiStatus":
+  if (
+    state.scenario ===
+      "cannot_connect_wifi_corrupted_profile"
+  ) {
+    message =
+      "Agent: I’m checking the device’s wireless settings to confirm Wi-Fi is enabled.\n\n" +
+      "System: Wi-Fi is enabled and the device can detect the wireless network, but the saved connection is still failing.\n\n" +
+      "Customer: I can see the network, but it still won’t connect.\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the device’s wireless settings to see why it is not connecting.\n\n" +
     "System: Wi-Fi is currently turned off on the device. Because wireless networking is disabled, the device cannot detect or connect to available networks.\n\n" +
-    "Customer: Oh okay.\n\n" + NEXT_STEP_PROMPTS.default;
+    "Customer: Oh okay.\n\n" +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "EnableWifi":
@@ -715,10 +1008,56 @@ case "EnableWifi":
   break;
 
 case "TestConnection":
+  if (
+    state.scenario ===
+      "cannot_connect_wifi_corrupted_profile" &&
+    state.scenarioFacts?.kind ===
+      "cannot_connect_wifi_corrupted_profile"
+  ) {
+    if (!state.scenarioFacts.first_connection_tested) {
+      message =
+        "Agent: I’m testing the Wi-Fi connection now that wireless networking has been confirmed.\n\n" +
+        "System: The connection still fails even though Wi-Fi is enabled and the network is available. The saved wireless profile may be preventing a clean connection.\n\n" +
+        "Customer: It still won’t connect.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    message =
+      "Agent: I’m testing the Wi-Fi connection after reconnecting with a clean wireless profile.\n\n" +
+      "System: The device connected successfully using the new Wi-Fi profile. Wireless network access has been restored.\n\n" +
+      "Customer: Great, I’m connected again.";
+    break;
+  }
+
   message =
     "Agent: I’m testing the connection now to confirm network access is restored.\n\n" +
     "System: The device successfully connected to Wi-Fi. Network access has been restored.\n\n" +
     "Customer: That worked, thanks.";
+  break;
+
+  case "CheckWifiProfile":
+  message =
+    "Agent: Since the connection still fails, I’m checking the saved Wi-Fi profile for corruption.\n\n" +
+    "System: The saved Wi-Fi profile contains invalid connection data. The corrupted profile is preventing the device from authenticating to the wireless network correctly.\n\n" +
+    "Customer: That would explain why it suddenly stopped connecting.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "RemoveCorruptedWifiProfile":
+  message =
+    "Agent: I’m removing the corrupted saved Wi-Fi profile from the device.\n\n" +
+    "System: The damaged wireless profile has been removed successfully. The device can now create a clean connection profile.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "ReconnectWifi":
+  message =
+    "Agent: I’m reconnecting the device to Wi-Fi so it can create a clean wireless profile.\n\n" +
+    "System: The device has reconnected to the wireless network using a newly created Wi-Fi profile. The connection is ready to be tested.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "CheckEthernetConnection":
@@ -744,10 +1083,36 @@ case "CheckNetworkSpeed":
 
 
 case "CheckNetworkStatus":
+  if (state.scenario === "internet_no_access_proxy") {
+    message =
+      "Agent: I’m checking the network status to confirm whether the device is connected locally.\n\n" +
+      "System: The device is connected to the local network, but websites and online services are still unavailable. Local connectivity is working, so internet traffic must be tested next.\n\n" +
+      "Customer: It shows connected, but nothing online will load.\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the network status to see why internet access is unavailable.\n\n" +
     "System: The device is connected to the local network, but internet access is not currently available. The connection needs to be refreshed before internet traffic can pass normally.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+  case "CheckProxySettings":
+  message =
+    "Agent: Since the device is connected but still cannot reach the internet, I’m checking the proxy settings.\n\n" +
+    "System: An incorrect proxy configuration is forcing internet traffic through an unavailable proxy server. This configuration is preventing websites and online services from loading.\n\n" +
+    "Customer: That would explain why it says connected but nothing opens.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "DisableIncorrectProxy":
+  message =
+    "Agent: I’m disabling the incorrect proxy configuration so internet traffic can use the normal connection path.\n\n" +
+    "System: The incorrect proxy configuration has been disabled successfully. Internet traffic is no longer being routed through the unavailable proxy server.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "CheckNetworkAdapter":
@@ -770,17 +1135,48 @@ case "RestartNetworkAdapter":
     message =
       "Agent: I’m restarting the network adapter to restore normal connection performance.\n\n" +
       "System: The network adapter restarted successfully. The connection has been refreshed and degraded network performance has been cleared.\n\n" +
-      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
     break;
   }
-       
+
+  if (state.scenario === "internet_no_access_proxy") {
+    message =
+      "Agent: I’m restarting the network adapter so the corrected proxy configuration is applied to a fresh network connection.\n\n" +
+      "System: The network adapter restarted successfully. The connection has been refreshed without the incorrect proxy configuration and is ready for final testing.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m restarting the network adapter to refresh the connection.\n\n" +
     "System: The network adapter has restarted successfully. The network connection has been refreshed and internet access can be tested again.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "TestInternetConnection":
+  if (
+    state.scenario === "internet_no_access_proxy" &&
+    state.scenarioFacts?.kind === "internet_no_access_proxy"
+  ) {
+    if (!state.scenarioFacts.first_internet_tested) {
+      message =
+        "Agent: I’m testing internet access now that local network connectivity has been confirmed.\n\n" +
+        "System: Internet access still fails even though the device is connected to the local network. A configuration issue may be blocking outbound web traffic.\n\n" +
+        "Customer: It still won’t load anything online.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    message =
+      "Agent: I’m testing internet access after disabling the incorrect proxy and refreshing the network connection.\n\n" +
+      "System: Internet access is working successfully. The device can now reach websites and online services through the normal network connection.\n\n" +
+      "Customer: Great, everything online is loading again.";
+    break;
+  }
+
   message =
     "Agent: I’m testing internet connectivity now to confirm access is restored.\n\n" +
     "System: Internet access has been restored successfully. The device can reach online services again.\n\n" +
@@ -934,6 +1330,14 @@ case "ConfirmStorageAvailable":
     NEXT_STEP_PROMPTS.default;
   break;
 
+case "CheckMemoryUsage":
+  message =
+    "Agent: I’m checking current memory usage to determine whether system resources are causing the slowdown.\n\n" +
+    "System: Memory usage is critically high. Available system memory is limited, which is reducing performance and responsiveness.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;  
+
 case "CloseMemoryHeavyApps":
   message =
     "Agent: I’m closing the applications consuming excessive memory.\n\n" +
@@ -996,6 +1400,27 @@ case "UpdateRecoveryEmail":
   break;
 
   case "TestSignIn":
+  if (
+    state.scenario === "account_lockout_saved_credentials" &&
+    state.scenarioFacts?.kind ===
+      "account_lockout_saved_credentials"
+  ) {
+    if (!state.scenarioFacts.first_sign_in_attempted) {
+      message =
+        "Agent: I’m testing sign-in after the initial account unlock.\n\n" +
+        "System: Sign-in fails because another device is still using outdated saved credentials. The repeated authentication attempts immediately lock the account again.\n\n" +
+        "Customer: It locked me out again right away.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    message =
+      "Agent: I’m testing sign-in after updating the saved credentials and unlocking the account again.\n\n" +
+      "System: Sign-in completed successfully. The outdated saved credentials are no longer causing repeated authentication failures, and the account remains unlocked.\n\n" +
+      "Customer: Great, it’s finally staying signed in now.";
+    break;
+  }
+
   message =
     "Agent: I’m testing sign-in now to confirm the new password works.\n\n" +
     "System: Sign-in was successful with the new password. Account access has been fully restored.\n\n" +
@@ -1047,18 +1472,57 @@ case "CheckAppStatus":
   break;
 
 case "RestartApplication":
+  if (
+    state.scenario ===
+    "shared_mailbox_automapping_missing"
+  ) {
+    message =
+      "Agent: I’m restarting Outlook so it can load the corrected shared mailbox auto-mapping configuration.\n\n" +
+      "System: Outlook restarted successfully and established a fresh mailbox session. The application is ready to rediscover the Finance shared mailbox automatically.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   if (state.scenario === "application_crash") {
     message =
       "Agent: I’m restarting the application to clear the crash state.\n\n" +
       "System: The application restarted successfully. The crash state has been cleared and the application is ready to be tested for stability.\n\n" +
-      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
+  if (state.scenario === "email_client_corrupted_profile") {
+    message =
+      "Agent: I’m restarting the email application to rule out a temporary process issue.\n\n" +
+      "System: The email application process restarted successfully, but the underlying launch condition has not yet been verified.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+      NEXT_STEP_PROMPTS.default;
     break;
   }
 
   message =
     "Agent: I’m restarting the application so it can launch cleanly.\n\n" +
     "System: The application has been restarted successfully. The stuck launch state has been cleared.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+  case "CheckEmailClientProfile":
+  message =
+    "Agent: Since the restart did not resolve the launch issue, I’m checking the email client profile for corruption.\n\n" +
+    "System: The email client profile contains damaged configuration data. The corrupted profile is preventing the application from completing its launch process.\n\n" +
+    "Customer: That explains why restarting it did not help.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "RepairEmailClientProfile":
+  message =
+    "Agent: I’m repairing the corrupted email client profile so the application can load its configuration normally.\n\n" +
+    "System: The damaged profile configuration has been repaired successfully. The email application is ready to be tested again.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "CheckLicenseAssignment":
@@ -1078,6 +1542,27 @@ case "AssignSoftwareLicense":
   break;
 
 case "TestApplicationLaunch":
+  if (state.scenario === "email_client_corrupted_profile") {
+    if (
+      state.scenarioFacts?.kind ===
+        "email_client_corrupted_profile" &&
+      !state.scenarioFacts.email_client_profile_repaired
+    ) {
+      message =
+        "Agent: I’m testing the email application after restarting it.\n\n" +
+        "System: The application still fails to launch after the restart. The temporary process recovery did not resolve the underlying issue.\n\n" +
+        "Customer: It still does nothing when I try to open it.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    message =
+      "Agent: I’m testing the email application after repairing the corrupted profile.\n\n" +
+      "System: The email application launches successfully. The repaired profile is loading normally and application access has been restored.\n\n" +
+      "Customer: Great, my email is opening again.";
+    break;
+  }
+
   if (state.scenario === "application_crash") {
     message =
       "Agent: I’m testing the application now to confirm it stays stable.\n\n" +
@@ -1123,24 +1608,109 @@ case "InstallSoftwareUpdate":
   break;
 
 case "CheckMicrophoneSettings":
+  if (
+    state.scenario ===
+    "microphone_wrong_recording_device"
+  ) {
+    message =
+      "Agent: I’m checking the microphone settings to confirm the microphone is enabled and available.\n\n" +
+      "System: The microphone is enabled and available to the operating system. The device is permitted to capture audio, so the microphone should be tested before changing the input configuration.\n\n" +
+      "Customer: It looks turned on, but nobody can hear me during calls.\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the microphone settings to see why audio is not being picked up.\n\n" +
     "System: The microphone is currently disabled in the device settings. While disabled, the device cannot capture audio input.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "EnableMicrophone":
   message =
     "Agent: I’m enabling the microphone so the device can capture audio again.\n\n" +
     "System: The microphone has been enabled successfully. The device is now allowed to capture audio input.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.gotIt}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.gotIt}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "CheckRecordingDevice":
+  message =
+    "Agent: Since the microphone is enabled but the test still failed, I’m checking which recording device is currently selected.\n\n" +
+    "System: A different audio-input device is selected as the active recording source. The intended microphone is available, but applications are currently capturing audio from the wrong device.\n\n" +
+    "Customer: That explains why the microphone looks enabled but nobody hears me.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "SelectRecordingDevice":
+  message =
+    "Agent: I’m selecting the intended microphone as the active recording device.\n\n" +
+    "System: The correct microphone has been selected successfully. Applications will now capture audio from the intended recording device.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "TestMicrophone":
+  if (
+    state.scenario ===
+      "microphone_wrong_recording_device" &&
+    state.scenarioFacts?.kind ===
+      "microphone_wrong_recording_device"
+  ) {
+    if (
+      !state.scenarioFacts.first_microphone_tested
+    ) {
+      message =
+        "Agent: I’m testing the microphone to reproduce the audio-input problem before changing the recording device.\n\n" +
+        "System: The microphone test receives no usable audio even though the intended microphone is enabled and available. The active recording-device selection should be checked next.\n\n" +
+        "Customer: It still is not picking up my voice.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    message =
+      "Agent: I’m testing the microphone again after selecting the intended recording device.\n\n" +
+      "System: The microphone is capturing audio successfully through the correct recording device. Audio input is functioning normally.\n\n" +
+      "Customer: Great, they can hear me now.";
+    break;
+  }
+
   message =
     "Agent: I’m testing the microphone now to confirm audio is working.\n\n" +
     "System: The microphone is capturing audio normally. Audio input functionality has been restored.\n\n" +
     "Customer: Great, they can hear me now.";
+  break;
+
+  case "CheckAudioOutput":
+  message =
+    "Agent: I’m checking which audio output device the computer is currently using.\n\n" +
+    "System: Audio is currently being routed to the wrong output device. Sound is being sent somewhere other than the user’s intended speakers or headphones.\n\n" +
+    "Customer: That would explain why I can’t hear anything.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "CheckVolumeStatus":
+  message =
+    "Agent: I’m checking the system volume and mute settings before changing the output device.\n\n" +
+    "System: The system volume is turned up and audio is not muted. The volume settings are not causing the issue.\n\n" +
+    "Customer: Okay, so the volume itself is fine.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "SelectAudioOutput":
+  message =
+    "Agent: I’m selecting the correct speakers as the active audio output device.\n\n" +
+    "System: The correct audio output device has been selected successfully. Sound will now be routed to the intended speakers or headphones.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "TestAudio":
+  message =
+    "Agent: I’m testing audio playback now to confirm sound is working through the selected device.\n\n" +
+    "System: Audio playback completed successfully through the correct output device. Sound functionality has been restored.\n\n" +
+    "Customer: Great, I can hear it now.";
   break;
 
 case "CheckSharedDrivePermissions":
@@ -1167,6 +1737,18 @@ case "GrantSharedDriveAccess":
   break;
 
 case "AddUserToGroup":
+  if (
+    state.scenario ===
+    "folder_access_required_security_group_missing"
+  ) {
+    message =
+      "Agent: I’m adding the user to the security group required for this folder.\n\n" +
+      "System: The user has been added to the required folder-access security group. The existing folder permissions can now apply through the corrected group membership.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.gotIt}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m adding the user to the required shared drive access group.\n\n" +
     "System: The user has been added to the required access group. Group membership is now in place for the shared drive.\n\n" +
@@ -1218,11 +1800,40 @@ case "TestFileOpen":
   break;
 
 case "CheckFolderPermissions":
+  if (
+    state.scenario ===
+    "folder_access_required_security_group_missing"
+  ) {
+    message =
+      "Agent: I’m checking the folder permissions to determine why access is being denied.\n\n" +
+      "System: The folder permissions are configured correctly and access is assigned through a required security group. The folder configuration itself is not missing permissions.\n\n" +
+      "Customer: So the folder permissions are already correct?\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the folder permissions to see why access is missing.\n\n" +
     "System: The folder exists, but this user does not currently have access to it. Without folder permissions, the folder cannot be opened.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
+
+  case "CheckFolderSecurityGroup":
+  message =
+    "Agent: Since the folder permissions are configured correctly but access still fails, I’m checking the user’s security group membership.\n\n" +
+    "System: The user is not currently a member of the security group required to access this folder. Without that group membership, the existing folder permissions do not apply to the user.\n\n" +
+    "Customer: That explains why the permissions looked right but I still couldn’t open it.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "CheckUserPermissions":
+  message =
+    "Agent: I’m checking the user’s current permissions to determine whether access restrictions are causing the issue.\n\n" +
+    "System: The user account does not currently have the required permission level. Access cannot proceed until the correct permissions are assigned.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;  
 
 case "GrantRequiredPermission":
   message =
@@ -1246,6 +1857,28 @@ case "GrantFolderAccess":
   break;
 
 case "TestFolderAccess":
+  if (
+    state.scenario ===
+      "folder_access_required_security_group_missing" &&
+    state.scenarioFacts?.kind ===
+      "folder_access_required_security_group_missing"
+  ) {
+    if (!state.scenarioFacts.first_folder_access_tested) {
+      message =
+        "Agent: I’m testing folder access after confirming the folder permissions are configured correctly.\n\n" +
+        "System: Access is still denied even though the folder permissions are valid. Another authorization dependency is preventing the user from receiving effective access.\n\n" +
+        "Customer: I still get the access denied message.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    message =
+      "Agent: I’m testing folder access after adding the user to the required security group.\n\n" +
+      "System: The folder opens successfully. The corrected security group membership now applies the existing folder permissions to the user.\n\n" +
+      "Customer: Great, I can open the folder now.";
+    break;
+  }
+
   message =
     "Agent: I’m testing folder access now.\n\n" +
     "System: The folder opens successfully for the user. Folder access has been restored.\n\n" +
@@ -1363,6 +1996,23 @@ case "CheckMfaStatus":
     NEXT_STEP_PROMPTS.default;
   break;
 
+  case "CheckBrowserCache":
+  message =
+    "Agent: I’m checking the browser cache to see whether accumulated cached data may be affecting performance.\n\n" +
+    "System: The browser cache contains a large amount of accumulated temporary web data. Clearing the cache may improve browser responsiveness.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "ClearBrowserCache":
+  message =
+    "Agent: I’m clearing the browser cache to remove accumulated temporary web data.\n\n" +
+    "System: The browser cache has been cleared successfully. The browser is ready for performance testing.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+
 case "CheckBrowserExtensions":
   message =
     "Agent: I’m checking the browser extensions to see what may be slowing it down.\n\n" +
@@ -1378,6 +2028,20 @@ case "DisableUnnecessaryExtensions":
   break;
 
 case "TestBrowserPerformance":
+  if (
+  state.scenario === "browser_running_slow_extension" &&
+  state.scenarioFacts?.kind ===
+    "browser_running_slow_extension" &&
+  !state.scenarioFacts.browser_performance_tested_after_cache
+) {
+  message =
+    "Agent: I’m testing browser performance after clearing the accumulated cache data.\n\n" +
+    "System: The browser is still running slowly even after the cache was cleared. Normal cache troubleshooting did not resolve the underlying performance issue.\n\n" +
+    "Customer: It’s still slow.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+}
+
   message =
     "Agent: I’m testing browser performance now to confirm it responds normally.\n\n" +
     "System: The browser is responding normally again. Browser performance has been restored.\n\n" +
@@ -1390,14 +2054,14 @@ case "CheckInstallPermissions":
       "cannot_install_software_admin_approval_required"
   ) {
     message =
-      "Agent: I’m checking the user’s software installation permissions to determine why the installation is blocked.\n\n" +
-      "System: The user does not currently have permission to install the requested software. The installation request must be reviewed before permissions can be granted.\n\n" +
-      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      "System: The software request has been approved successfully. Installation permissions can now be granted to the user.\n\n" +
+      "System: The user does not currently have permission to install the requested software. Installation access cannot be granted yet because the software request has not completed the required approval process.\n\n" +
+      "Customer: So something still has to be approved before I can install it?\n\n" +
       NEXT_STEP_PROMPTS.default;
     break;
   }
 
-  message =
+    message =
     "Agent: I’m checking the user’s install permissions to see why software cannot be installed.\n\n" +
     "System: The user does not currently have permission to install software on this device. That restriction prevents new software from being added.\n\n" +
     `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
@@ -1459,27 +2123,106 @@ case "TestSoftwareInstall":
   break;
 
 case "CheckDisplayConnection":
+  if (
+    state.scenario ===
+    "second_monitor_display_disabled"
+  ) {
+    message =
+      "Agent: I’m checking the display cable and connection to confirm the second monitor is physically connected.\n\n" +
+      "System: The second monitor is connected securely and receiving power. The physical connection is not preventing the display from working, so the display configuration should be checked next.\n\n" +
+      "Customer: The monitor is plugged in and powered on, but the screen is still blank.\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the display cable and connection to confirm the second monitor is physically connected.\n\n" +
     "System: The second monitor is connected, but the computer has not fully registered the display yet. Display settings must be checked next so the operating system can detect it.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "CheckDisplaySettings":
+  if (
+    state.scenario ===
+    "second_monitor_display_disabled"
+  ) {
+    message =
+      "Agent: I’m checking the display settings to confirm whether the connected monitor appears in the operating system.\n\n" +
+      "System: The second monitor appears in display settings, but its current operating state has not yet been verified. The monitor should be detected and tested before investigating a deeper configuration dependency.\n\n" +
+      "Customer: So the computer can see the monitor, but it still is not showing anything?\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the display settings to see why the second monitor is not being detected.\n\n" +
     "System: The second monitor is physically connected but not currently detected in display settings. The computer must detect the display before it can be used.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "DetectSecondMonitor":
+  if (
+    state.scenario ===
+    "second_monitor_display_disabled"
+  ) {
+    message =
+      "Agent: I’m detecting the second monitor so the operating system can fully register the connected display.\n\n" +
+      "System: The second monitor has been detected successfully. The operating system recognizes the display, but dual-display functionality must still be tested to confirm the monitor is active.\n\n" +
+      "Customer: It shows up in the settings now, but the screen is still blank.\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m detecting the second monitor so the computer can recognize it.\n\n" +
     "System: The second monitor has been detected successfully. The operating system can now communicate with the display.\n\n" +
-    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` + NEXT_STEP_PROMPTS.default;
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "CheckDisplayEnabledStatus":
+  message =
+    "Agent: Since the second monitor is detected but still not displaying anything, I’m checking whether that display is enabled in the operating system.\n\n" +
+    "System: The second monitor is detected, but the display is disabled in the current display configuration. The operating system recognizes the monitor but is not sending an active desktop signal to it.\n\n" +
+    "Customer: That explains why the computer sees it but the screen stays blank.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "EnableSecondDisplay":
+  message =
+    "Agent: I’m enabling the second display so the operating system can extend the desktop to that monitor.\n\n" +
+    "System: The second display has been enabled successfully. The operating system is now configured to send an active desktop signal to both monitors.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
   break;
 
 case "TestDualDisplay":
+  if (
+    state.scenario ===
+      "second_monitor_display_disabled" &&
+    state.scenarioFacts?.kind ===
+      "second_monitor_display_disabled"
+  ) {
+    if (
+      !state.scenarioFacts.first_dual_display_tested
+    ) {
+      message =
+        "Agent: I’m testing the dual-display setup now that the second monitor has been detected.\n\n" +
+        "System: The operating system detects the second monitor, but the screen remains inactive and does not display the desktop. Another display configuration condition is preventing the monitor from being used.\n\n" +
+        "Customer: The monitor is listed, but the screen is still completely blank.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    message =
+      "Agent: I’m testing the dual-display setup again after enabling the second display.\n\n" +
+      "System: Both monitors are active and displaying correctly. The desktop extends successfully across the primary and second displays.\n\n" +
+      "Customer: Great, both screens are working now.";
+    break;
+  }
+
   message =
     "Agent: I’m testing the dual monitor setup now to confirm both screens work.\n\n" +
     "System: Both monitors are detected and displaying correctly. Dual display functionality has been restored.\n\n" +
@@ -1489,8 +2232,13 @@ case "TestDualDisplay":
     case "SelectScenario":
       message = `Scenario selected: ${decision.plan.scenario_id.replace(/_/g, " ")}`;
       break;
+
+    case "ViewScorecard":
+      message = "";
+      break;
+
     default:
-      message = "[ENGINE] Action completed.";
+      assertNeverPlan(decision.plan);
   }
 }
 

@@ -5,6 +5,7 @@
 export type ExecutionState =
   | "LOBBY"
   | "RUNNING"
+  | "SCORECARD"
   | "COMPLETED";
 
 // Commands are labeled intents, not behavior
@@ -13,8 +14,9 @@ export type Command =
   | { kind: "start"; readOnly: false }
   | { kind: "restart"; readOnly: false }
   | { kind: "quit"; readOnly: false }
-  | { kind: "debug"; readOnly: true }
-  | { kind: "select"; readOnly: false; scenario_id: string }
+| { kind: "debug"; readOnly: true }
+| { kind: "view_scorecard"; readOnly: false }
+| { kind: "select"; readOnly: false; scenario_id: string }
   | { kind: "help"; readOnly: true }
   | { kind: "status"; readOnly: true }
   | { kind: "unknown"; rawInput: string }
@@ -31,6 +33,11 @@ export type Command =
   | { kind: "test_sign_in"; readOnly: false }
   | { kind: "request_unlock"; readOnly: false }
   | { kind: "confirm_unlock"; readOnly: false }
+  | {
+      kind: "review_failed_authentication_attempts";
+      readOnly: false;
+    }
+  | { kind: "update_saved_credentials"; readOnly: false }
   | { kind: "check_vpn_access"; readOnly: false }
   | { kind: "enable_vpn_access"; readOnly: false }
   | { kind: "confirm_connection"; readOnly: false }
@@ -57,6 +64,8 @@ export type Command =
   // EMAIL
   | { kind: "check_email_status"; readOnly: false }
   | { kind: "enable_email_client"; readOnly: false }
+  | { kind: "check_outbox"; readOnly: false }
+  | { kind: "send_stuck_outbox_email"; readOnly: false }
   | { kind: "check_inbox_filters"; readOnly: false }
   | { kind: "disable_inbox_filter"; readOnly: false }
   | { kind: "resend_reset_code"; readOnly: false }
@@ -66,6 +75,8 @@ export type Command =
   | { kind: "apply_archive_policy"; readOnly: false }
   | { kind: "archive_old_emails"; readOnly: false }
   | { kind: "check_email_login_status"; readOnly: false }
+  | { kind: "check_saved_email_credentials"; readOnly: false }
+  | { kind: "update_saved_email_credentials"; readOnly: false }
   | { kind: "reset_email_session"; readOnly: false }
   | { kind: "test_email_login"; readOnly: false }
   | { kind: "check_sync_settings"; readOnly: false }
@@ -75,15 +86,24 @@ export type Command =
   | { kind: "compress_attachment"; readOnly: false }
   | { kind: "check_shared_mailbox_membership"; readOnly: false }
   | { kind: "grant_shared_mailbox_access"; readOnly: false }
+  | { kind: "check_shared_mailbox_automapping"; readOnly: false }
+  | { kind: "enable_shared_mailbox_automapping"; readOnly: false }
   | { kind: "check_outlook_mailbox_configuration"; readOnly: false }
   | { kind: "add_shared_mailbox_to_outlook_profile"; readOnly: false }
   | { kind: "test_shared_mailbox_access"; readOnly: false }
+  | { kind: "check_email_client_profile"; readOnly: false }
+  | { kind: "repair_email_client_profile"; readOnly: false }
 
   // NETWORK / CONNECTIVITY
   | { kind: "check_wifi_status"; readOnly: false }
   | { kind: "enable_wifi"; readOnly: false }
   | { kind: "test_connection"; readOnly: false }
+  | { kind: "check_wifi_profile"; readOnly: false }
+  | { kind: "remove_corrupted_wifi_profile"; readOnly: false }
+  | { kind: "reconnect_wifi"; readOnly: false }
   | { kind: "check_network_status"; readOnly: false }
+  | { kind: "check_proxy_settings"; readOnly: false }
+  | { kind: "disable_incorrect_proxy"; readOnly: false }
   | { kind: "check_network_adapter"; readOnly: false }
   | { kind: "check_network_speed"; readOnly: false }
   | { kind: "check_ethernet_connection"; readOnly: false }
@@ -103,6 +123,7 @@ export type Command =
   | { kind: "repair_file_association"; readOnly: false }
   | { kind: "test_file_open"; readOnly: false }
   | { kind: "check_folder_permissions"; readOnly: false }
+  | { kind: "check_folder_security_group"; readOnly: false }
   | { kind: "grant_folder_access"; readOnly: false }
   | { kind: "test_folder_access"; readOnly: false }
 
@@ -112,9 +133,13 @@ export type Command =
   | { kind: "test_performance"; readOnly: false }
   | { kind: "check_memory_usage"; readOnly: false }
   | { kind: "close_memory_heavy_apps"; readOnly: false }
+  | { kind: "check_browser_cache"; readOnly: false }
+  | { kind: "clear_browser_cache"; readOnly: false }
   | { kind: "check_browser_extensions"; readOnly: false }
   | { kind: "disable_unnecessary_extensions"; readOnly: false }
   | { kind: "test_browser_performance"; readOnly: false }
+
+  // HARDWARE / PERIPHERALS
 
   // HARDWARE / PERIPHERALS
   | { kind: "check_printer_status"; readOnly: false }
@@ -128,13 +153,21 @@ export type Command =
   | { kind: "check_microphone_settings"; readOnly: false }
   | { kind: "enable_microphone"; readOnly: false }
   | { kind: "test_microphone"; readOnly: false }
+  | { kind: "check_recording_device"; readOnly: false }
+  | { kind: "select_recording_device"; readOnly: false }
   | { kind: "check_webcam_settings"; readOnly: false }
   | { kind: "enable_webcam"; readOnly: false }
   | { kind: "test_webcam"; readOnly: false }
   | { kind: "check_display_connection"; readOnly: false }
   | { kind: "check_display_settings"; readOnly: false }
   | { kind: "detect_second_monitor"; readOnly: false }
+  | { kind: "check_display_enabled_status"; readOnly: false }
+  | { kind: "enable_second_display"; readOnly: false }
   | { kind: "test_dual_display"; readOnly: false }
+  | { kind: "check_audio_output"; readOnly: false }
+  | { kind: "check_volume_status"; readOnly: false }
+  | { kind: "select_audio_output"; readOnly: false }
+  | { kind: "test_audio"; readOnly: false }
 
   // SOFTWARE / APPLICATIONS
   | { kind: "check_app_status"; readOnly: false }
@@ -161,6 +194,7 @@ export type ExecutionPlan =
   | { kind: "StartNewAttempt" }
   | { kind: "SelectScenario"; scenario_id: string }
   | { kind: "ReadOnly"; view: "HELP" | "STATUS" | "DEBUG" }
+  | { kind: "ViewScorecard" }
   | { kind: "QuitAttemptToLobby" }
 
   // SHARED
@@ -175,6 +209,8 @@ export type ExecutionPlan =
   | { kind: "TestSignIn" }
   | { kind: "RequestUnlock" }
   | { kind: "ConfirmUnlock" }
+  | { kind: "ReviewFailedAuthenticationAttempts" }
+  | { kind: "UpdateSavedCredentials" }
   | { kind: "CheckVpnAccess" }
   | { kind: "EnableVpnAccess" }
   | { kind: "ConfirmConnection" }
@@ -201,6 +237,8 @@ export type ExecutionPlan =
   // EMAIL
   | { kind: "CheckEmailStatus" }
   | { kind: "EnableEmailClient" }
+  | { kind: "CheckOutbox" }
+  | { kind: "SendStuckOutboxEmail" }
   | { kind: "SendTestEmail" }
   | { kind: "CheckInboxFilters" }
   | { kind: "DisableInboxFilter" }
@@ -210,6 +248,8 @@ export type ExecutionPlan =
   | { kind: "ApplyArchivePolicy" }
   | { kind: "ArchiveOldEmails" }
   | { kind: "CheckEmailLoginStatus" }
+  | { kind: "CheckSavedEmailCredentials" }
+  | { kind: "UpdateSavedEmailCredentials" }
   | { kind: "ResetEmailSession" }
   | { kind: "TestEmailLogin" }
   | { kind: "CheckSyncSettings" }
@@ -219,15 +259,24 @@ export type ExecutionPlan =
   | { kind: "CompressAttachment" }
   | { kind: "CheckSharedMailboxMembership" }
   | { kind: "GrantSharedMailboxAccess" }
+  | { kind: "CheckSharedMailboxAutomapping" }
+  | { kind: "EnableSharedMailboxAutomapping" }
   | { kind: "CheckOutlookMailboxConfiguration" }
   | { kind: "AddSharedMailboxToOutlookProfile" }
   | { kind: "TestSharedMailboxAccess" }
+  | { kind: "CheckEmailClientProfile" }
+  | { kind: "RepairEmailClientProfile" }
 
   // NETWORK / CONNECTIVITY
   | { kind: "CheckWifiStatus" }
   | { kind: "EnableWifi" }
   | { kind: "TestConnection" }
+  | { kind: "CheckWifiProfile" }
+  | { kind: "RemoveCorruptedWifiProfile" }
+  | { kind: "ReconnectWifi" }
   | { kind: "CheckNetworkStatus" }
+  | { kind: "CheckProxySettings" }
+  | { kind: "DisableIncorrectProxy" }
   | { kind: "CheckNetworkAdapter" }
   | { kind: "CheckNetworkSpeed" }
   | { kind: "CheckEthernetConnection" }
@@ -247,6 +296,7 @@ export type ExecutionPlan =
   | { kind: "RepairFileAssociation" }
   | { kind: "TestFileOpen" }
   | { kind: "CheckFolderPermissions" }
+  | { kind: "CheckFolderSecurityGroup" }
   | { kind: "GrantFolderAccess" }
   | { kind: "TestFolderAccess" }
 
@@ -256,6 +306,8 @@ export type ExecutionPlan =
   | { kind: "TestPerformance" }
   | { kind: "CheckMemoryUsage" }
   | { kind: "CloseMemoryHeavyApps" }
+  | { kind: "CheckBrowserCache" }
+  | { kind: "ClearBrowserCache" }
   | { kind: "CheckBrowserExtensions" }
   | { kind: "DisableUnnecessaryExtensions" }
   | { kind: "TestBrowserPerformance" }
@@ -272,13 +324,21 @@ export type ExecutionPlan =
   | { kind: "CheckMicrophoneSettings" }
   | { kind: "EnableMicrophone" }
   | { kind: "TestMicrophone" }
+  | { kind: "CheckRecordingDevice" }
+  | { kind: "SelectRecordingDevice" }
   | { kind: "CheckWebcamSettings" }
   | { kind: "EnableWebcam" }
   | { kind: "TestWebcam" }
   | { kind: "CheckDisplayConnection" }
   | { kind: "CheckDisplaySettings" }
   | { kind: "DetectSecondMonitor" }
+  | { kind: "CheckDisplayEnabledStatus" }
+  | { kind: "EnableSecondDisplay" }
   | { kind: "TestDualDisplay" }
+  | { kind: "CheckAudioOutput" }
+  | { kind: "CheckVolumeStatus" }
+  | { kind: "SelectAudioOutput" }
+  | { kind: "TestAudio" }
 
   // SOFTWARE / APPLICATIONS
   | { kind: "CheckAppStatus" }
@@ -346,6 +406,18 @@ export type AccountLockoutFacts = {
   identity_verified: boolean;
   account_locked: boolean;
   unlock_requested: boolean;
+  can_login_now: boolean;
+};
+
+export type AccountLockoutSavedCredentialsFacts = {
+  kind: "account_lockout_saved_credentials";
+  identity_verified: boolean;
+  account_locked: boolean;
+  unlock_requested: boolean;
+  first_sign_in_attempted: boolean;
+  repeated_authentication_attempts_reviewed: boolean;
+  saved_credentials_updated: boolean;
+  account_unlocked_after_fix: boolean;
   can_login_now: boolean;
 };
 
@@ -436,17 +508,30 @@ export type EmailNotSendingFacts = {
   can_send_email: boolean;
 };
 
+export type EmailNotSendingOutboxFacts = {
+  kind: "email_not_sending_outbox";
+  identity_verified: boolean;
+  email_status_checked: boolean;
+  first_send_test_completed: boolean;
+  outbox_checked: boolean;
+  stuck_outbox_email_sent: boolean;
+  can_send_email: boolean;
+};
+
 export type NotReceivingEmailFacts = {
   kind: "not_receiving_email";
   identity_verified: boolean;
-  filters_checked: boolean;
-  filter_disabled: boolean;
+  sync_settings_checked: boolean;
+  email_client_resynced: boolean;
   can_receive_email: boolean;
 };
 
 export type NotReceivingEmailInboxRuleRedirectingFacts = {
   kind: "not_receiving_email_inbox_rule_redirecting";
   identity_verified: boolean;
+  sync_settings_checked: boolean;
+  email_client_resynced: boolean;
+  first_receive_test_completed: boolean;
   inbox_filter_checked: boolean;
   inbox_filter_enabled: boolean;
   filter_disabled: boolean;
@@ -476,6 +561,16 @@ export type EmailLoginIssueFacts = {
   identity_verified: boolean;
   email_login_checked: boolean;
   email_session_reset: boolean;
+  email_login_working: boolean;
+};
+
+export type EmailLoginCachedCredentialsFacts = {
+  kind: "email_login_cached_credentials";
+  identity_verified: boolean;
+  email_login_checked: boolean;
+  first_email_login_tested: boolean;
+  saved_email_credentials_checked: boolean;
+  saved_email_credentials_updated: boolean;
   email_login_working: boolean;
 };
 
@@ -523,6 +618,36 @@ export type SharedMailboxOutlookProfileNotUpdatedFacts = {
   shared_mailbox_working: boolean;
 };
 
+export type SharedMailboxAutomappingMissingFacts = {
+  kind: "shared_mailbox_automapping_missing";
+  identity_verified: boolean;
+  shared_mailbox_membership_checked: boolean;
+  shared_mailbox_access_tested: boolean;
+  shared_mailbox_automapping_checked: boolean;
+  shared_mailbox_automapping_enabled: boolean;
+  application_restarted: boolean;
+  shared_mailbox_working: boolean;
+};
+
+export type EmailApplicationWillNotOpenFacts = {
+  kind: "email_application_will_not_open";
+  identity_verified: boolean;
+  app_status_checked: boolean;
+  application_restarted: boolean;
+  application_working: boolean;
+};
+
+export type EmailClientCorruptedProfileFacts = {
+  kind: "email_client_corrupted_profile";
+  identity_verified: boolean;
+  app_status_checked: boolean;
+  application_restarted: boolean;
+  application_launch_tested: boolean;
+  email_client_profile_checked: boolean;
+  email_client_profile_repaired: boolean;
+  application_working: boolean;
+};
+
 // NETWORK / CONNECTIVITY
 export type CannotConnectWifiFacts = {
   kind: "cannot_connect_wifi";
@@ -532,11 +657,33 @@ export type CannotConnectWifiFacts = {
   can_connect_wifi: boolean;
 };
 
+export type CannotConnectWifiCorruptedProfileFacts = {
+  kind: "cannot_connect_wifi_corrupted_profile";
+  identity_verified: boolean;
+  wifi_checked: boolean;
+  first_connection_tested: boolean;
+  wifi_profile_checked: boolean;
+  corrupted_wifi_profile_removed: boolean;
+  wifi_reconnected: boolean;
+  can_connect_wifi: boolean;
+};
+
 export type InternetNoAccessFacts = {
   kind: "internet_no_access";
   identity_verified: boolean;
   network_checked: boolean;
   network_adapter_checked: boolean;
+  network_adapter_restarted: boolean;
+  internet_restored: boolean;
+};
+
+export type InternetNoAccessProxyFacts = {
+  kind: "internet_no_access_proxy";
+  identity_verified: boolean;
+  network_checked: boolean;
+  first_internet_tested: boolean;
+  proxy_settings_checked: boolean;
+  incorrect_proxy_disabled: boolean;
   network_adapter_restarted: boolean;
   internet_restored: boolean;
 };
@@ -602,6 +749,16 @@ export type FolderAccessMissingFacts = {
   folder_access_working: boolean;
 };
 
+export type FolderAccessRequiredSecurityGroupMissingFacts = {
+  kind: "folder_access_required_security_group_missing";
+  identity_verified: boolean;
+  folder_permissions_checked: boolean;
+  first_folder_access_tested: boolean;
+  folder_security_group_checked: boolean;
+  user_added_to_group: boolean;
+  folder_access_working: boolean;
+};
+
 // DEVICE / PERFORMANCE
 export type TooManyAppsRunningFacts = {
   kind: "too_many_apps_running";
@@ -622,6 +779,17 @@ export type LowMemoryFacts = {
 export type BrowserRunningSlowFacts = {
   kind: "browser_running_slow";
   identity_verified: boolean;
+  browser_cache_checked: boolean;
+  browser_cache_cleared: boolean;
+  browser_performance_ok: boolean;
+};
+
+export type BrowserRunningSlowExtensionFacts = {
+  kind: "browser_running_slow_extension";
+  identity_verified: boolean;
+  browser_cache_checked: boolean;
+  browser_cache_cleared: boolean;
+  browser_performance_tested_after_cache: boolean;
   browser_extensions_checked: boolean;
   unnecessary_extensions_disabled: boolean;
   browser_performance_ok: boolean;
@@ -660,6 +828,15 @@ export type MicrophoneNotWorkingFacts = {
   microphone_working: boolean;
 };
 
+export type MicrophoneWrongRecordingDeviceFacts = {
+  kind: "microphone_wrong_recording_device";
+  microphone_settings_checked: boolean;
+  first_microphone_tested: boolean;
+  recording_device_checked: boolean;
+  correct_recording_device_selected: boolean;
+  microphone_working: boolean;
+};
+
 export type WebcamNotWorkingFacts = {
   kind: "webcam_not_working";
   identity_verified: boolean;
@@ -675,6 +852,26 @@ export type SecondMonitorNotDetectedFacts = {
   display_settings_checked: boolean;
   second_monitor_detected: boolean;
   dual_display_working: boolean;
+};
+
+export type SecondMonitorDisplayDisabledFacts = {
+  kind: "second_monitor_display_disabled";
+  display_connection_checked: boolean;
+  display_settings_checked: boolean;
+  second_monitor_detected: boolean;
+  first_dual_display_tested: boolean;
+  display_enabled_status_checked: boolean;
+  second_display_enabled: boolean;
+  dual_display_working: boolean;
+};
+
+export type AudioNotWorkingFacts = {
+  kind: "audio_not_working";
+  identity_verified: boolean;
+  audio_output_checked: boolean;
+  volume_status_checked: boolean;
+  audio_output_selected: boolean;
+  audio_working: boolean;
 };
 
 // SOFTWARE / APPLICATIONS
@@ -717,6 +914,7 @@ export type ScenarioFacts =
   | PasswordResetRecoveryEmailNeverArrivesFacts
   | PasswordResetRecoveryEmailOutdatedFacts
   | AccountLockoutFacts
+  | AccountLockoutSavedCredentialsFacts
   | VpnAccessIssueFacts
   | VpnMfaDependencyMissingFacts
   | MfaCodeNotWorkingFacts
@@ -729,42 +927,53 @@ export type ScenarioFacts =
 
   // EMAIL
   | EmailNotSendingFacts
+  | EmailNotSendingOutboxFacts
   | NotReceivingEmailFacts
   | NotReceivingEmailInboxRuleRedirectingFacts
   | MailboxFullFacts
   | MailboxFullArchivePolicyNotAppliedFacts
   | EmailLoginIssueFacts
+  | EmailLoginCachedCredentialsFacts
   | EmailClientNotSyncingFacts
   | EmailClientCachedSessionStuckFacts
   | AttachmentTooLargeFacts
   | SharedMailboxMissingFacts
   | SharedMailboxOutlookProfileNotUpdatedFacts
+  | SharedMailboxAutomappingMissingFacts
+  | EmailApplicationWillNotOpenFacts
+  | EmailClientCorruptedProfileFacts
 
   // NETWORK / CONNECTIVITY
   | CannotConnectWifiFacts
+  | CannotConnectWifiCorruptedProfileFacts
   | InternetNoAccessFacts
+  | InternetNoAccessProxyFacts
   | SlowNetworkConnectionFacts
   | EthernetNotConnectedFacts
-
   // FILES / STORAGE
   | DiskSpaceFullFacts
   | NetworkDriveMissingFacts
   | NetworkDriveVpnRequiredFirstFacts
   | CannotOpenFileFacts
   | FolderAccessMissingFacts
+  | FolderAccessRequiredSecurityGroupMissingFacts
 
   // DEVICE / PERFORMANCE
-  | TooManyAppsRunningFacts
-  | LowMemoryFacts
-  | BrowserRunningSlowFacts
+| TooManyAppsRunningFacts
+| LowMemoryFacts
+| BrowserRunningSlowFacts
+| BrowserRunningSlowExtensionFacts
 
   // HARDWARE / PERIPHERALS
   | PrinterNotWorkingFacts
   | PrinterWrongDefaultPrinterFacts
   | MouseKeyboardNotWorkingFacts
   | MicrophoneNotWorkingFacts
+  | MicrophoneWrongRecordingDeviceFacts
   | WebcamNotWorkingFacts
   | SecondMonitorNotDetectedFacts
+  | SecondMonitorDisplayDisabledFacts
+  | AudioNotWorkingFacts
 
   // SOFTWARE / APPLICATIONS
   | SoftwareAppNotOpeningFacts

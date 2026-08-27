@@ -83,16 +83,19 @@ const SCENARIO_TIER_ORDER: Record<
     "software_applications",
   ],
 
-  operational_challenges: [
-    "password_reset_challenges",
-    "vpn_access_challenges",
-    "shared_drive_access_challenges",
-    "files_storage",
-    "hardware_peripherals",
-    "email",
-    "software_applications",
-    "software_install_challenges",
-  ],
+operational_challenges: [
+  "account_access",
+  "password_reset_challenges",
+  "vpn_access_challenges",
+  "shared_drive_access_challenges",
+  "network",
+  "files_storage",
+  "device_performance",
+  "hardware_peripherals",
+  "email",
+  "software_applications",
+  "software_install_challenges",
+],
 
   chaos: [],
 };
@@ -252,6 +255,8 @@ export const PREVIEW_STEP_LABELS: Record<string, string> = {
   // EMAIL
   check_email_status: "Check Email Status",
   enable_email_client: "Enable Email Client",
+  check_outbox: "Check Outbox",
+  send_stuck_outbox_email: "Send Stuck Outbox Email",
   send_test_email: "Send Test Email",
 
   check_inbox_filters: "Check Inbox Filters",
@@ -263,8 +268,15 @@ export const PREVIEW_STEP_LABELS: Record<string, string> = {
   archive_old_emails: "Archive Old Emails",
 
   check_email_login_status: "Check Email Login Status",
-  reset_email_session: "Reset Email Session",
-  test_email_login: "Test Email Login",
+
+check_saved_email_credentials:
+  "Check Saved Email Credentials",
+
+update_saved_email_credentials:
+  "Update Saved Email Credentials",
+
+reset_email_session: "Reset Email Session",
+test_email_login: "Test Email Login",
 
   check_sync_settings: "Check Sync Settings",
   resync_email_client: "Resync Email Client",
@@ -275,6 +287,10 @@ export const PREVIEW_STEP_LABELS: Record<string, string> = {
 
   check_shared_mailbox_membership: "Check Shared Mailbox Membership",
   grant_shared_mailbox_access: "Grant Shared Mailbox Access",
+  check_shared_mailbox_automapping:
+    "Check Shared Mailbox Auto-Mapping",
+  enable_shared_mailbox_automapping:
+    "Enable Shared Mailbox Auto-Mapping",
   check_outlook_mailbox_configuration:
     "Check Outlook Mailbox Configuration",
   add_shared_mailbox_to_outlook_profile:
@@ -286,8 +302,13 @@ export const PREVIEW_STEP_LABELS: Record<string, string> = {
   enable_wifi: "Enable Wi-Fi",
   test_connection: "Test Network Connection",
 
+  check_network_status: "Check Network Status",
+  check_proxy_settings: "Check Proxy Settings",
+  disable_incorrect_proxy: "Disable Incorrect Proxy",
   check_network_speed: "Check Network Speed",
   check_network_adapter: "Check Network Adapter",
+  restart_network_adapter: "Restart Network Adapter",
+  test_internet_connection: "Test Internet Connection",
   check_ethernet_connection: "Check Ethernet Connection",
   reconnect_ethernet_cable: "Reconnect Ethernet Cable",
 
@@ -306,7 +327,10 @@ export const PREVIEW_STEP_LABELS: Record<string, string> = {
   test_file_open: "Test File Open",
 
   check_folder_permissions: "Check Folder Permissions",
+  check_folder_security_group:
+  "Check Folder Security Group",
   grant_folder_access: "Grant Folder Access",
+  add_user_to_group: "Add User to Group",
   test_folder_access: "Test Folder Access",
 
   // DEVICE / PERFORMANCE
@@ -336,6 +360,12 @@ export const PREVIEW_STEP_LABELS: Record<string, string> = {
   enable_microphone: "Enable Microphone",
   test_microphone: "Test Microphone",
 
+  check_recording_device:
+    "Check Recording Device",
+
+  select_recording_device:
+    "Select Recording Device",
+
   check_webcam_settings: "Check Webcam Settings",
   enable_webcam: "Enable Webcam",
   test_webcam: "Test Webcam",
@@ -343,12 +373,21 @@ export const PREVIEW_STEP_LABELS: Record<string, string> = {
   check_display_connection: "Check Display Connection",
   check_display_settings: "Check Display Settings",
   detect_second_monitor: "Detect Second Monitor",
+
+  check_display_enabled_status:
+    "Check Display Enabled Status",
+
+  enable_second_display:
+    "Enable Second Display",
+
   test_dual_display: "Test Dual Display",
 
   // SOFTWARE / APPLICATIONS
   check_app_status: "Check Application Status",
   check_application_status: "Check Application Status",
   restart_application: "Restart Application",
+  check_email_client_profile: "Check Email Client Profile",
+  repair_email_client_profile: "Repair Email Client Profile",
   test_application_launch: "Test Application Launch",
   check_software_version: "Check Software Version",
   install_software_update: "Install Software Update",

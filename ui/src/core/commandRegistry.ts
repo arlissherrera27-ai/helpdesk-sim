@@ -16,7 +16,10 @@ import {
 
 type KnownVerb = Exclude<Command["kind"], "unknown">;
 
-type SystemCommandKind = Exclude<KnownVerb, ProcedureCommandKind>;
+export type SystemCommandKind = Exclude<
+  KnownVerb,
+  ProcedureCommandKind
+>;
 
 // System/control commands are not procedure-catalog entries because they
 // require specialized parsing or plan construction.
@@ -28,6 +31,7 @@ const systemRegistry = {
   select: "select",
   help: "help",
   status: "status",
+  view_scorecard: "view_scorecard",
 } as const satisfies Record<string, SystemCommandKind>;
 
 // Aliases point to an existing canonical procedure command.

@@ -8,7 +8,7 @@ export type ProfileMetrics = {
   averageScore: number | null;
   bestScore: number | null;
 
-  totalMistakes: number;
+  failedAttempts: number;
 
   practiceAttempts: number;
   assessmentAttempts: number;
@@ -38,10 +38,9 @@ export function calculateProfileMetrics(
     0
   );
 
-  const totalMistakes = attempts.reduce(
-    (sum, attempt) => sum + attempt.mistakes,
-    0
-  );
+  const failedAttempts = completedAttempts.filter(
+    (attempt) => attempt.completion === "FAIL"
+  ).length;
 
   const practiceAttempts = attempts.filter(
     (attempt) => attempt.mode === "practice"
@@ -84,7 +83,7 @@ export function calculateProfileMetrics(
 
     bestScore,
 
-    totalMistakes,
+    failedAttempts,
 
     practiceAttempts,
 

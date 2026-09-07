@@ -1,4 +1,5 @@
 import type { UserProfile } from "./profile/types";
+import { loadSavedProfiles } from "./profile/profileStore";
 import type { ProfileMetrics } from "./profile/calculateProfileMetrics";
 import type { ScenarioAttemptRecord } from "./history/types";
 import type { SavedPlaylist } from "./playlists/types";
@@ -21,6 +22,8 @@ type ProfilePageProps = {
   onOpenHistory: () => void;
   onOpenPlaylists: () => void;
   onBackToSimulator: () => void;
+  onSignIn: (profile: UserProfile) => void;
+  onSignOut: () => void;
 };
 
 export default function ProfilePage({
@@ -32,7 +35,20 @@ export default function ProfilePage({
   onOpenHistory,
   onOpenPlaylists,
   onBackToSimulator,
-}: ProfilePageProps) {
+  onSignIn,
+  onSignOut,
+  }: ProfilePageProps) {
+const savedProfiles = loadSavedProfiles();
+
+const savedProfile = savedProfiles[0] ?? null;
+
+const profileState =
+  activeProfile !== null
+    ? "SIGNED_IN"
+    : savedProfile !== null
+      ? "SIGNED_OUT"
+      : "NO_PROFILE";
+
  const profileInitials =
   activeProfile?.displayName
     .split(/\s+/)
@@ -46,6 +62,49 @@ const profileCreatedLabel =
   activeProfile !== null
     ? new Date(activeProfile.createdAt).toLocaleDateString()
     : "—";
+
+    const ageRangeLabel =
+  activeProfile?.ageRange === "under_18"
+    ? "Under 18"
+    : activeProfile?.ageRange === "18_24"
+      ? "18–24"
+      : activeProfile?.ageRange === "25_34"
+        ? "25–34"
+        : activeProfile?.ageRange === "35_44"
+          ? "35–44"
+          : activeProfile?.ageRange === "45_54"
+            ? "45–54"
+            : activeProfile?.ageRange === "55_64"
+              ? "55–64"
+              : activeProfile?.ageRange === "65_plus"
+                ? "65+"
+                : activeProfile?.ageRange === "prefer_not_to_say"
+                  ? "Prefer not to say"
+                  : null;
+
+const itExperienceLabel =
+  activeProfile?.itExperience === "brand_new"
+    ? "Brand new to IT"
+    : activeProfile?.itExperience === "learning"
+      ? "Learning / self-taught"
+      : activeProfile?.itExperience === "some_hands_on"
+        ? "Some hands-on experience"
+        : activeProfile?.itExperience === "working_in_it"
+          ? "Currently working in IT"
+          : null;
+
+const trainingGoalLabel =
+  activeProfile?.trainingGoal === "learn_fundamentals"
+    ? "Learn IT fundamentals"
+    : activeProfile?.trainingGoal === "get_first_it_job"
+      ? "Prepare for a first IT job"
+      : activeProfile?.trainingGoal === "improve_current_skills"
+        ? "Improve current IT skills"
+        : activeProfile?.trainingGoal === "improve_troubleshooting"
+          ? "Improve troubleshooting"
+          : activeProfile?.trainingGoal === "exploring_it"
+            ? "Explore IT as a career"
+            : null;
 
 const recentHistory = [...history]
   .sort(
@@ -99,57 +158,162 @@ return (
             gap: SPACE.sm,
           }}
         >
-          <button
-            type="button"
-            style={{
-              ...BUTTON.primary,
-              width: "100%",
-              textAlign: "left",
-            }}
-          >
-            Overview
-          </button>
 
-          <button
-            type="button"
-            onClick={onOpenHistory}
-            style={{
-              ...BUTTON.secondary,
-              width: "100%",
-              textAlign: "left",
-            }}
-          >
-            History
-          </button>
+          {profileState === "SIGNED_IN" && (
+  <>
+    <button
+      type="button"
+      onClick={onOpenHistory}
+      style={{
+        ...BUTTON.secondary,
+        width: "100%",
+        textAlign: "left",
+      }}
+    >
+      History
+    </button>
 
-          <button
-            type="button"
-            onClick={onOpenPlaylists}
-            style={{
-              ...BUTTON.secondary,
-              width: "100%",
-              textAlign: "left",
-            }}
-          >
-            Playlists
-          </button>
+    <button
+      type="button"
+      onClick={onOpenPlaylists}
+      style={{
+        ...BUTTON.secondary,
+        width: "100%",
+        textAlign: "left",
+      }}
+    >
+      Playlists
+    </button>
+  </>
+)}
 
-          <button
-            type="button"
-            onClick={onBackToSimulator}
-            style={{
-              ...BUTTON.secondary,
-              width: "100%",
-              textAlign: "left",
-            }}
-          >
-            Home
-          </button>
+<button
+  type="button"
+  onClick={onBackToSimulator}
+  style={{
+    ...BUTTON.secondary,
+    width: "100%",
+    textAlign: "left",
+  }}
+>
+  Home
+</button>
+
+<div
+  style={{
+    marginTop: SPACE.md,
+    paddingTop: SPACE.md,
+    borderTop: `1px solid ${COLORS.border}`,
+  }}
+>
+  {profileState === "SIGNED_IN" && (
+    <button
+      type="button"
+      onClick={onSignOut}
+      style={{
+        ...BUTTON.secondary,
+        width: "100%",
+        textAlign: "left",
+      }}
+    >
+      Sign Out
+    </button>
+  )}
+
+  {profileState === "SIGNED_OUT" && (
+    <button
+      type="button"
+      onClick={() => {
+        if (savedProfile !== null) {
+          onSignIn(savedProfile);
+        }
+      }}
+      style={{
+        ...BUTTON.secondary,
+        width: "100%",
+        textAlign: "left",
+      }}
+    >
+      Sign In
+    </button>
+  )}
+
+  {profileState === "NO_PROFILE" && (
+    <button
+      type="button"
+      onClick={onCreateProfile}
+      style={{
+        ...BUTTON.secondary,
+        width: "100%",
+        textAlign: "left",
+      }}
+    >
+      Create Profile
+    </button>
+  )}
+</div>
         </nav>
       </aside>
 
+      {profileState !== "SIGNED_IN" && (
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      gap: SPACE.md,
+      minWidth: 0,
+      padding: `${SPACE.lg} ${SPACE.lg} ${SPACE.lg} 0`,
+    }}
+  >
+    <header>
+      <h1
+        style={{
+          margin: 0,
+          color: COLORS.text,
+          fontSize: TEXT.title,
+        }}
+      >
+        Profile
+      </h1>
+
+      <p
+        style={{
+          margin: `${SPACE.xs} 0 0`,
+          color: COLORS.muted,
+          fontSize: TEXT.body,
+          lineHeight: 1.6,
+        }}
+      >
+        {profileState === "SIGNED_OUT"
+          ? "You are signed out."
+          : "Create your training profile to begin."}
+      </p>
+    </header>
+
+    <section
+  style={{
+    ...CARD.base,
+    padding: SPACE.lg,
+  }}
+>
+  <div
+    style={{
+      color: COLORS.body,
+      fontSize: TEXT.body,
+      lineHeight: 1.6,
+    }}
+  >
+    {profileState === "SIGNED_OUT"
+      ? "Sign in to view your training profile and progress."
+      : "Create a profile to begin saving your training progress."}
+  </div>
+</section>
+  </div>
+)}
+
       {/* PROFILE DASHBOARD */}
-      <div
+{profileState === "SIGNED_IN" && (
+<div
         style={{
           display: "flex",
           flexDirection: "column",
@@ -190,15 +354,6 @@ return (
     </p>
   </div>
 
-  {activeProfile === null && (
-    <button
-      type="button"
-      onClick={onCreateProfile}
-      style={BUTTON.primary}
-    >
-      Create Profile
-    </button>
-  )}
 </header>
 
         {/* TOP DASHBOARD ROW */}
@@ -297,6 +452,47 @@ return (
                 >
                   Training Status: Active
                 </div>
+
+                {(
+  ageRangeLabel !== null ||
+  itExperienceLabel !== null ||
+  trainingGoalLabel !== null
+) && (
+  <div
+    style={{
+      marginTop: SPACE.md,
+      paddingTop: SPACE.md,
+      borderTop: `1px solid ${COLORS.border}`,
+      display: "flex",
+      flexDirection: "column",
+      gap: SPACE.xs,
+      color: COLORS.body,
+      fontSize: TEXT.label,
+      lineHeight: 1.6,
+    }}
+  >
+    {ageRangeLabel !== null && (
+      <div>
+        <strong>Age Range:</strong>{" "}
+        {ageRangeLabel}
+      </div>
+    )}
+
+    {itExperienceLabel !== null && (
+      <div>
+        <strong>IT Experience:</strong>{" "}
+        {itExperienceLabel}
+      </div>
+    )}
+
+    {trainingGoalLabel !== null && (
+      <div>
+        <strong>Training Goal:</strong>{" "}
+        {trainingGoalLabel}
+      </div>
+    )}
+  </div>
+)}
               </div>
             </div>
           </section>
@@ -356,10 +552,10 @@ return (
         ? "—"
         : `${metrics.bestScore}/10`,
   },
-  {
-    label: "Total Mistakes",
-    value: metrics.totalMistakes.toString(),
-  },
+{
+  label: "Failed Attempts",
+  value: metrics.failedAttempts.toString(),
+},
   {
     label: "Practice Attempts",
     value: metrics.practiceAttempts.toString(),
@@ -467,11 +663,15 @@ return (
         getScenarioLabel(attempt.scenarioId);
 
       const resultLabel =
-        attempt.status === "completed"
-          ? attempt.completion ?? "Completed"
-          : attempt.endReason === "restart"
-          ? "Abandoned • Restart"
-          : "Abandoned • Quit";
+  attempt.status === "completed"
+    ? attempt.completion === "FAIL"
+      ? "Failed Attempt"
+      : attempt.mistakes === 0
+        ? "Perfect Run"
+        : "Successful Run"
+    : attempt.endReason === "restart"
+      ? "Restart"
+      : "Quit";
 
       const scoreLabel =
         attempt.score === null
@@ -720,7 +920,8 @@ return (
             </section>
           </div>
         </div>
-      </div>
+            </div>
+)}
     </main>
   );
 }

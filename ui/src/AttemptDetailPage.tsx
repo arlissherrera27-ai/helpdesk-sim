@@ -22,11 +22,15 @@ export default function AttemptDetailPage({
     getScenarioLabel(attempt.scenarioId);
 
   const resultLabel =
-    attempt.status === "completed"
-      ? attempt.completion ?? "Completed"
-      : attempt.endReason === "restart"
-      ? "Abandoned • Restart"
-      : "Abandoned • Quit";
+  attempt.status === "completed"
+    ? attempt.completion === "FAIL"
+      ? "Failed Attempt"
+      : attempt.mistakes === 0
+        ? "Perfect Run"
+        : "Successful Run"
+    : attempt.endReason === "restart"
+      ? "Restart"
+      : "Quit";
 
   const scoreLabel =
     attempt.score === null

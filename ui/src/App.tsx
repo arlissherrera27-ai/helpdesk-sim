@@ -38,6 +38,7 @@ import type { UserProfile } from "./profile/types";
 import {
   loadActiveProfile,
   saveActiveProfile,
+  clearActiveProfile,
 } from "./profile/profileStore";
 
 import {
@@ -234,14 +235,9 @@ function getReportDetails(state: SimState) {
     (event) => event.mistakeType === "unknown"
   );
 
-  const repeatedProcedureAttempts = deniedAttempts.filter(
-    (event) => event.mistakeType === "repeated"
-  );
-
   return {
     deniedAttempts,
     unknownCommands,
-    repeatedProcedureAttempts,
   };
 }
 
@@ -362,6 +358,12 @@ const playlistScenario =
 const [procedureHelpPinned, setProcedureHelpPinned] = useState(false);
 
 const [showMobileProcedureHelp, setShowMobileProcedureHelp] = useState(false);
+
+const [showFeedback, setShowFeedback] = useState(false);
+const [feedbackType, setFeedbackType] =
+  useState<"suggestion" | "feedback">("suggestion");
+const [feedbackMessage, setFeedbackMessage] = useState("");
+const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
 const scoringOutput = JSON.stringify(
   {
@@ -1126,34 +1128,37 @@ const STATE4_TEXT = {
         </div>
 
         <nav
-          aria-label="Header utilities"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            flexWrap: "wrap",
-            justifyContent: "flex-end",
-          }}
-        >
-          {activeProfile !== null && (
+  aria-label="Header utilities"
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+  }}
+>
   <button
-    type="button"
-    onClick={() => setAppView("profile")}
-    style={{
-      fontFamily: "monospace",
-      fontSize: "12px",
-      color: COLORS.assessment,
-      background: "transparent",
-      border: "none",
-      padding: "7px 4px",
-      cursor: "pointer",
-      fontWeight: 700,
-    }}
-  >
-    {activeProfile.displayName}
-  </button>
-)}
-          {["Profile", "Settings"].map((item) => (
+  type="button"
+  onClick={() => {
+    setFeedbackSubmitted(false);
+    setShowFeedback(true);
+  }}
+  style={{
+    fontFamily: "monospace",
+    fontSize: "12px",
+    color: "#d7dde6",
+    background: "transparent",
+    border: "1px solid #2a2a2a",
+    borderRadius: "999px",
+    padding: "7px 10px",
+    cursor: "pointer",
+  }}
+>
+  Suggestion / Feedback
+</button>
+
+{state.executionState !== "RUNNING" &&
+  ["Profile"].map((item) => (
           <button
             key={item}
             type="button"
@@ -1176,10 +1181,183 @@ const STATE4_TEXT = {
               {item}
             </button>
           ))}
-                </nav>
-      </header>
+            </nav>
+</header>
 
-      {appView === "profile" && (
+{showFeedback && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 300,
+      display: "grid",
+      placeItems: "center",
+      padding: "20px",
+      background: "rgba(0, 0, 0, 0.68)",
+    }}
+  >
+    <div
+      style={{
+        ...CARD.base,
+        width: "100%",
+        maxWidth: "520px",
+        padding: SPACE.lg,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: SPACE.md,
+          marginBottom: SPACE.md,
+        }}
+      >
+        <h2
+          style={{
+            margin: 0,
+            color: COLORS.text,
+            fontSize: TEXT.section,
+          }}
+        >
+          Suggestion / Feedback
+        </h2>
+
+        <button
+          type="button"
+          onClick={() => setShowFeedback(false)}
+          style={BUTTON.secondary}
+        >
+          Close
+        </button>
+      </div>
+
+      <div
+  style={{
+    display: "grid",
+    gap: SPACE.md,
+  }}
+>
+  <p
+    style={{
+      margin: 0,
+      color: COLORS.body,
+      fontSize: TEXT.body,
+      lineHeight: 1.6,
+    }}
+  >
+    Have an idea or something we could improve? Let us know.
+  </p>
+
+  <label
+    style={{
+      display: "grid",
+      gap: SPACE.xs,
+      color: COLORS.body,
+      fontSize: TEXT.detail,
+    }}
+  >
+    Type
+
+    <select
+  value={feedbackType}
+  onChange={(event) =>
+    setFeedbackType(
+      event.target.value as "suggestion" | "feedback"
+    )
+  }
+  style={{
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "10px 12px",
+    color: COLORS.text,
+    background: COLORS.panelSoft,
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: RADIUS.button,
+  }}
+>
+      <option value="suggestion">
+        Suggestion
+      </option>
+      <option value="feedback">
+        Feedback
+      </option>
+    </select>
+  </label>
+
+  <label
+    style={{
+      display: "grid",
+      gap: SPACE.xs,
+      color: COLORS.body,
+      fontSize: TEXT.detail,
+    }}
+  >
+    Message
+
+    <textarea
+  rows={6}
+  value={feedbackMessage}
+  onChange={(event) =>
+    setFeedbackMessage(event.target.value)
+  }
+  placeholder="Tell us what you think..."
+      style={{
+        width: "100%",
+        boxSizing: "border-box",
+        resize: "vertical",
+        padding: "10px 12px",
+        fontFamily: "inherit",
+        color: COLORS.text,
+        background: COLORS.panelSoft,
+        border: `1px solid ${COLORS.border}`,
+        borderRadius: RADIUS.button,
+      }}
+    />
+  </label>
+
+  {feedbackSubmitted ? (
+  <div
+    style={{
+      padding: SPACE.md,
+      textAlign: "center",
+      color: COLORS.text,
+      border: `1px solid ${COLORS.border}`,
+      borderRadius: RADIUS.button,
+    }}
+  >
+    Thanks for your feedback.
+  </div>
+) : (
+  <button
+    type="button"
+    disabled={!feedbackMessage.trim()}
+    onClick={() => {
+      if (!feedbackMessage.trim()) {
+        return;
+      }
+
+      setFeedbackSubmitted(true);
+      setFeedbackMessage("");
+    }}
+    style={{
+      ...BUTTON.primary,
+      width: "100%",
+      opacity: feedbackMessage.trim() ? 1 : 0.5,
+      cursor: feedbackMessage.trim()
+        ? "pointer"
+        : "not-allowed",
+    }}
+  >
+    Submit Feedback
+  </button>
+)}
+</div>
+    </div>
+  </div>
+)}
+
+{appView === "profile" && (
   <ProfilePage
     activeProfile={activeProfile}
     metrics={profileMetrics}
@@ -1189,6 +1367,36 @@ const STATE4_TEXT = {
     onOpenHistory={() => setAppView("history")}
     onOpenPlaylists={() => setAppView("playlists")}
     onBackToSimulator={() => setAppView("simulator")}
+    onSignIn={(profile) => {
+  saveActiveProfile(profile);
+  setActiveProfile(profile);
+
+  setProfileHistory(
+    loadAttemptHistoryForProfile(profile.profileId)
+  );
+
+  setSavedPlaylists(
+    loadSavedPlaylistsForProfile(profile.profileId)
+  );
+
+  setPlaylistRuns(
+    loadPlaylistRunsForProfile(profile.profileId)
+  );
+
+  setActivePlaylistRun(null);
+  setAppView("profile");
+}}
+    onSignOut={() => {
+      clearActiveProfile();
+
+      setActiveProfile(null);
+      setProfileHistory([]);
+      setSavedPlaylists([]);
+      setPlaylistRuns([]);
+      setActivePlaylistRun(null);
+
+      setAppView("profile");
+    }}
   />
 )}
 
@@ -2583,22 +2791,6 @@ style={{
 
   <button
     type="button"
-    onClick={runCommand}
-    style={{
-      fontFamily: "monospace",
-      padding: "10px 16px",
-      border: "1px solid #6d4aff",
-      borderRadius: "8px",
-      background: "rgba(109, 74, 255, 0.18)",
-      color: "#fff",
-      cursor: "pointer",
-    }}
-  >
-    Start
-  </button>
-
-  <button
-    type="button"
     onClick={runCurrentScenarioValidation}
     style={{
       fontFamily: "monospace",
@@ -3426,22 +3618,6 @@ style={{
       <div>None recorded.</div>
     )}
 
-    <div style={{ marginTop: SPACE.md }}>
-      <strong>Repeated Procedure Attempts:</strong>{" "}
-      {reportDetails.repeatedProcedureAttempts.length}
-    </div>
-
-    {reportDetails.repeatedProcedureAttempts.length > 0 ? (
-      reportDetails.repeatedProcedureAttempts.map((event) => (
-        <div key={`${event.timestamp}-${event.command}`}>
-          - {formatRunLogEvent(event)}
-  {" "}
-  ({getMistakeLabel(event)})
-        </div>
-      ))
-    ) : (
-      <div>None recorded.</div>
-    )}
   </div>
 </section>
 
@@ -3514,21 +3690,6 @@ style={{
       >
         Retry Scenario
       </button>
-
-<button
-  type="button"
-  onClick={() => {
-    setShowSelector(true);
-    setLog([
-      "Select a scenario to begin",
-    ]);
-    setProcedureHelpPinned(false);
-    setShowMobileProcedureHelp(false);
-  }}
-  style={BUTTON.primary}
->
-  Choose Another Scenario
-</button>
 
       <button
   type="button"

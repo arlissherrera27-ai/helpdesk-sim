@@ -3,6 +3,9 @@ import { useState } from "react";
 import type {
   TrainingRole,
   UserProfile,
+  AgeRange,
+  ITExperience,
+  TrainingGoal,
 } from "./profile/types";
 
 import {
@@ -30,10 +33,19 @@ export default function CreateProfilePage({
 }: CreateProfilePageProps) {
   const [displayName, setDisplayName] = useState("");
 
-  const [trainingRole, setTrainingRole] =
-    useState<TrainingRole>("help_desk_trainee");
+const [trainingRole, setTrainingRole] =
+  useState<TrainingRole>("help_desk_trainee");
 
-  const trimmedDisplayName = displayName.trim();
+const [ageRange, setAgeRange] =
+  useState<AgeRange | "">("");
+
+const [itExperience, setITExperience] =
+  useState<ITExperience | "">("");
+
+const [trainingGoal, setTrainingGoal] =
+  useState<TrainingGoal | "">("");
+
+const trimmedDisplayName = displayName.trim();
 
   const canCreate =
     trimmedDisplayName.length > 0;
@@ -43,13 +55,25 @@ export default function CreateProfilePage({
       return;
     }
 
-    const profile: UserProfile = {
-      profileId: newProfileId(),
-      displayName: trimmedDisplayName,
-      trainingRole,
-      createdAt: new Date().toISOString(),
-      status: "active",
-    };
+const profile: UserProfile = {
+  profileId: newProfileId(),
+  displayName: trimmedDisplayName,
+  trainingRole,
+  createdAt: new Date().toISOString(),
+  status: "active",
+
+  ...(ageRange !== "" && {
+    ageRange,
+  }),
+
+  ...(itExperience !== "" && {
+    itExperience,
+  }),
+
+  ...(trainingGoal !== "" && {
+    trainingGoal,
+  }),
+};
 
     onCreate(profile);
   }
@@ -182,6 +206,154 @@ export default function CreateProfilePage({
               </option>
             </select>
           </label>
+
+          <label
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: SPACE.sm,
+  }}
+>
+  <span
+    style={{
+      color: COLORS.body,
+      fontSize: TEXT.body,
+      fontWeight: 700,
+    }}
+  >
+    Age Range
+  </span>
+
+  <select
+    value={ageRange}
+    onChange={(event) =>
+      setAgeRange(event.target.value as AgeRange | "")
+    }
+    style={{
+      padding: "10px 12px",
+      fontFamily: "monospace",
+      fontSize: TEXT.body,
+      color: COLORS.text,
+      background: COLORS.appBg,
+      border: `1px solid ${COLORS.border}`,
+      borderRadius: "8px",
+    }}
+  >
+    <option value="">Prefer not to answer</option>
+    <option value="under_18">Under 18</option>
+    <option value="18_24">18–24</option>
+    <option value="25_34">25–34</option>
+    <option value="35_44">35–44</option>
+    <option value="45_54">45–54</option>
+    <option value="55_64">55–64</option>
+    <option value="65_plus">65+</option>
+    <option value="prefer_not_to_say">
+      Prefer not to say
+    </option>
+  </select>
+</label>
+
+<label
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: SPACE.sm,
+  }}
+>
+  <span
+    style={{
+      color: COLORS.body,
+      fontSize: TEXT.body,
+      fontWeight: 700,
+    }}
+  >
+    IT Experience
+  </span>
+
+  <select
+    value={itExperience}
+    onChange={(event) =>
+      setITExperience(
+        event.target.value as ITExperience | ""
+      )
+    }
+    style={{
+      padding: "10px 12px",
+      fontFamily: "monospace",
+      fontSize: TEXT.body,
+      color: COLORS.text,
+      background: COLORS.appBg,
+      border: `1px solid ${COLORS.border}`,
+      borderRadius: "8px",
+    }}
+  >
+    <option value="">Optional</option>
+    <option value="brand_new">Brand new to IT</option>
+    <option value="learning">
+      Learning / self-taught
+    </option>
+    <option value="some_hands_on">
+      Some hands-on experience
+    </option>
+    <option value="working_in_it">
+      Currently working in IT
+    </option>
+  </select>
+</label>
+
+
+<label
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: SPACE.sm,
+  }}
+>
+  <span
+    style={{
+      color: COLORS.body,
+      fontSize: TEXT.body,
+      fontWeight: 700,
+    }}
+  >
+    Training Goal
+  </span>
+
+  <select
+    value={trainingGoal}
+    onChange={(event) =>
+      setTrainingGoal(
+        event.target.value as TrainingGoal | ""
+      )
+    }
+    style={{
+      padding: "10px 12px",
+      fontFamily: "monospace",
+      fontSize: TEXT.body,
+      color: COLORS.text,
+      background: COLORS.appBg,
+      border: `1px solid ${COLORS.border}`,
+      borderRadius: "8px",
+    }}
+  >
+    <option value="">Optional</option>
+    <option value="learn_fundamentals">
+      Learn IT fundamentals
+    </option>
+    <option value="get_first_it_job">
+      Prepare for a first IT job
+    </option>
+    <option value="improve_current_skills">
+      Improve current IT skills
+    </option>
+    <option value="improve_troubleshooting">
+      Improve troubleshooting
+    </option>
+    <option value="exploring_it">
+      Explore IT as a career
+    </option>
+  </select>
+</label>
 
           <button
             type="button"

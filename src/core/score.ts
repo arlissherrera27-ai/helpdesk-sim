@@ -1,17 +1,22 @@
 import { LogEvent, ScoreSummary } from "./types";
 
 export function evaluateRun(runLog: LogEvent[]): ScoreSummary {
-  let mistakes = 0; // ← ADD
+  let mistakes = 0;
 
   for (const event of runLog) {
     if (event.decision === "DENY") {
-      mistakes++; // ← ADD
+      mistakes++;
     }
   }
 
+  const totalScore = Math.max(0, 10 - mistakes);
+
   return {
-    totalScore: Math.max(0, 10 - mistakes), // ← ADD
+    totalScore,
     mistakes,
-    completion: "PASS", // ← ADD (simple for MVP)
+    completion:
+      totalScore >= 7
+        ? "PASS"
+        : "FAIL",
   };
 }

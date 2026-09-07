@@ -328,17 +328,20 @@ export default function PlaylistRunDetailPage({
                   </div>
 
                   <div
-                    style={{
-                      color: COLORS.text,
-                      fontSize: TEXT.body,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {attempt?.score === null ||
-                    attempt === undefined
-                      ? "—"
-                      : `${attempt.score}/10`}
-                  </div>
+  style={{
+    color:
+  attempt?.completion === "FAIL"
+    ? COLORS.assessmentStrong
+    : COLORS.success,
+    fontSize: TEXT.body,
+    fontWeight: 700,
+  }}
+>
+  {attempt?.score === null ||
+  attempt === undefined
+    ? "—"
+    : `${attempt.score}/10`}
+</div>
                 </button>
               );
             }

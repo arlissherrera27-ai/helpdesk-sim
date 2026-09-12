@@ -3,6 +3,7 @@ import { parseCommand } from "./parse";
 import { decide } from "./decide";
 import { executePlan } from "./execute";
 import { applyPatch } from "./update";
+import { getScenarioProcedureCommands } from "./scenarioRegistry";
 import { evaluateRun } from "./score";
 
 import {
@@ -204,9 +205,18 @@ State: ${state.executionState}${resultLine}`;
   let finalPatch = patch;
 
   if (patch.result?.completion === "PASS" || patch.result?.completion === "FAIL") {
-    const score = evaluateRun([...state.runLog, logEvent], patch.result.completion);
-    finalPatch = { ...patch, result: score };
-  }
+  const requiredSteps =
+  state.scenario
+    ? getScenarioProcedureCommands(state.scenario).length
+    : 0;
+
+  const score = evaluateRun(
+    [...state.runLog, logEvent],
+    requiredSteps
+  );
+
+  finalPatch = { ...patch, result: score };
+}
 
   const nextState = applyPatch(state, finalPatch, logEvent);
 

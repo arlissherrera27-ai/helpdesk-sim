@@ -1,5 +1,6 @@
 import type { UserProfile } from "./profile/types";
 import { loadSavedProfiles } from "./profile/profileStore";
+import { useResponsive } from "./useResponsive";
 import type { ProfileMetrics } from "./profile/calculateProfileMetrics";
 import type { ScenarioAttemptRecord } from "./history/types";
 import type { SavedPlaylist } from "./playlists/types";
@@ -38,6 +39,7 @@ export default function ProfilePage({
   onSignIn,
   onSignOut,
   }: ProfilePageProps) {
+const { isMobile } = useResponsive();
 const savedProfiles = loadSavedProfiles();
 
 const savedProfile = savedProfiles[0] ?? null;
@@ -126,8 +128,8 @@ return (
     <main
       style={{
         display: "grid",
-        gridTemplateColumns: "220px minmax(0, 1fr)",
-        gap: SPACE.lg,
+        gridTemplateColumns: isMobile ? "1fr" : "220px minmax(0, 1fr)",
+        gap: isMobile ? SPACE.md : SPACE.lg,
         alignItems: "stretch",
         width: "100%",
       }}
@@ -135,9 +137,10 @@ return (
       {/* LEFT NAVIGATION RAIL */}
       <aside
         style={{
-          borderRight: `1px solid ${COLORS.border}`,
-          padding: `${SPACE.lg} ${SPACE.md}`,
-          minHeight: "calc(100vh - 116px)",
+          borderRight: isMobile ? "none" : `1px solid ${COLORS.border}`,
+          borderBottom: isMobile ? `1px solid ${COLORS.border}` : "none",
+          padding: isMobile ? SPACE.md : `${SPACE.lg} ${SPACE.md}`,
+          minHeight: isMobile ? "auto" : "calc(100vh - 116px)",
         }}
       >
         <div
@@ -360,7 +363,7 @@ return (
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "300px minmax(0, 1fr)",
+            gridTemplateColumns: isMobile ? "1fr" : "300px minmax(0, 1fr)",
             gap: SPACE.md,
             alignItems: "stretch",
           }}
@@ -518,7 +521,9 @@ return (
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                gridTemplateColumns: isMobile
+                  ? "repeat(2, minmax(0, 1fr))"
+                  : "repeat(4, minmax(0, 1fr))",
                 gap: SPACE.sm,
               }}
             >
@@ -604,7 +609,9 @@ return (
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "minmax(0, 1.15fr) minmax(340px, 0.85fr)",
+            gridTemplateColumns: isMobile
+              ? "1fr"
+              : "minmax(0, 1.15fr) minmax(340px, 0.85fr)",
             gap: SPACE.md,
             alignItems: "stretch",
           }}
@@ -864,14 +871,14 @@ return (
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
                   gap: SPACE.md,
                 }}
               >
                 <div
                   style={{
-                    paddingRight: SPACE.md,
-                    borderRight: `1px solid ${COLORS.border}`,
+                    paddingRight: isMobile ? 0 : SPACE.md,
+                    borderRight: isMobile ? "none" : `1px solid ${COLORS.border}`,
                   }}
                 >
                   <h3

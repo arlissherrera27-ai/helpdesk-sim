@@ -1,5 +1,6 @@
 import type { ScenarioAttemptRecord } from "./history/types";
 import type { PlaylistRun } from "./playlists/types";
+import { useResponsive } from "./useResponsive";
 import { getScenarioLabel } from "./core/scenarioRegistry";
 import {
   COLORS,
@@ -25,7 +26,9 @@ export default function HistoryPage({
   onOpenPlaylistRun,
   onBackToProfile,
 }: HistoryPageProps) {
-    const playlistAttemptIds = new Set(
+  const { isMobile } = useResponsive();
+
+  const playlistAttemptIds = new Set(
   playlistRuns.flatMap(
     (run) => run.attemptIds
   )
@@ -81,8 +84,9 @@ const sortedPlaylistRuns =
       <header
         style={{
           display: "flex",
+          flexDirection: isMobile ? "column" : "row",
           justifyContent: "space-between",
-          alignItems: "flex-start",
+          alignItems: isMobile ? "stretch" : "flex-start",
           gap: SPACE.md,
           marginBottom: SPACE.lg,
         }}
@@ -113,7 +117,10 @@ const sortedPlaylistRuns =
         <button
           type="button"
           onClick={onBackToProfile}
-          style={BUTTON.secondary}
+          style={{
+          ...BUTTON.secondary,
+          width: isMobile ? "100%" : "auto",
+        }}
         >
           Back to Profile
         </button>
@@ -128,9 +135,10 @@ const sortedPlaylistRuns =
         <div
           style={{
             display: "flex",
+            flexDirection: isMobile ? "column" : "row",
             justifyContent: "space-between",
-            alignItems: "center",
-            gap: SPACE.md,
+            alignItems: isMobile ? "flex-start" : "center",
+            gap: SPACE.sm,
             paddingBottom: SPACE.md,
             borderBottom: `1px solid ${COLORS.border}`,
           }}
@@ -238,10 +246,11 @@ sortedPlaylistRuns.length === 0 ? (
           }
           style={{
             display: "grid",
-            gridTemplateColumns:
-              "minmax(0, 2fr) 120px 150px 90px 170px",
-            gap: SPACE.md,
-            alignItems: "center",
+            gridTemplateColumns: isMobile
+              ? "1fr"
+              : "minmax(0, 2fr) 120px 150px 90px 170px",
+            gap: isMobile ? SPACE.sm : SPACE.md,
+            alignItems: isMobile ? "start" : "center",
             padding: `${SPACE.md} 0`,
             borderBottom: `1px solid ${COLORS.border}`,
             width: "100%",
@@ -314,7 +323,7 @@ sortedPlaylistRuns.length === 0 ? (
             style={{
               color: COLORS.muted,
               fontSize: TEXT.label,
-              textAlign: "right",
+              textAlign: isMobile ? "left" : "right",
             }}
           >
             {endedLabel}
@@ -362,10 +371,11 @@ sortedPlaylistRuns.length === 0 ? (
             }
             style={{
               display: "grid",
-              gridTemplateColumns:
-                "minmax(0, 2fr) 120px 150px 90px 170px",
-              gap: SPACE.md,
-              alignItems: "center",
+              gridTemplateColumns: isMobile
+                ? "1fr"
+                : "minmax(0, 2fr) 120px 150px 90px 170px",
+              gap: isMobile ? SPACE.sm : SPACE.md,
+              alignItems: isMobile ? "start" : "center",
               padding: `${SPACE.md} 0`,
               borderBottom: `1px solid ${COLORS.border}`,
               width: "100%",
@@ -437,7 +447,7 @@ sortedPlaylistRuns.length === 0 ? (
               style={{
                 color: COLORS.muted,
                 fontSize: TEXT.label,
-                textAlign: "right",
+                textAlign: isMobile ? "left" : "right",
               }}
             >
               {endedLabel}

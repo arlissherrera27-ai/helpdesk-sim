@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useResponsive } from "./useResponsive";
+import { supabase } from "./lib/supabase";
 import { handleInput } from "./core/engine";
 import { initialState } from "./core/state";
 import type { SimState } from "./core/types";
@@ -364,6 +366,8 @@ const [feedbackType, setFeedbackType] =
   useState<"suggestion" | "feedback">("suggestion");
 const [feedbackMessage, setFeedbackMessage] = useState("");
 const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+const [feedbackError, setFeedbackError] = useState("");
 
 const scoringOutput = JSON.stringify(
   {
@@ -1027,7 +1031,7 @@ const showState3Preview =
   !showSelector &&
   previewScenarioDetails !== undefined;
 
-  const isMobile = window.innerWidth <= 768;
+  const { isMobile } = useResponsive();
 
 const STATE3_TEXT = {
   heading: isMobile ? "16px" : "20px",
@@ -1055,28 +1059,32 @@ const STATE4_TEXT = {
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        padding: "96px 20px 20px",
+        padding: isMobile ? "16px" : "96px 20px 20px",
         fontFamily: "monospace",
         boxSizing: "border-box",
       }}
     >
        <header
       style={{
-        position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    minHeight: "72px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: "12px",
-    padding: "12px 16px",
-    boxSizing: "border-box",
-    borderBottom: "1px solid #2a2a2a",
-    background: "#0b0f14",
-    flexWrap: "wrap",
+        position: isMobile ? "relative" : "fixed",
+top: isMobile ? "auto" : 0,
+left: isMobile ? "auto" : 0,
+right: isMobile ? "auto" : 0,
+zIndex: 100,
+minHeight: "72px",
+display: "flex",
+alignItems: isMobile ? "stretch" : "center",
+justifyContent: "space-between",
+flexDirection: isMobile ? "column" : "row",
+gap: "12px",
+marginBottom: isMobile ? "16px" : 0,
+padding: "12px 16px",
+boxSizing: "border-box",
+border: isMobile ? "1px solid #2a2a2a" : "none",
+borderBottom: "1px solid #2a2a2a",
+borderRadius: isMobile ? "12px" : 0,
+background: "#0b0f14",
+flexWrap: "wrap",
   }}
       >
         <div
@@ -1134,7 +1142,7 @@ const STATE4_TEXT = {
     alignItems: "center",
     gap: "8px",
     flexWrap: "wrap",
-    justifyContent: "flex-end",
+    justifyContent: isMobile ? "flex-start" : "flex-end",
   }}
 >
   <button
@@ -1187,22 +1195,25 @@ const STATE4_TEXT = {
 {showFeedback && (
   <div
     style={{
-      position: "fixed",
-      inset: 0,
-      zIndex: 300,
-      display: "grid",
-      placeItems: "center",
-      padding: "20px",
-      background: "rgba(0, 0, 0, 0.68)",
-    }}
+  position: "fixed",
+  inset: 0,
+  zIndex: 300,
+  display: "grid",
+  placeItems: "center",
+  padding: isMobile ? "12px" : "20px",
+  overflowY: "auto",
+  background: "rgba(0, 0, 0, 0.68)",
+}}
   >
     <div
       style={{
-        ...CARD.base,
-        width: "100%",
-        maxWidth: "520px",
-        padding: SPACE.lg,
-      }}
+  ...CARD.base,
+  width: "100%",
+  maxWidth: "520px",
+  maxHeight: isMobile ? "calc(100vh - 24px)" : "none",
+  overflowY: isMobile ? "auto" : "visible",
+  padding: isMobile ? SPACE.md : SPACE.lg,
+}}
     >
       <div
         style={{
@@ -1267,14 +1278,15 @@ const STATE4_TEXT = {
     )
   }
   style={{
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "10px 12px",
-    color: COLORS.text,
-    background: COLORS.panelSoft,
-    border: `1px solid ${COLORS.border}`,
-    borderRadius: RADIUS.button,
-  }}
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "10px 12px",
+  fontSize: isMobile ? "16px" : TEXT.body,
+  color: COLORS.text,
+  background: COLORS.panelSoft,
+  border: `1px solid ${COLORS.border}`,
+  borderRadius: RADIUS.button,
+}}
 >
       <option value="suggestion">
         Suggestion
@@ -1308,6 +1320,7 @@ const STATE4_TEXT = {
         resize: "vertical",
         padding: "10px 12px",
         fontFamily: "inherit",
+        fontSize: isMobile ? "16px" : TEXT.body,
         color: COLORS.text,
         background: COLORS.panelSoft,
         border: `1px solid ${COLORS.border}`,
@@ -1329,28 +1342,78 @@ const STATE4_TEXT = {
     Thanks for your feedback.
   </div>
 ) : (
-  <button
-    type="button"
-    disabled={!feedbackMessage.trim()}
-    onClick={() => {
-      if (!feedbackMessage.trim()) {
-        return;
-      }
+  <>
+    {feedbackError && (
+      <div
+        style={{
+          padding: SPACE.sm,
+          color: COLORS.assessmentStrong,
+          border: `1px solid ${COLORS.assessmentStrong}`,
+          borderRadius: RADIUS.button,
+        }}
+      >
+        {feedbackError}
+      </div>
+    )}
 
-      setFeedbackSubmitted(true);
-      setFeedbackMessage("");
-    }}
-    style={{
-      ...BUTTON.primary,
-      width: "100%",
-      opacity: feedbackMessage.trim() ? 1 : 0.5,
-      cursor: feedbackMessage.trim()
-        ? "pointer"
-        : "not-allowed",
-    }}
-  >
-    Submit Feedback
-  </button>
+    <button
+      type="button"
+      disabled={
+        !feedbackMessage.trim() ||
+        feedbackSubmitting
+      }
+      onClick={async () => {
+        const message =
+          feedbackMessage.trim();
+
+        if (!message || feedbackSubmitting) {
+          return;
+        }
+
+        setFeedbackSubmitting(true);
+        setFeedbackError("");
+
+        const { error } = await supabase
+          .from("feedback")
+          .insert({
+            type: feedbackType,
+            message,
+            scenario: state.scenario,
+            mode: state.mode,
+          });
+
+        if (error) {
+  setFeedbackError(
+    "Could not submit feedback. Please try again."
+  );
+  setFeedbackSubmitting(false);
+  return;
+}
+
+        setFeedbackSubmitted(true);
+        setFeedbackMessage("");
+        setFeedbackSubmitting(false);
+      }}
+      style={{
+        ...BUTTON.primary,
+        width: "100%",
+        opacity:
+          feedbackMessage.trim() &&
+          !feedbackSubmitting
+            ? 1
+            : 0.5,
+        cursor:
+          feedbackMessage.trim() &&
+          !feedbackSubmitting
+            ? "pointer"
+            : "not-allowed",
+      }}
+    >
+      {feedbackSubmitting
+        ? "Submitting..."
+        : "Submit Feedback"}
+    </button>
+  </>
 )}
 </div>
     </div>
@@ -1713,11 +1776,12 @@ onBackToPlaylists={() => {
         style={{
           minHeight: "132px",
           display: "flex",
-          alignItems: "center",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "stretch" : "center",
           justifyContent: "space-between",
-          gap: "24px",
+          gap: isMobile ? "16px" : "24px",
           marginBottom: "16px",
-          padding: "24px 32px",
+          padding: isMobile ? "18px" : "24px 32px",
           boxSizing: "border-box",
           border: "1px solid #1f7a3a",
           borderRadius: "12px",
@@ -1728,7 +1792,7 @@ onBackToPlaylists={() => {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "22px",
+            gap: isMobile ? "14px" : "22px",
           }}
         >
           <div
@@ -1778,8 +1842,8 @@ onBackToPlaylists={() => {
         <div
           aria-hidden="true"
           style={{
-            width: "92px",
-            height: "72px",
+            width: isMobile ? "100%" : "92px",
+            height: isMobile ? "48px" : "72px",
             display: "grid",
             placeItems: "center",
             color: "#1f7a3a",
@@ -1799,7 +1863,7 @@ onBackToPlaylists={() => {
           <section
             style={{
               marginBottom: "16px",
-              padding: "28px 32px",
+              padding: isMobile ? "18px" : "28px 32px",
               border: "1px solid #6d4aff",
               borderRadius: "12px",
               background: "rgba(109, 74, 255, 0.06)",
@@ -1856,8 +1920,8 @@ onBackToPlaylists={() => {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "22px",
+                gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+                gap: isMobile ? "14px" : "22px",
                 marginBottom: "28px",
               }}
             >
@@ -2058,7 +2122,7 @@ setLog(["Select a scenario to begin"]);
 <section
   style={{
     marginBottom: "16px",
-    padding: window.innerWidth <= 768 ? "18px 12px" : "28px 32px",
+    padding: isMobile ? "18px 12px" : "28px 32px",
     background: "transparent",
   }}
 >
@@ -2067,13 +2131,13 @@ setLog(["Select a scenario to begin"]);
     display: "flex",
     flexDirection: "column",
     alignItems:
-      window.innerWidth <= 768 ? "center" : "flex-start",
+      isMobile ? "center" : "flex-start",
     textAlign:
-      window.innerWidth <= 768 ? "center" : "left",
+      isMobile ? "center" : "left",
     gap: "14px",
     marginBottom: "24px",
-    width: window.innerWidth <= 768 ? "calc(100vw - 40px)" : "auto",
-    marginLeft: window.innerWidth <= 768 ? "-32px" : 0,
+    width: "100%",
+    boxSizing: "border-box",
     position: "relative",
     zIndex: 1,
     background: COLORS.appBg,
@@ -2107,10 +2171,12 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
 <div
   style={{
     display: "flex",
+    flexDirection: isMobile ? "column" : "row",
     alignItems: "center",
     alignSelf: "center",
+    width: isMobile ? "100%" : "auto",
     border: "1px solid #2a2a2a",
-    borderRadius: "999px",
+    borderRadius: isMobile ? "10px" : "999px",
     overflow: "hidden",
     background: "rgba(255, 255, 255, 0.03)",
   }}
@@ -2125,7 +2191,8 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
                   }));
                 }}
                 style={{
-                  minWidth: "170px",
+                  width: isMobile ? "100%" : "auto",
+                  minWidth: isMobile ? 0 : "170px",
                   padding: "10px 16px",
                   fontFamily: "monospace",
                   fontSize: "13px",
@@ -2151,7 +2218,8 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
                   }));
                 }}
                 style={{
-                  minWidth: "190px",
+                  width: isMobile ? "100%" : "auto",
+                  minWidth: isMobile ? 0 : "190px",
                   padding: "10px 16px",
                   fontFamily: "monospace",
                   fontSize: "13px",
@@ -2173,7 +2241,7 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
   style={{
     marginBottom: "18px",
     textAlign:
-      window.innerWidth <= 768 ? "center" : "left",
+      isMobile ? "center" : "left",
   }}
 >
   <h2
@@ -2256,20 +2324,20 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
   style={{
     display: "grid",
     gridTemplateColumns:
-      window.innerWidth <= 768 ? "220px 1fr" : "280px 1fr",
-    gap: window.innerWidth <= 768 ? "12px" : "24px",
+      isMobile ? "1fr" : "280px 1fr",
+    gap: isMobile ? "18px" : "24px",
     alignItems: "start",
   }}
 >
             <div
 style={{
   minHeight: "320px",
-  padding: window.innerWidth <= 768 ? "0" : "16px",
+  padding: isMobile ? "0" : "16px",
   border:
-    window.innerWidth <= 768 ? "none" : "1px solid #2a2a2a",
-  borderRadius: window.innerWidth <= 768 ? 0 : "10px",
+    isMobile ? "none" : "1px solid #2a2a2a",
+  borderRadius: isMobile ? 0 : "10px",
   background:
-    window.innerWidth <= 768
+    isMobile
       ? "transparent"
       : "rgba(255, 255, 255, 0.03)",
 }}
@@ -2338,12 +2406,12 @@ style={{
             <div
 style={{
   minHeight: "320px",
-  padding: window.innerWidth <= 768 ? "0" : "16px",
+  padding: isMobile ? "0" : "16px",
   border:
-    window.innerWidth <= 768 ? "none" : "1px solid #2a2a2a",
-  borderRadius: window.innerWidth <= 768 ? 0 : "10px",
+    isMobile ? "none" : "1px solid #2a2a2a",
+  borderRadius: isMobile ? 0 : "10px",
   background:
-    window.innerWidth <= 768
+    isMobile
       ? "transparent"
       : "rgba(255, 255, 255, 0.02)",
 }}
@@ -2506,7 +2574,7 @@ style={{
 <section
   style={{
     marginBottom: "16px",
-    padding: "28px 32px",
+    padding: isMobile ? "18px 12px" : "28px 32px",
     border: isMobile ? "none" : "1px solid #6d4aff",
     borderRadius: isMobile ? 0 : "12px",
     background: isMobile ? "transparent" : "rgba(109, 74, 255, 0.04)",
@@ -2609,11 +2677,11 @@ style={{
 <div
 style={{
   display: "grid",
-  gridTemplateColumns: isMobile ? "40% 60%" : "1fr 1fr",
-  gap: isMobile ? "8px" : "18px",
+  gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+  gap: isMobile ? "12px" : "18px",
   marginBottom: "18px",
-  width: isMobile ? "calc(100vw - 24px)" : "auto",
-  marginLeft: isMobile ? "-24px" : 0,
+  width: "100%",
+  boxSizing: "border-box",
 }}
 >
 <div
@@ -2721,8 +2789,8 @@ style={{
                     key={step}
 style={{
   display: "flex",
-  gap: window.innerWidth <= 768 ? "8px" : "14px",
-  padding: window.innerWidth <= 768 ? "10px 0" : "14px 0",
+  gap: isMobile ? "8px" : "14px",
+  padding: isMobile ? "10px 0" : "14px 0",
   borderBottom: "1px solid #2a2a2a",
   color: COLORS.body,
   fontSize: STATE3_TEXT.body,
@@ -2781,6 +2849,7 @@ style={{
       flex: 1,
       boxSizing: "border-box",
       fontFamily: "monospace",
+      fontSize: isMobile ? "16px" : TEXT.body,
       background: "transparent",
       color: "#fff",
       border: "1px solid #2a2a2a",
@@ -3268,6 +3337,7 @@ onClick={() => {
           flex: 1,
           boxSizing: "border-box",
           fontFamily: "monospace",
+          fontSize: isMobile ? "16px" : TEXT.body,
           background: "transparent",
           color: COLORS.text,
           border: `1px solid ${COLORS.border}`,
@@ -3317,7 +3387,7 @@ style={{
         lineHeight: 1.25,
       }}
     >
-      Scenario Passed
+      Scenario Complete
     </h2>
 
     <div
@@ -3388,25 +3458,30 @@ style={{
 >
       <div>
         <div
-          style={{
-            color: COLORS.success,
-            fontSize: TEXT.hero,
-            fontWeight: 700,
-            lineHeight: 1,
-            marginBottom: SPACE.sm,
-          }}
-        >
-          PASS
-        </div>
+  style={{
+    color:
+      state.result?.completion === "PASS"
+        ? COLORS.success
+        : COLORS.assessmentStrong,
+    fontSize: TEXT.hero,
+    fontWeight: 700,
+    lineHeight: 1,
+    marginBottom: SPACE.sm,
+  }}
+>
+  {state.result?.completion ?? "—"}
+</div>
 
-        <div
-          style={{
-            color: COLORS.body,
-            marginBottom: SPACE.md,
-          }}
-        >
-          You completed the scenario successfully.
-        </div>
+<div
+  style={{
+    color: COLORS.body,
+    marginBottom: SPACE.md,
+  }}
+>
+  {state.result?.completion === "PASS"
+    ? "You completed the scenario successfully."
+    : "You completed the scenario, but did not pass."}
+</div>
 
 <div
   style={{

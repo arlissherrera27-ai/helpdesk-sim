@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useResponsive } from "./useResponsive";
 
 import type {
   TrainingRole,
@@ -31,6 +32,7 @@ export default function CreateProfilePage({
   onBack,
   onCreate,
 }: CreateProfilePageProps) {
+  const { isMobile } = useResponsive();
   const [displayName, setDisplayName] = useState("");
 
 const [trainingRole, setTrainingRole] =
@@ -89,7 +91,7 @@ const profile: UserProfile = {
       <section
         style={{
           ...CARD.base,
-          padding: SPACE.lg,
+          padding: isMobile ? SPACE.md : SPACE.lg,
         }}
       >
         <button
@@ -158,7 +160,7 @@ const profile: UserProfile = {
               style={{
                 padding: "10px 12px",
                 fontFamily: "monospace",
-                fontSize: TEXT.body,
+                fontSize: isMobile ? "16px" : TEXT.body,
                 color: COLORS.text,
                 background: COLORS.panelSoft,
                 border: `1px solid ${COLORS.border}`,

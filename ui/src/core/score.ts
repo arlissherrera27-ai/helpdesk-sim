@@ -2,7 +2,7 @@ import type { LogEvent, ScoreSummary } from "./types";
 
 export function evaluateRun(
   runLog: LogEvent[],
-  completion: "PASS" | "FAIL" = "PASS"
+  requiredSteps: number
 ): ScoreSummary {
   let mistakes = 0;
 
@@ -12,9 +12,19 @@ export function evaluateRun(
     }
   }
 
+  const attempts = requiredSteps + mistakes;
+
+  const accuracy =
+    attempts > 0
+      ? requiredSteps / attempts
+      : 1;
+
+  const totalScore =
+    Math.round(accuracy * 100) / 10;
+
   return {
-    totalScore: Math.max(0, 10 - mistakes),
+    totalScore,
     mistakes,
-    completion,
+    completion: accuracy >= 0.7 ? "PASS" : "FAIL",
   };
 }

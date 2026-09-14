@@ -1120,7 +1120,7 @@ flexWrap: "wrap",
                 lineHeight: 1.1,
               }}
             >
-              Customer Service Simulator
+              Help Desk & IT Support Simulator
             </div>
 
             <div
@@ -1833,9 +1833,9 @@ onBackToPlaylists={() => {
                 lineHeight: 1.6,
               }}
             >
-                Choose your training mode to begin.
+                Practice realistic help desk and IT support scenarios.
                 <br />
-                Practice or Assessment—your choice.            </p>
+                Use guided Practice Mode or test your skills in Assessment Mode.           </p>
           </div>
         </div>
 

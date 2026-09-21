@@ -336,7 +336,9 @@ const [
   setScenarioValidationReport,
 ] = useState<ScenarioValidationReport | null>(null);
 
-    const commandInputRef = useRef<HTMLInputElement>(null);
+const [showDeveloperTools, setShowDeveloperTools] = useState(false);
+
+const commandInputRef = useRef<HTMLInputElement>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
 
 const [showSelector, setShowSelector] = useState(false);
@@ -719,11 +721,11 @@ function abandonPlaylistRun(
     const reportMeasurements = getReportMeasurements(state);
   const reportDetails = getReportDetails(state);
 
-  function runCommand() {
-    const trimmed = input.trim();
-    if (!trimmed) return;
+  function runCommand(commandOverride?: string) {
+  const trimmed = (commandOverride ?? input).trim();
+  if (!trimmed) return;
 
-const out = handleInput(state, trimmed);
+  const out = handleInput(state, trimmed);
 
 const lower = trimmed.toLowerCase();
 const isStart = lower === "start";
@@ -1097,40 +1099,43 @@ flexWrap: "wrap",
           <div
             aria-hidden="true"
             style={{
-              width: "38px",
-              height: "38px",
-              borderRadius: "12px",
+              width: "44px",
+              height: "44px",
+              flex: "0 0 auto",
               display: "grid",
               placeItems: "center",
-              background: "#1f6feb",
-              color: "#fff",
+              border: `1px solid ${COLORS.assessmentStrong}`,
+              borderRadius: RADIUS.card,
+              background: "rgba(96, 165, 250, 0.10)",
+              color: COLORS.assessment,
+              fontSize: TEXT.detail,
               fontWeight: 700,
-              fontSize: "16px",
+              letterSpacing: "1px",
             }}
           >
-            CS
+            MHD
           </div>
 
           <div>
             <div
               style={{
-                color: "#f5f7fb",
+                color: COLORS.text,
                 fontSize: "18px",
                 fontWeight: 700,
                 lineHeight: 1.1,
               }}
             >
-              Help Desk & IT Support Simulator
+              MyHelpDeskSim
             </div>
 
             <div
               style={{
-                marginTop: "4px",
-                color: "#9aa4b2",
-                fontSize: "12px",
+                marginTop: SPACE.xs,
+                color: COLORS.muted,
+                fontSize: TEXT.label,
               }}
             >
-              Practice. Learn. Resolve.
+              Help Desk & IT Support Simulator
             </div>
           </div>
         </div>
@@ -1152,15 +1157,12 @@ flexWrap: "wrap",
     setShowFeedback(true);
   }}
   style={{
-    fontFamily: "monospace",
-    fontSize: "12px",
-    color: "#d7dde6",
-    background: "transparent",
-    border: "1px solid #2a2a2a",
-    borderRadius: "999px",
-    padding: "7px 10px",
-    cursor: "pointer",
-  }}
+  ...BUTTON.secondary,
+  fontSize: TEXT.label,
+  color: COLORS.body,
+  borderRadius: RADIUS.pill,
+  padding: "7px 10px",
+}}
 >
   Suggestion / Feedback
 </button>
@@ -1176,15 +1178,12 @@ flexWrap: "wrap",
             }
           }}
               style={{
-                fontFamily: "monospace",
-                fontSize: "12px",
-                color: "#d7dde6",
-                background: "transparent",
-                border: "1px solid #2a2a2a",
-                borderRadius: "999px",
-                padding: "7px 10px",
-                cursor: "pointer",
-              }}
+              ...BUTTON.secondary,
+              fontSize: TEXT.label,
+              color: COLORS.body,
+              borderRadius: RADIUS.pill,
+              padding: "7px 10px",
+            }}
             >
               {item}
             </button>
@@ -1767,93 +1766,45 @@ onBackToPlaylists={() => {
     />
   </div>
 )}
-      {/* ===== STATE BANNER (Box 2) ===== */}
-      {state.executionState === "LOBBY" &&
-      state.scenario === null &&
-      state.previewScenario === null &&
-      !showSelector && (
-      <section
+      {/* ===== WELCOME ===== */}
+{state.executionState === "LOBBY" &&
+state.scenario === null &&
+state.previewScenario === null &&
+!showSelector && (
+  <section
+    style={{
+      ...CARD.base,
+      marginBottom: SPACE.md,
+      padding: isMobile ? SPACE.md : SPACE.lg,
+      background: COLORS.panelSoft,
+    }}
+  >
+    <div>
+      <h1
         style={{
-          minHeight: "132px",
-          display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          alignItems: isMobile ? "stretch" : "center",
-          justifyContent: "space-between",
-          gap: isMobile ? "16px" : "24px",
-          marginBottom: "16px",
-          padding: isMobile ? "18px" : "24px 32px",
-          boxSizing: "border-box",
-          border: "1px solid #1f7a3a",
-          borderRadius: "12px",
-          background: "rgba(22, 101, 52, 0.08)",
+          margin: 0,
+          color: COLORS.text,
+          fontSize: TEXT.section,
+          lineHeight: 1.2,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: isMobile ? "14px" : "22px",
-          }}
-        >
-          <div
-            aria-hidden="true"
-            style={{
-              width: "48px",
-              height: "48px",
-              borderRadius: "999px",
-              display: "grid",
-              placeItems: "center",
-              border: "2px solid #1f7a3a",
-              color: "#1f7a3a",
-              fontSize: "24px",
-              fontWeight: 700,
-              flex: "0 0 auto",
-            }}
-          >
-            i
-          </div>
+        Welcome
+      </h1>
 
-          <div>
-            <h1
-              style={{
-                margin: 0,
-                color: "#e8f5ee",
-                fontSize: "24px",
-                lineHeight: 1.2,
-              }}
-            >
-              Welcome
-            </h1>
-
-            <p
-              style={{
-                margin: "12px 0 0",
-                color: "#cdd8d2",
-                fontSize: "15px",
-                lineHeight: 1.6,
-              }}
-            >
-                Practice realistic help desk and IT support scenarios.
-                <br />
-                Use guided Practice Mode or test your skills in Assessment Mode.           </p>
-          </div>
-        </div>
-
-        <div
-          aria-hidden="true"
-          style={{
-            width: isMobile ? "100%" : "92px",
-            height: isMobile ? "48px" : "72px",
-            display: "grid",
-            placeItems: "center",
-            color: "#1f7a3a",
-            fontSize: "34px",
-            flex: "0 0 auto",
-          }}
-        >
-          ☎
-        </div>
-      </section>
+      <p
+        style={{
+          margin: `${SPACE.sm} 0 0`,
+          color: COLORS.body,
+          fontSize: TEXT.body,
+          lineHeight: 1.6,
+        }}
+      >
+        Practice realistic help desk and IT support scenarios.
+        <br />
+        Use guided Practice Mode or test your skills in Assessment Mode.
+      </p>
+    </div>
+  </section>
 )}
 
             {state.executionState === "LOBBY" &&
@@ -1862,43 +1813,45 @@ onBackToPlaylists={() => {
         !showSelector && (
           <section
             style={{
-              marginBottom: "16px",
-              padding: isMobile ? "18px" : "28px 32px",
-              border: "1px solid #6d4aff",
-              borderRadius: "12px",
-              background: "rgba(109, 74, 255, 0.06)",
+              ...CARD.base,
+              marginBottom: SPACE.md,
+              padding: isMobile ? SPACE.md : SPACE.xl,
+              background: COLORS.panel,
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "18px",
-                marginBottom: "26px",
-              }}
-            >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: SPACE.md,
+              marginBottom: SPACE.xl,
+            }}
+          >
               <div
                 aria-hidden="true"
                 style={{
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "12px",
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: RADIUS.button,
                   display: "grid",
                   placeItems: "center",
-                  color: "#8b5cf6",
-                  border: "1px solid #6d4aff",
-                  fontSize: "22px",
+                  color: COLORS.primary,
+                  border: `1px solid ${COLORS.primaryStrong}`,
+                  background: "rgba(109, 74, 255, 0.10)",
+                  fontSize: TEXT.body,
+                  fontWeight: 700,
+                  flex: "0 0 auto",
                 }}
               >
-                ▦
+                1
               </div>
 
               <div>
                 <h2
                   style={{
                     margin: 0,
-                    color: "#f5f7fb",
-                    fontSize: "24px",
+                    color: COLORS.text,
+                    fontSize: TEXT.title,
                     lineHeight: 1.2,
                   }}
                 >
@@ -1907,9 +1860,9 @@ onBackToPlaylists={() => {
 
                 <p
                   style={{
-                    margin: "8px 0 0",
-                    color: "#c5cad3",
-                    fontSize: "14px",
+                    margin: `${SPACE.sm} 0 0`,
+                    color: COLORS.body,
+                    fontSize: TEXT.body,
                   }}
                 >
                   Select how you want to learn and grow.
@@ -1926,146 +1879,259 @@ onBackToPlaylists={() => {
               }}
             >
               <button
-                type="button"
-                onClick={() => {
-                  setState((current) => ({
-                    ...current,
-                    mode: "practice",
-                    assessmentIntegrity: "maintained",
-                  }));
-                }}
-                style={{
-                  minHeight: "116px",
-                  display: "block",
-                  padding: "18px",
-                  textAlign: "center",
-                  fontFamily: "monospace",
-                  borderRadius: "12px",
-                  border:
-                    mode === "practice"
-                      ? "1px solid #8b5cf6"
-                      : "1px solid #2a2a2a",
-                  background:
-                    mode === "practice"
-                      ? "rgba(139, 92, 246, 0.14)"
-                      : "rgba(255, 255, 255, 0.03)",
-                  color: "#f5f7fb",
-                  cursor: "pointer",
-                }}
-              >
-<div>
-  <strong
-    style={{
-      display: "block",
-      color: "#a78bfa",
-      fontSize: "17px",
-      marginBottom: "8px",
-    }}
-  >
-    Practice Mode
-  </strong>
+  type="button"
+  onClick={() => {
+    setState((current) => ({
+      ...current,
+      mode: "practice",
+      assessmentIntegrity: "maintained",
+    }));
+  }}
+  style={{
+    minHeight: "154px",
+    display: "block",
+    padding: SPACE.lg,
+    textAlign: "left",
+    fontFamily: "monospace",
+    borderRadius: RADIUS.card,
+    border:
+      mode === "practice"
+        ? `1px solid ${COLORS.practice}`
+        : `1px solid ${COLORS.border}`,
+    background:
+      mode === "practice"
+        ? "rgba(34, 197, 94, 0.10)"
+        : COLORS.panel,
+    color: COLORS.text,
+    cursor: "pointer",
+  }}
+>
+  <div>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: SPACE.md,
+        marginBottom: SPACE.sm,
+      }}
+    >
+      <strong
+        style={{
+          color: COLORS.practice,
+          fontSize: "17px",
+        }}
+      >
+        Practice Mode
+      </strong>
 
-  <span
-    style={{
-      color: COLORS.body,
-      fontSize: TEXT.detail,
-      lineHeight: 1.5,
-    }}
-  >
-    You can see how it works—procedures, commands, and guided steps.
-  </span>
-</div>
-              </button>
+      {mode === "practice" && (
+        <span
+          aria-label="Selected"
+          style={{
+            width: "24px",
+            height: "24px",
+            display: "grid",
+            placeItems: "center",
+            flex: "0 0 auto",
+            borderRadius: RADIUS.pill,
+            background: COLORS.practice,
+            color: COLORS.appBg,
+            fontSize: TEXT.body,
+            fontWeight: 700,
+          }}
+        >
+          ✓
+        </span>
+      )}
+    </div>
+
+    <div
+      style={{
+        color: COLORS.body,
+        fontSize: TEXT.detail,
+        lineHeight: 1.5,
+      }}
+    >
+      Learn at your own pace with procedures, commands, and guided steps.
+    </div>
+
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: SPACE.sm,
+        marginTop: SPACE.md,
+      }}
+    >
+      {["Guided Steps", "Learn & Explore", "Build Confidence"].map(
+        (item) => (
+          <span
+            key={item}
+            style={{
+              padding: "5px 8px",
+              color: COLORS.body,
+              fontSize: TEXT.label,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: RADIUS.pill,
+              background: COLORS.panelSoft,
+            }}
+          >
+            {item}
+          </span>
+        )
+      )}
+    </div>
+  </div>
+</button>
 
               <button
-                type="button"
-                onClick={() => {
-                  setState((current) => ({
-                    ...current,
-                    mode: "assessment",
-                    assessmentIntegrity: "maintained",
-                  }));
-                }}
-                  style={{
-                    minHeight: "116px",
-                    display: "block",
-                    padding: "18px",
-                    textAlign: "center",
-                    fontFamily: "monospace",
-                  borderRadius: "12px",
-                  border:
-                    mode === "assessment"
-                      ? "1px solid #60a5fa"
-                      : "1px solid #2a2a2a",
-                  background:
-                    mode === "assessment"
-                      ? "rgba(96, 165, 250, 0.14)"
-                      : "rgba(255, 255, 255, 0.03)",
-                  color: "#f5f7fb",
-                  cursor: "pointer",
-                }}
-              >
-<div>
-  <strong
-    style={{
-      display: "block",
-      color: "#93c5fd",
-      fontSize: "17px",
-      marginBottom: "8px",
-    }}
-  >
-    Assessment Mode
-  </strong>
+  type="button"
+  onClick={() => {
+    setState((current) => ({
+      ...current,
+      mode: "assessment",
+      assessmentIntegrity: "maintained",
+    }));
+  }}
+  style={{
+    minHeight: "154px",
+    display: "block",
+    padding: SPACE.lg,
+    textAlign: "left",
+    fontFamily: "monospace",
+    borderRadius: RADIUS.card,
+    border:
+      mode === "assessment"
+        ? `1px solid ${COLORS.assessment}`
+        : `1px solid ${COLORS.border}`,
+    background:
+      mode === "assessment"
+        ? "rgba(96, 165, 250, 0.10)"
+        : COLORS.panel,
+    color: COLORS.text,
+    cursor: "pointer",
+  }}
+>
+  <div>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: SPACE.md,
+        marginBottom: SPACE.sm,
+      }}
+    >
+      <strong
+        style={{
+          color: COLORS.assessment,
+          fontSize: "17px",
+        }}
+      >
+        Assessment Mode
+      </strong>
 
-  <span
-    style={{
-      color: COLORS.body,
-      fontSize: TEXT.detail,
-      lineHeight: 1.5,
-    }}
-  >
-    When you’re ready, take the training wheels off. No assistance.
-  </span>
-</div>
-              </button>
+      {mode === "assessment" && (
+        <span
+          aria-label="Selected"
+          style={{
+            width: "24px",
+            height: "24px",
+            display: "grid",
+            placeItems: "center",
+            flex: "0 0 auto",
+            borderRadius: RADIUS.pill,
+            background: COLORS.assessment,
+            color: COLORS.appBg,
+            fontSize: TEXT.body,
+            fontWeight: 700,
+          }}
+        >
+          ✓
+        </span>
+      )}
+    </div>
+
+    <div
+      style={{
+        color: COLORS.body,
+        fontSize: TEXT.detail,
+        lineHeight: 1.5,
+      }}
+    >
+      Test your skills by solving the issue on your own with no assistance.
+    </div>
+
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: SPACE.sm,
+        marginTop: SPACE.md,
+      }}
+    >
+      {["No Hints", "Realistic Experience", "See Your Score"].map(
+        (item) => (
+          <span
+            key={item}
+            style={{
+              padding: "5px 8px",
+              color: COLORS.body,
+              fontSize: TEXT.label,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: RADIUS.pill,
+              background: COLORS.panelSoft,
+            }}
+          >
+            {item}
+          </span>
+        )
+      )}
+    </div>
+  </div>
+</button>
             </div>
 
             <div
               style={{
-                borderTop: "1px solid #2a2a2a",
-                paddingTop: "24px",
+                borderTop: `1px solid ${COLORS.border}`,
+                paddingTop: SPACE.xl,
               }}
             >
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "18px",
-                  marginBottom: "18px",
+                  gap: SPACE.md,
+                  marginBottom: SPACE.md,
                 }}
               >
                 <div
                   aria-hidden="true"
                   style={{
-                    width: "44px",
-                    height: "44px",
-                    borderRadius: "999px",
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: RADIUS.button,
                     display: "grid",
                     placeItems: "center",
-                    background: "rgba(139, 92, 246, 0.12)",
-                    color: "#a78bfa",
-                    fontSize: "22px",
+                    background: "rgba(109, 74, 255, 0.10)",
+                    color: COLORS.primary,
+                    border: `1px solid ${COLORS.primaryStrong}`,
+                    fontSize: TEXT.body,
+                    fontWeight: 700,
+                    flex: "0 0 auto",
                   }}
                 >
-                  □
+                  2
                 </div>
 
                 <div>
                   <h3
                     style={{
                       margin: 0,
-                      color: "#f5f7fb",
-                      fontSize: "20px",
+                      color: COLORS.text,
+                      fontSize: TEXT.section,
                     }}
                   >
                     Choose a Scenario
@@ -2073,9 +2139,9 @@ onBackToPlaylists={() => {
 
                   <p
                     style={{
-                      margin: "6px 0 0",
-                      color: "#c5cad3",
-                      fontSize: "14px",
+                      margin: `${SPACE.sm} 0 0`,
+                      color: COLORS.body,
+                      fontSize: TEXT.body,
                     }}
                   >
                     Pick a customer issue to work on.
@@ -2099,22 +2165,43 @@ setShowMobileProcedureHelp(false);
 setLog(["Select a scenario to begin"]);
                 }}
                 style={{
-                  width: "100%",
-                  minHeight: "72px",
-                  display: "grid",
-                  placeItems: "center",
-                  fontFamily: "monospace",
-                  fontSize: "15px",
-                  fontWeight: 700,
-                  color: "#a78bfa",
-                  border: "1px dashed #8b5cf6",
-                  borderRadius: "10px",
-                  background: "rgba(255, 255, 255, 0.02)",
-                  cursor: "pointer",
-                }}
-              >
-                Pick a scenario to begin
-              </button>
+  width: "100%",
+  minHeight: "88px",
+  display: "grid",
+  placeItems: "center",
+  padding: SPACE.md,
+  boxSizing: "border-box",
+  fontFamily: "monospace",
+  textAlign: "center",
+  border: `1px dashed ${COLORS.border}`,
+  borderRadius: RADIUS.card,
+  background: COLORS.panelSoft,
+  cursor: "pointer",
+}}
+>
+  <div>
+    <div
+      style={{
+        color: COLORS.primary,
+        fontSize: TEXT.body,
+        fontWeight: 700,
+      }}
+    >
+      Pick a scenario
+    </div>
+
+    <div
+      style={{
+        marginTop: SPACE.sm,
+        color: COLORS.muted,
+        fontSize: TEXT.detail,
+        fontWeight: 400,
+      }}
+    >
+      Browse the scenario library to begin.
+    </div>
+  </div>
+</button>
             </div>
           </section>
         )}
@@ -2140,7 +2227,7 @@ setLog(["Select a scenario to begin"]);
     boxSizing: "border-box",
     position: "relative",
     zIndex: 1,
-    background: COLORS.appBg,
+    background: "transparent",
   }}
 >
             <button
@@ -2165,7 +2252,7 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
                 padding: 0,
               }}
             >
-              ← Back to Training Choice
+              ← Back to Home
             </button>
 
 <div
@@ -2195,11 +2282,14 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
                   minWidth: isMobile ? 0 : "170px",
                   padding: "10px 16px",
                   fontFamily: "monospace",
-                  fontSize: "13px",
-                  color: mode === "practice" ? "#ffffff" : "#aab2c0",
+                  fontSize: TEXT.detail,
+                  color:
+                    mode === "practice"
+                      ? COLORS.practice
+                      : COLORS.muted,
                   background:
                     mode === "practice"
-                      ? "rgba(109, 74, 255, 0.95)"
+                      ? "rgba(34, 197, 94, 0.10)"
                       : "transparent",
                   border: "none",
                   cursor: "pointer",
@@ -2222,11 +2312,14 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
                   minWidth: isMobile ? 0 : "190px",
                   padding: "10px 16px",
                   fontFamily: "monospace",
-                  fontSize: "13px",
-                  color: mode === "assessment" ? "#ffffff" : "#aab2c0",
+                  fontSize: TEXT.detail,
+                  color:
+                    mode === "assessment"
+                      ? COLORS.assessment
+                      : COLORS.muted,
                   background:
                     mode === "assessment"
-                      ? "rgba(96, 165, 250, 0.9)"
+                      ? "rgba(96, 165, 250, 0.10)"
                       : "transparent",
                   border: "none",
                   cursor: "pointer",
@@ -2298,18 +2391,21 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
                     minWidth: "150px",
                     padding: "10px 18px",
                     fontFamily: "monospace",
-                    fontSize: "13px",
+                    fontSize: TEXT.detail,
                     fontWeight: 700,
                     color:
                       openScenarioTypeId === scenarioType.typeId
-                        ? "#ffffff"
-                        : "#d1d5db",
+                        ? COLORS.text
+                        : COLORS.body,
                     background:
                       openScenarioTypeId === scenarioType.typeId
-                        ? "rgba(109, 74, 255, 0.95)"
-                        : "rgba(255, 255, 255, 0.03)",
-                    border: "1px solid #2a2a2a",
-                    borderRadius: "8px",
+                        ? "rgba(109, 74, 255, 0.18)"
+                        : COLORS.panel,
+                    border:
+                      openScenarioTypeId === scenarioType.typeId
+                        ? `1px solid ${COLORS.primaryStrong}`
+                        : `1px solid ${COLORS.border}`,
+                    borderRadius: RADIUS.button,
                     opacity: scenarioType.enabled ? 1 : 0.45,
                     cursor: scenarioType.enabled ? "pointer" : "default",
                   }}
@@ -2330,23 +2426,23 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
   }}
 >
             <div
-style={{
-  minHeight: "320px",
-  padding: isMobile ? "0" : "16px",
-  border:
-    isMobile ? "none" : "1px solid #2a2a2a",
-  borderRadius: isMobile ? 0 : "10px",
-  background:
-    isMobile
-      ? "transparent"
-      : "rgba(255, 255, 255, 0.03)",
-}}
+              style={{
+                minHeight: "320px",
+                padding: isMobile ? "0" : SPACE.md,
+                border:
+                  isMobile ? "none" : `1px solid ${COLORS.border}`,
+                borderRadius: isMobile ? 0 : RADIUS.card,
+                background:
+                  isMobile
+                    ? "transparent"
+                    : COLORS.panel,
+              }}
             >
               <div
                 style={{
-                  marginBottom: "14px",
-                  color: "#f5f7fb",
-                  fontSize: "15px",
+                  marginBottom: SPACE.md,
+                  color: COLORS.text,
+                  fontSize: TEXT.body,
                   fontWeight: 700,
                 }}
               >
@@ -2379,21 +2475,23 @@ style={{
                         width: "100%",
                         display: "block",
                         textAlign: "left",
-                        marginBottom: "8px",
+                        marginBottom: SPACE.sm,
                         padding: "12px 14px",
                         fontFamily: "monospace",
-                        fontSize: "13px",
+                        fontSize: TEXT.detail,
                         color:
-                          openBranchId === branch.tierId ? "#ffffff" : "#d1d5db",
+                          openBranchId === branch.tierId
+                            ? COLORS.text
+                            : COLORS.body,
                         background:
                           openBranchId === branch.tierId
                             ? "rgba(109, 74, 255, 0.18)"
                             : "transparent",
                         border:
                           openBranchId === branch.tierId
-                            ? "1px solid #6d4aff"
+                            ? `1px solid ${COLORS.primaryStrong}`
                             : "1px solid transparent",
-                        borderRadius: "8px",
+                        borderRadius: RADIUS.button,
                         cursor: "pointer",
                       }}
                     >
@@ -2404,23 +2502,23 @@ style={{
             </div>
 
             <div
-style={{
-  minHeight: "320px",
-  padding: isMobile ? "0" : "16px",
-  border:
-    isMobile ? "none" : "1px solid #2a2a2a",
-  borderRadius: isMobile ? 0 : "10px",
-  background:
-    isMobile
-      ? "transparent"
-      : "rgba(255, 255, 255, 0.02)",
-}}
+              style={{
+                minHeight: "320px",
+                padding: isMobile ? "0" : SPACE.md,
+                border:
+                  isMobile ? "none" : `1px solid ${COLORS.border}`,
+                borderRadius: isMobile ? 0 : RADIUS.card,
+                background:
+                  isMobile
+                    ? "transparent"
+                    : COLORS.panelSoft,
+              }}
             >
               {openBranchId === null ? (
                 <div
                   style={{
-                    color: "#9aa4b2",
-                    fontSize: "13px",
+                    color: COLORS.muted,
+                    fontSize: TEXT.detail,
                     lineHeight: 1.6,
                   }}
                 >
@@ -2495,28 +2593,28 @@ style={{
         textAlign: "left",
         padding: "14px 16px",
         fontFamily: "monospace",
-        color: "#f5f7fb",
-        background: "rgba(255, 255, 255, 0.03)",
-        border: "1px solid #2a2a2a",
-        borderRadius: "10px",
+        color: COLORS.text,
+        background: COLORS.panel,
+        border: `1px solid ${COLORS.border}`,
+        borderRadius: RADIUS.card,
         cursor: "pointer",
       }}
     >
       <div
-        style={{
-          fontSize: "15px",
-          fontWeight: 700,
-          marginBottom: "6px",
-        }}
-      >
-        {scenario.label}
-      </div>
+  style={{
+    fontSize: TEXT.body,
+    fontWeight: 700,
+    marginBottom: SPACE.sm,
+  }}
+>
+  {scenario.label}
+</div>
 
       <div
         style={{
-          fontSize: "12px",
-          color: "#9aa4b2",
-          marginBottom: "6px",
+          fontSize: TEXT.label,
+          color: COLORS.muted,
+          marginBottom: SPACE.sm,
         }}
       >
         {scenario.level} • {scenario.estimatedTime}
@@ -2524,8 +2622,8 @@ style={{
 
       <div
         style={{
-          fontSize: "12px",
-          color: "#c5cad3",
+          fontSize: TEXT.label,
+          color: COLORS.body,
           lineHeight: 1.5,
         }}
       >
@@ -2575,9 +2673,9 @@ style={{
   style={{
     marginBottom: "16px",
     padding: isMobile ? "18px 12px" : "28px 32px",
-    border: isMobile ? "none" : "1px solid #6d4aff",
-    borderRadius: isMobile ? 0 : "12px",
-    background: isMobile ? "transparent" : "rgba(109, 74, 255, 0.04)",
+    border: "none",
+    borderRadius: 0,
+    background: "transparent",
   }}
 >
 
@@ -2632,249 +2730,402 @@ style={{
           </button>
 
           <div
-            style={{
-              marginBottom: "18px",
-              padding: "22px",
-              border: "1px solid #2a2a2a",
-              borderRadius: "12px",
-              background: "rgba(255, 255, 255, 0.03)",
-            }}
-          >
-            <div style={{ color: "#a78bfa", fontSize: "13px", fontWeight: 700 }}>
-              Scenario selected:
-            </div>
-
-            <h2 style={{ margin: "10px 0 0", color: "#f5f7fb", fontSize: "26px" }}>
-              {previewScenarioDetails.label} — Standard
-            </h2>
-            {mode === "assessment" && (
-  <button
-    type="button"
-    onClick={() => {
-      setState((current) => ({
-        ...current,
-        mode: "practice",
-        assessmentIntegrity: "maintained",
-      }));
-    }}
+  style={{
+    marginBottom: SPACE.md,
+    padding: SPACE.md,
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: RADIUS.card,
+    background: COLORS.panelSoft,
+  }}
+>
+  <div
     style={{
-      marginTop: "16px",
-      fontFamily: "monospace",
-      fontSize: "13px",
-      color: "#a78bfa",
-      background: "transparent",
-      border: "1px solid #6d4aff",
-      borderRadius: "8px",
-      padding: "9px 12px",
-      cursor: "pointer",
+      marginBottom: SPACE.xs,
+      color: COLORS.muted,
+      fontSize: TEXT.label,
     }}
   >
-    Switch to Practice
-  </button>
-)}
-          </div>
+    Scenario selected:
+  </div>
 
-<div
-style={{
-  display: "grid",
-  gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-  gap: isMobile ? "12px" : "18px",
-  marginBottom: "18px",
-  width: "100%",
-  boxSizing: "border-box",
-}}
->
-<div
-style={{
-  padding: isMobile ? "10px" : "22px",
-  border: "1px solid #2a2a2a",
-  borderRadius: "12px",
-  background: "rgba(255, 255, 255, 0.03)",
-}}
->
-<h3
-  style={{
-    marginTop: 0,
-    color: COLORS.text,
-    fontSize: STATE3_TEXT.heading,
-    lineHeight: 1.2,
-  }}
->
-  Skill Focus:
-</h3>
-
-              {previewScenarioDetails.skillFocus.map((skill) => (
-<div
-  key={skill}
-  style={{
-    marginBottom: "8px",
-    color: COLORS.body,
-    fontSize: STATE3_TEXT.body,
-    lineHeight: STATE3_TEXT.lineHeight,
-    whiteSpace: "pre-line",
-    overflowWrap: "break-word",
-  }}
->
-  ✓ {skill}
+  <div
+    style={{
+      color: COLORS.text,
+      fontSize: TEXT.section,
+      fontWeight: 700,
+      lineHeight: 1.3,
+    }}
+  >
+    {previewScenarioDetails.label} — Standard
+  </div>
 </div>
-              ))}
-
-              <hr style={STATE3_DIVIDER} />
-
-<h3
-  style={{
-    marginTop: 0,
-    color: COLORS.text,
-    fontSize: STATE3_TEXT.heading,
-    lineHeight: 1.2,
-  }}
->
-  Scenario Context:
-</h3>
-<p
-  style={{
-    color: COLORS.body,
-    fontSize: STATE3_TEXT.body,
-    lineHeight: STATE3_TEXT.lineHeight,
-  }}
->
-  {previewScenarioDetails.scenarioContext}
-</p>
-
-              <hr style={STATE3_DIVIDER} />
-
-<h3
-  style={{
-    marginTop: 0,
-    color: COLORS.text,
-    fontSize: STATE3_TEXT.heading,
-    lineHeight: 1.2,
-  }}
->
-  Success Outcome:
-</h3>
-<p
-  style={{
-    color: COLORS.body,
-    fontSize: STATE3_TEXT.body,
-    lineHeight: STATE3_TEXT.lineHeight,
-  }}
->
-  {previewScenarioDetails.successOutcome}
-</p>
-            </div>
 
 <div
-style={{
-  padding: isMobile ? "10px" : "22px",
-  border: "1px solid #2a2a2a",
-  borderRadius: "12px",
-  background: "rgba(255, 255, 255, 0.03)",
-}}
->
-<h3
   style={{
-    marginTop: 0,
-    color: COLORS.text,
-    fontSize: STATE3_TEXT.heading,
-    lineHeight: 1.2,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: SPACE.md,
+    marginBottom: SPACE.lg,
+    padding: SPACE.md,
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: RADIUS.card,
+    background: COLORS.panelSoft,
   }}
 >
-  Expected procedure:
-</h3>
+  <div>
+    <div
+      style={{
+        color: COLORS.text,
+        fontSize: TEXT.body,
+        fontWeight: 700,
+      }}
+    >
+      Training Mode
+    </div>
 
-              {mode === "practice" ? (
-                previewScenarioDetails.previewSteps.map((step, index) => (
-                  <div
-                    key={step}
-style={{
-  display: "flex",
-  gap: isMobile ? "8px" : "14px",
-  padding: isMobile ? "10px 0" : "14px 0",
-  borderBottom: "1px solid #2a2a2a",
-  color: COLORS.body,
-  fontSize: STATE3_TEXT.body,
-  lineHeight: STATE3_TEXT.lineHeight,
-}}
-                  >
-                    <strong style={{ color: "#a78bfa" }}>{index + 1}</strong>
-                    <span>{getPreviewStepLabel(step)}</span>
-                  </div>
-                ))
-              ) : (
-<p
+    <div
+      style={{
+        marginTop: SPACE.xs,
+        color: COLORS.muted,
+        fontSize: TEXT.label,
+      }}
+    >
+      Choose how you want to run this scenario.
+    </div>
+  </div>
+
+  <div
+    style={{
+      display: "flex",
+      border: `1px solid ${COLORS.border}`,
+      borderRadius: RADIUS.pill,
+      overflow: "hidden",
+      background: COLORS.panel,
+    }}
+  >
+    <button
+      type="button"
+      onClick={() => {
+        setState((current) => ({
+          ...current,
+          mode: "practice",
+          assessmentIntegrity: "maintained",
+        }));
+      }}
+      style={{
+        minWidth: "150px",
+        padding: "10px 16px",
+        fontFamily: "monospace",
+        fontSize: TEXT.detail,
+        color:
+          mode === "practice"
+            ? COLORS.practice
+            : COLORS.muted,
+        background:
+          mode === "practice"
+            ? "rgba(34, 197, 94, 0.10)"
+            : "transparent",
+        border: "none",
+        cursor: "pointer",
+      }}
+    >
+      {mode === "practice" ? "✓ " : ""}
+      Practice Mode
+    </button>
+
+    <button
+      type="button"
+      onClick={() => {
+        setState((current) => ({
+          ...current,
+          mode: "assessment",
+          assessmentIntegrity: "maintained",
+        }));
+      }}
+      style={{
+        minWidth: "170px",
+        padding: "10px 16px",
+        fontFamily: "monospace",
+        fontSize: TEXT.detail,
+        color:
+          mode === "assessment"
+            ? COLORS.assessment
+            : COLORS.muted,
+        background:
+          mode === "assessment"
+            ? "rgba(96, 165, 250, 0.10)"
+            : "transparent",
+        border: "none",
+        cursor: "pointer",
+      }}
+    >
+      {mode === "assessment" ? "✓ " : ""}
+      Assessment Mode
+    </button>
+  </div>
+</div>
+
+<div
   style={{
-    color: COLORS.muted,
-    fontSize: STATE3_TEXT.body,
-    lineHeight: STATE3_TEXT.lineHeight,
+    display: "grid",
+    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+    gap: SPACE.md,
+    marginBottom: SPACE.md,
+    width: "100%",
+    boxSizing: "border-box",
   }}
 >
-  Procedure preview is hidden in Assessment Mode.
-</p>
-              )}
-            </div>
-          </div>
+  <div
+    style={{
+      padding: isMobile ? "10px" : SPACE.lg,
+      border: `1px solid ${COLORS.border}`,
+      borderRadius: RADIUS.card,
+      background: COLORS.panelSoft,
+    }}
+  >
+    <h3
+      style={{
+        margin: `0 0 ${SPACE.md}`,
+        color: COLORS.text,
+        fontSize: STATE3_TEXT.heading,
+        lineHeight: 1.2,
+      }}
+    >
+      Skill Focus
+    </h3>
 
+    {previewScenarioDetails.skillFocus.map((skill) => (
+      <div
+        key={skill}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: SPACE.sm,
+          marginBottom: SPACE.sm,
+          color: COLORS.body,
+          fontSize: STATE3_TEXT.body,
+          lineHeight: STATE3_TEXT.lineHeight,
+          whiteSpace: "pre-line",
+          overflowWrap: "break-word",
+        }}
+      >
+        <span style={{ color: COLORS.practice }}>✓</span>
+        <span>{skill}</span>
+      </div>
+    ))}
+
+    <hr style={STATE3_DIVIDER} />
+
+    <h3
+      style={{
+        margin: `0 0 ${SPACE.sm}`,
+        color: COLORS.text,
+        fontSize: STATE3_TEXT.heading,
+        lineHeight: 1.2,
+      }}
+    >
+      Scenario Context
+    </h3>
+
+    <p
+      style={{
+        margin: 0,
+        color: COLORS.body,
+        fontSize: STATE3_TEXT.body,
+        lineHeight: STATE3_TEXT.lineHeight,
+      }}
+    >
+      {previewScenarioDetails.scenarioContext}
+    </p>
+
+    <hr style={STATE3_DIVIDER} />
+
+    <h3
+      style={{
+        margin: `0 0 ${SPACE.sm}`,
+        color: COLORS.text,
+        fontSize: STATE3_TEXT.heading,
+        lineHeight: 1.2,
+      }}
+    >
+      Success Outcome
+    </h3>
+
+    <p
+      style={{
+        margin: 0,
+        color: COLORS.body,
+        fontSize: STATE3_TEXT.body,
+        lineHeight: STATE3_TEXT.lineHeight,
+      }}
+    >
+      {previewScenarioDetails.successOutcome}
+    </p>
+  </div>
+
+  <div
+    style={{
+      padding: isMobile ? "10px" : SPACE.lg,
+      border: `1px solid ${COLORS.border}`,
+      borderRadius: RADIUS.card,
+      background: COLORS.panelSoft,
+    }}
+  >
+    <h3
+      style={{
+        margin: `0 0 ${SPACE.md}`,
+        color: COLORS.text,
+        fontSize: STATE3_TEXT.heading,
+        lineHeight: 1.2,
+      }}
+    >
+      Expected Procedure
+    </h3>
+
+    {mode === "practice" ? (
+      previewScenarioDetails.previewSteps.map((step, index) => (
+        <div
+          key={step}
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: SPACE.md,
+            padding: `${SPACE.md} 0`,
+            borderBottom:
+              index < previewScenarioDetails.previewSteps.length - 1
+                ? `1px solid ${COLORS.border}`
+                : "none",
+            color: COLORS.body,
+            fontSize: STATE3_TEXT.body,
+            lineHeight: STATE3_TEXT.lineHeight,
+          }}
+        >
           <div
             style={{
-              padding: "18px 22px",
-              border: "1px solid #2a2a2a",
-              borderRadius: "12px",
-              color: "#f5f7fb",
-              background: "rgba(109, 74, 255, 0.08)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              width: "26px",
+              height: "26px",
+              border: `1px solid ${COLORS.practiceStrong}`,
+              borderRadius: "50%",
+              color: COLORS.practice,
+              fontSize: TEXT.label,
+              fontWeight: 700,
             }}
           >
-        
-            Next step: type <strong>'start'</strong> to begin.
+            {index + 1}
           </div>
+
+          <span>{getPreviewStepLabel(step)}</span>
+        </div>
+      ))
+    ) : (
+      <div
+        style={{
+          padding: SPACE.md,
+          border: `1px solid ${COLORS.border}`,
+          borderRadius: RADIUS.button,
+          background: COLORS.panel,
+          color: COLORS.muted,
+          fontSize: STATE3_TEXT.body,
+          lineHeight: STATE3_TEXT.lineHeight,
+        }}
+      >
+        Procedure preview is hidden in Assessment Mode.
+      </div>
+    )}
+  </div>
+</div>
+
+
          <div
   style={{
-    marginTop: "12px",
-    display: "flex",
-    flexDirection: isMobile ? "column" : "row",
-    gap: "8px",
+    marginTop: SPACE.lg,
   }}
 >
-  <input
-    ref={commandInputRef}
-    value={input}
-    onChange={(e) => setInput(e.target.value)}
-    onKeyDown={(e) => {
-      if (e.key === "Enter") {
-        runCommand();
-      }
-    }}
-    placeholder="Type 'start' to begin"
-    style={{
-      flex: 1,
-      boxSizing: "border-box",
-      fontFamily: "monospace",
-      fontSize: isMobile ? "16px" : TEXT.body,
-      background: "transparent",
-      color: "#fff",
-      border: "1px solid #2a2a2a",
-      borderRadius: "8px",
-      padding: "10px 12px",
-    }}
-  />
-
   <button
     type="button"
-    onClick={runCurrentScenarioValidation}
+    onClick={() => runCommand("start")}
     style={{
+      width: "100%",
+      padding: "14px 18px",
       fontFamily: "monospace",
-      padding: "10px 16px",
-      border: `1px solid ${COLORS.successDark}`,
-      borderRadius: "8px",
-      background: "rgba(22, 163, 74, 0.18)",
+      fontSize: TEXT.body,
+      fontWeight: 700,
       color: COLORS.text,
+      background: COLORS.primary,
+      border: `1px solid ${COLORS.primaryStrong}`,
+      borderRadius: RADIUS.button,
       cursor: "pointer",
     }}
   >
-    Run Combined Test
+    Accept Ticket
   </button>
-</div>
-{scenarioValidationReport && (
+
+  <div
+    style={{
+      marginTop: SPACE.lg,
+      paddingTop: SPACE.md,
+      borderTop: `1px solid ${COLORS.border}`,
+    }}
+  >
+    <button
+      type="button"
+      onClick={() =>
+        setShowDeveloperTools((current) => !current)
+      }
+      aria-expanded={showDeveloperTools}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: SPACE.sm,
+        padding: "8px 0",
+        fontFamily: "monospace",
+        fontSize: TEXT.label,
+        fontWeight: 700,
+        color: COLORS.muted,
+        background: "transparent",
+        border: "none",
+        cursor: "pointer",
+      }}
+    >
+      <span aria-hidden="true">
+        {showDeveloperTools ? "▾" : "▸"}
+      </span>
+
+      <span>Developer Tools</span>
+    </button>
+
+    {showDeveloperTools && (
+      <div
+        style={{
+          marginTop: SPACE.sm,
+          padding: SPACE.md,
+          border: `1px solid ${COLORS.border}`,
+          borderRadius: RADIUS.card,
+          background: COLORS.panelSoft,
+        }}
+      >
+        <button
+          type="button"
+          onClick={runCurrentScenarioValidation}
+          style={{
+            fontFamily: "monospace",
+            padding: "10px 16px",
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: RADIUS.button,
+            background: COLORS.panel,
+            color: COLORS.body,
+            cursor: "pointer",
+          }}
+        >
+          Run Combined Test
+        </button>
+
+        {scenarioValidationReport && (
   <section
     style={{
       marginTop: "14px",
@@ -2973,8 +3224,12 @@ style={{
         </div>
       </div>
     )}
-  </section>
-)}
+    </section>
+        )}
+      </div>
+    )}
+  </div>
+</div>
                 </section>
       )}
       {state.executionState === "RUNNING" &&
@@ -3045,91 +3300,166 @@ style={{
   )}
 {state.executionState === "RUNNING" &&
   !(isMobile && showMobileProcedureHelp) && (
-<div
-  style={{
-    display: "block",
-    marginBottom: isMobile ? SPACE.sm : SPACE.md,
-  }}
->
-<section
-  style={{
-    ...CARD.base,
-    padding: isMobile ? SPACE.md : SPACE.lg,
-  }}
->
-<h2
-  style={{
-    margin: `0 0 ${SPACE.md}`,
-    color: COLORS.text,
-    fontSize: STATE4_TEXT.title,
-    lineHeight: 1.25,
-  }}
->
-{activeScenarioId
-  ? getScenarioLabel(activeScenarioId)
-  : "Active Scenario"}{" "}
-— {activeScenarioId
-  ? getScenarioTypeDisplayLabel(activeScenarioId)
-  : "Standard"}
-</h2>
-
-    <p
-  style={{
-    margin: "0 0 10px",
-    color: COLORS.body,
-    fontSize: STATE4_TEXT.body,
-    lineHeight: STATE4_TEXT.lineHeight,
-  }}
->
-      <strong style={{ color: COLORS.assessmentStrong }}>Customer Issue:</strong>{" "}
-      {previewScenarioDetails?.scenarioContext ?? "Customer issue is active."}
-    </p>
-
-        <p
-  style={{
-    margin: 0,
-    color: COLORS.body,
-    fontSize: STATE4_TEXT.body,
-    lineHeight: STATE4_TEXT.lineHeight,
-  }}
->
-      <strong style={{ color: COLORS.assessmentStrong }}>Scenario Goal:</strong>{" "}
-      {previewScenarioDetails?.successOutcome ?? "Resolve the customer issue."}
-    </p>
-
-    {mode === "assessment" && (
-      <button
-        type="button"
-        onClick={() => {
-          setState((current) => ({
-            ...current,
-            mode: "practice",
-
-            ...(current.mode === "assessment" &&
-            current.executionState === "RUNNING"
-              ? { assessmentIntegrity: "converted_to_practice" }
-              : {}),
-          }));
-
-          setProcedureHelpPinned(false);
-          setShowMobileProcedureHelp(false);
+    <section
+      style={{
+        ...CARD.base,
+        marginBottom: SPACE.md,
+        padding: isMobile ? SPACE.md : SPACE.lg,
+        background: COLORS.panelSoft,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "stretch" : "flex-start",
+          justifyContent: "space-between",
+          gap: SPACE.lg,
         }}
-style={{
-  ...BUTTON.secondary,
-  width: "100%",
-  marginTop: SPACE.md,
-  border: `1px solid ${COLORS.practiceStrong}`,
-  color: COLORS.practice,
-  textAlign: "center",
-}}
       >
-        Switch to Practice
-      </button>
-    )}
-                </section>
+        <div style={{ flex: 1 }}>
+          <div
+            style={{
+              marginBottom: SPACE.xs,
+              color: COLORS.muted,
+              fontSize: TEXT.label,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.6px",
+            }}
+          >
+            Active Ticket
+          </div>
 
-  </div>
-)}
+          <h2
+            style={{
+              margin: 0,
+              color: COLORS.text,
+              fontSize: STATE4_TEXT.title,
+              lineHeight: 1.25,
+            }}
+          >
+            {activeScenarioId
+              ? getScenarioLabel(activeScenarioId)
+              : "Active Scenario"}{" "}
+            —{" "}
+            {activeScenarioId
+              ? getScenarioTypeDisplayLabel(activeScenarioId)
+              : "Standard"}
+          </h2>
+
+          <div
+            style={{
+              display: "grid",
+              gap: SPACE.sm,
+              marginTop: SPACE.md,
+            }}
+          >
+            <div
+              style={{
+                color: COLORS.body,
+                fontSize: STATE4_TEXT.body,
+                lineHeight: STATE4_TEXT.lineHeight,
+              }}
+            >
+              <strong
+                style={{
+                  color: COLORS.assessmentStrong,
+                }}
+              >
+                Customer Issue:
+              </strong>{" "}
+              {previewScenarioDetails?.scenarioContext ??
+                "Customer issue is active."}
+            </div>
+
+            <div
+              style={{
+                color: COLORS.body,
+                fontSize: STATE4_TEXT.body,
+                lineHeight: STATE4_TEXT.lineHeight,
+              }}
+            >
+              <strong
+                style={{
+                  color: COLORS.assessmentStrong,
+                }}
+              >
+                Scenario Goal:
+              </strong>{" "}
+              {previewScenarioDetails?.successOutcome ??
+                "Resolve the customer issue."}
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: isMobile ? "stretch" : "flex-end",
+            gap: SPACE.sm,
+            flexShrink: 0,
+          }}
+        >
+          <div
+            style={{
+              padding: "6px 10px",
+              border:
+                mode === "practice"
+                  ? `1px solid ${COLORS.practiceStrong}`
+                  : `1px solid ${COLORS.assessmentStrong}`,
+              borderRadius: RADIUS.pill,
+              color:
+                mode === "practice"
+                  ? COLORS.practice
+                  : COLORS.assessment,
+              background:
+                mode === "practice"
+                  ? "rgba(34, 197, 94, 0.08)"
+                  : "rgba(96, 165, 250, 0.08)",
+              fontSize: TEXT.label,
+              fontWeight: 700,
+            }}
+          >
+            {mode === "practice"
+              ? "Practice Mode"
+              : "Assessment Mode"}
+          </div>
+
+          {mode === "assessment" && (
+            <button
+              type="button"
+              onClick={() => {
+                setState((current) => ({
+                  ...current,
+                  mode: "practice",
+
+                  ...(current.mode === "assessment" &&
+                  current.executionState === "RUNNING"
+                    ? {
+                        assessmentIntegrity:
+                          "converted_to_practice",
+                      }
+                    : {}),
+                }));
+
+                setProcedureHelpPinned(false);
+                setShowMobileProcedureHelp(false);
+              }}
+              style={{
+                ...BUTTON.secondary,
+                border: `1px solid ${COLORS.practiceStrong}`,
+                color: COLORS.practice,
+              }}
+            >
+              Switch to Practice
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  )}
 
 {state.executionState === "RUNNING" &&
   !(isMobile && showMobileProcedureHelp) && (
@@ -3347,7 +3677,7 @@ onClick={() => {
       />
 
       <button
-        onClick={runCommand}
+        onClick={() => runCommand()}
 style={{
   ...BUTTON.secondary,
   width: isMobile ? "100%" : "auto",
@@ -3517,7 +3847,7 @@ style={{
             color: COLORS.text,
           }}
         >
-          Assessment Result
+          Scorecard
         </h3>
 
         <div style={{ marginTop: SPACE.lg, color: COLORS.body }}>

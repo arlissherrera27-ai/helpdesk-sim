@@ -3,13 +3,20 @@ export const COLORS = {
   panel: "rgba(255,255,255,0.03)",
   panelSoft: "rgba(255,255,255,0.02)",
   border: "#2a2a2a",
+
   text: "#f5f7fb",
   body: "#d1d5db",
   muted: "#9aa4b2",
+
+  primary: "#a78bfa",
+  primaryStrong: "#6d4aff",
+
   success: "#22c55e",
   successDark: "#1f7a3a",
-  practice: "#a78bfa",
-  practiceStrong: "#6d4aff",
+
+  practice: "#22c55e",
+  practiceStrong: "#1f7a3a",
+
   assessment: "#93c5fd",
   assessmentStrong: "#60a5fa",
 };
@@ -29,6 +36,7 @@ export const SPACE = {
   md: "16px",
   lg: "22px",
   xl: "28px",
+  xxl: "40px",
 };
 
 export const RADIUS = {
@@ -60,7 +68,7 @@ export const BUTTON = {
   primary: {
     fontFamily: "monospace",
     padding: "10px 14px",
-    border: `1px solid ${COLORS.practiceStrong}`,
+    border: `1px solid ${COLORS.primaryStrong}`,
     borderRadius: RADIUS.button,
     background: "rgba(109, 74, 255, 0.18)",
     color: COLORS.text,

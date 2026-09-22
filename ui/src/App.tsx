@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useResponsive } from "./useResponsive";
-import { supabase } from "./lib/supabase";
 import { handleInput } from "./core/engine";
 import { initialState } from "./core/state";
 import type { SimState } from "./core/types";
@@ -1372,26 +1371,35 @@ flexWrap: "wrap",
         setFeedbackSubmitting(true);
         setFeedbackError("");
 
-        const { error } = await supabase
-          .from("feedback")
-          .insert({
-            type: feedbackType,
-            message,
-            scenario: state.scenario,
-            mode: state.mode,
-          });
+        try {
+  const response = await fetch("/api/feedback", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      type: feedbackType,
+      message,
+      scenario: state.scenario,
+      mode: state.mode,
+    }),
+  });
 
-        if (error) {
+  if (!response.ok) {
+    throw new Error("Feedback submission failed");
+  }
+
+  setFeedbackSubmitted(true);
+  setFeedbackMessage("");
+} catch (error) {
+  console.error("Feedback submission failed:", error);
+
   setFeedbackError(
     "Could not submit feedback. Please try again."
   );
+} finally {
   setFeedbackSubmitting(false);
-  return;
 }
-
-        setFeedbackSubmitted(true);
-        setFeedbackMessage("");
-        setFeedbackSubmitting(false);
       }}
       style={{
         ...BUTTON.primary,

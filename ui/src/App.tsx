@@ -1149,22 +1149,42 @@ flexWrap: "wrap",
     justifyContent: isMobile ? "flex-start" : "flex-end",
   }}
 >
-  <button
-  type="button"
-  onClick={() => {
-    setFeedbackSubmitted(false);
-    setShowFeedback(true);
-  }}
+<div
   style={{
-  ...BUTTON.secondary,
-  fontSize: TEXT.label,
-  color: COLORS.body,
-  borderRadius: RADIUS.pill,
-  padding: "7px 10px",
-}}
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "3px",
+  }}
 >
-  Suggestion / Feedback
-</button>
+  <button
+    type="button"
+    onClick={() => {
+      setFeedbackSubmitted(false);
+      setShowFeedback(true);
+    }}
+    style={{
+      ...BUTTON.secondary,
+      fontSize: TEXT.label,
+      color: COLORS.body,
+      borderRadius: RADIUS.pill,
+      padding: "7px 10px",
+    }}
+  >
+    Suggestion / Feedback
+  </button>
+
+  <span
+    style={{
+      fontSize: "9px",
+      color: COLORS.muted,
+      whiteSpace: "nowrap",
+      lineHeight: 1.2,
+    }}
+  >
+    V1 · V2 in Development
+  </span>
+</div>
 
 {state.executionState !== "RUNNING" &&
   ["Profile"].map((item) => (
@@ -1799,6 +1819,7 @@ state.previewScenario === null &&
         Welcome
       </h1>
 
+
       <p
         style={{
           margin: `${SPACE.sm} 0 0`,
@@ -1807,9 +1828,9 @@ state.previewScenario === null &&
           lineHeight: 1.6,
         }}
       >
-        Practice realistic help desk and IT support scenarios.
+        Practice real-world Help Desk tickets and IT support scenarios.
         <br />
-        Use guided Practice Mode or test your skills in Assessment Mode.
+        Perform a procedure, review the evidence from the result, and decide what procedure to perform next.
       </p>
     </div>
   </section>
@@ -3578,10 +3599,24 @@ onClick={() => {
               border: `1px solid ${COLORS.practiceStrong}`,
               color: COLORS.practice,
             }}
-          >
-            {procedureHelpOpen ? "Hide Procedure Help" : "Show Procedure Help"}
-          </button>
-        )}
+>
+  {procedureHelpOpen ? "Hide Procedure Help" : "Show Procedure Help"}
+</button>
+)}
+
+{showProcedureHelp && !procedureHelpOpen && (
+  <div
+    style={{
+      marginTop: SPACE.xs,
+      color: COLORS.muted,
+      fontSize: TEXT.label,
+      lineHeight: 1.4,
+      textAlign: "center",
+    }}
+  >
+    Opening Procedure Help will be recorded as assistance on your scorecard.
+  </div>
+)}
 
         {procedureHelpOpen && !isMobile && (
           <div

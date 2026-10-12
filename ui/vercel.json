@@ -3,6 +3,10 @@
     {
       "source": "/admin/feedback",
       "destination": "/"
+    },
+    {
+      "source": "/simulator",
+      "destination": "/"
     }
   ]
 }

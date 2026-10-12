@@ -377,6 +377,33 @@ if (command.kind === "restart") {
   
   // --- SHARED COMMANDS --- //
 
+  // Prevent repeating a RELATED action that already succeeded
+  // during the current Investigation attempt.
+  if (
+    state.mode === "investigation" &&
+    state.executionState === "RUNNING" &&
+    state.scenario !== null &&
+    isValidScenarioId(state.scenario) &&
+    isScenarioInvestigationRelatedAction(
+      state.scenario,
+      command.kind
+    ) &&
+    state.runLog.some(
+      (event) =>
+        event.command === command.kind &&
+        event.decision === "RELATED" &&
+        event.outcome === "success"
+    )
+  ) {
+    return {
+      kind: "DENY",
+      reason:
+        "This investigation check has already been completed. " +
+        "Review the evidence gathered and continue troubleshooting.",
+      denyType: "PROCEDURE_DENIED",
+    };
+  }
+
   // verify_identity gating rule
   if (command.kind === "verify_identity") {
     const runningCheck = mustBeRunning(state);

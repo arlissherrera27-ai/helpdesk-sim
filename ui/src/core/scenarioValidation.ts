@@ -30,10 +30,12 @@ export type ScenarioValidationTranscriptEntry = {
   phase:
     | "setup"
     | "correct"
-    | "repeat"
     | "wrong-order"
     | "related"
+    | "security"
+    | "repeat"
     | "deny"
+    | "completion"
     | "takeover";
   decision: ExpectedDecision;
   message: string;
@@ -58,6 +60,7 @@ export type ScenarioValidationFailure = {
     | "repeat"
     | "wrong-order"
     | "related"
+    | "security"
     | "deny"
     | "takeover"
     | "completion";
@@ -887,6 +890,16 @@ export function runInvestigationValidation(
   let relatedAddedMistake = false;
 
   for (const currentRelatedCommand of relatedCommands) {
+    // This command is intentionally identity-gated.
+    // Validate its security behavior in a separate test,
+    // rather than expecting RELATED before authorization.
+    if (
+      scenarioId === "email_client_corrupted_profile" &&
+      currentRelatedCommand === "check_email_login_status"
+    ) {
+      continue;
+    }
+
     const progressBeforeRelated =
       getScenarioFactsSnapshot(testState);
 
@@ -1109,7 +1122,141 @@ export function runInvestigationValidation(
     };
   }
 
-    // REPEAT CHECKS:
+  // ISOLATED IDENTITY-GATED RELATED CHECK
+  if (scenarioId === "email_client_corrupted_profile") {
+    let securityState: SimState = {
+      ...initialState(),
+      mode: "investigation",
+      assessmentIntegrity: "maintained",
+    };
+
+    const securitySelected =
+      handleInput(securityState, selectCommand);
+
+    if (
+      securitySelected.decision.kind !== "ALLOW" ||
+      securitySelected.state.previewScenario !== scenarioId
+    ) {
+      return fail({
+        stepNumber: transcript.length + 1,
+        input: selectCommand,
+        phase: "setup",
+        expected: "ALLOW selecting security-test scenario",
+        actual: securitySelected.decision.kind,
+      });
+    }
+
+    const securityStarted =
+      handleInput(securitySelected.state, "start");
+
+    if (
+      securityStarted.decision.kind !== "ALLOW" ||
+      securityStarted.state.executionState !== "RUNNING"
+    ) {
+      return fail({
+        stepNumber: transcript.length + 1,
+        input: "start",
+        phase: "setup",
+        expected: "ALLOW starting security-test ticket",
+        actual: securityStarted.decision.kind,
+      });
+    }
+
+    securityState = securityStarted.state;
+
+    const securitySteps: Array<{
+      command: string;
+      expected: "ALLOW" | "RELATED" | "DENY";
+      phase: "security" | "setup" | "related" | "repeat";
+      countRelated?: boolean;
+    }> = [
+      {
+        command: "check_email_status",
+        expected: "RELATED",
+        phase: "related",
+      },
+      {
+        command: "check_email_status",
+        expected: "DENY",
+        phase: "repeat",
+      },
+      {
+        command: "check_email_login_status",
+        expected: "DENY",
+        phase: "security",
+      },
+      {
+        command: "verify_identity",
+        expected: "ALLOW",
+        phase: "setup",
+      },
+      {
+        command: "check_email_login_status",
+        expected: "RELATED",
+        phase: "related",
+        countRelated: true,
+      },
+      {
+        command: "check_email_login_status",
+        expected: "DENY",
+        phase: "repeat",
+      },
+    ];
+
+    for (const step of securitySteps) {
+      const factsBefore =
+        getScenarioFactsSnapshot(securityState);
+
+      const output =
+        handleInput(securityState, step.command);
+
+      const factsAfter =
+        getScenarioFactsSnapshot(output.state);
+
+      const mustPreserveFacts =
+        step.expected !== "ALLOW";
+
+      transcript.push({
+        stepNumber: transcript.length + 1,
+        input: step.command,
+        phase: step.phase,
+        decision: output.decision.kind,
+        message: output.message || "",
+      });
+
+      if (
+        output.decision.kind !== step.expected ||
+        (mustPreserveFacts && factsBefore !== factsAfter)
+      ) {
+        return fail({
+          stepNumber: transcript.length,
+          input: step.command,
+          phase: step.phase,
+          expected:
+            `${step.expected}` +
+            (mustPreserveFacts
+              ? " with unchanged scenario facts"
+              : ""),
+          actual:
+            `${output.decision.kind}, facts ` +
+            `${factsBefore === factsAfter ? "unchanged" : "changed"}`,
+        });
+      }
+
+      if (step.countRelated === true) {
+        relatedCommandsPassed += 1;
+      }
+
+      if (step.phase === "repeat") {
+        repeatChecks += 1;
+        repeatChecksPassed += 1;
+      }
+
+      securityState = output.state;
+    }
+  }
+
+  // REPEAT CHECKS:
   // Test each non-final procedure in its own fresh Investigation attempt.
   // This prevents intentional repeat DENYs from contaminating the PASS path.
 

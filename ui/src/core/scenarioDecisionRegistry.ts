@@ -412,6 +412,47 @@ not_receiving_email_inbox_rule_redirecting:
     }
   ),
 
+  dns_incorrect_configuration:
+    defineScenarioProcedureRules(
+      "dns_incorrect_configuration",
+      {
+        check_network_status: (facts) =>
+          !facts.network_status_checked,
+
+        test_internet_connection: (facts) =>
+          (
+            facts.network_status_checked &&
+            !facts.internet_connection_tested
+          ) ||
+          (
+            facts.dns_resolution_restored &&
+            !facts.internet_access_restored
+          ),
+
+        check_dns_configuration: (facts) =>
+          facts.internet_connection_tested &&
+          !facts.dns_configuration_checked,
+
+        test_dns_server_connectivity: (facts) =>
+          facts.dns_configuration_checked &&
+          !facts.dns_server_connectivity_tested,
+
+        test_dns_resolution: (facts) =>
+          (
+            facts.dns_server_connectivity_tested &&
+            !facts.dns_resolution_tested
+          ) ||
+          (
+            facts.dns_configuration_corrected &&
+            !facts.dns_resolution_restored
+          ),
+
+        correct_dns_configuration: (facts) =>
+          facts.dns_resolution_tested &&
+          !facts.dns_configuration_corrected,
+      }
+    ),
+
     slow_network_connection:
   defineScenarioProcedureRules("slow_network_connection", {
     check_network_speed: (facts) =>
@@ -465,7 +506,76 @@ not_receiving_email_inbox_rule_redirecting:
     }
   ),
 
-     browser_running_slow_extension:
+// SECOND MONITOR — DISPLAY ADAPTER CODE 43
+second_monitor_display_adapter_code_43:
+  defineScenarioProcedureRules(
+    "second_monitor_display_adapter_code_43",
+    {
+      check_display_connection: (facts) =>
+        !facts.display_connection_checked,
+
+      check_display_configuration: (facts) =>
+        facts.display_connection_checked &&
+        !facts.display_configuration_checked,
+
+      detect_displays: (facts) =>
+        (
+          facts.display_configuration_checked &&
+          !facts.first_display_detection_attempted
+        ) ||
+        (
+          facts.workstation_restarted &&
+          !facts.second_display_detection_attempted
+        ),
+
+      isolate_display_hardware: (facts) =>
+        facts.first_display_detection_attempted &&
+        !facts.display_hardware_isolated,
+
+      reset_graphics_driver: (facts) =>
+        facts.display_hardware_isolated &&
+        !facts.graphics_driver_reset,
+
+      restart_workstation: (facts) =>
+        facts.graphics_driver_reset &&
+        !facts.workstation_restarted,
+
+      inspect_display_adapter: (facts) =>
+        facts.second_display_detection_attempted &&
+        !facts.display_adapter_inspected,
+
+      inspect_device_status: (facts) =>
+        (
+          facts.display_adapter_inspected &&
+          !facts.first_device_status_inspected
+        ) ||
+        (
+          facts.display_driver_updated &&
+          !facts.second_device_status_inspected
+        ) ||
+        (
+          facts.display_driver_reinstalled &&
+          !facts.final_device_status_inspected
+        ),
+
+      update_display_driver: (facts) =>
+        facts.first_device_status_inspected &&
+        facts.code_43_detected &&
+        !facts.display_driver_updated,
+
+      reinstall_display_driver: (facts) =>
+        facts.second_device_status_inspected &&
+        facts.code_43_detected &&
+        !facts.display_driver_reinstalled,
+
+      escalate_display_issue: (facts) =>
+        facts.final_device_status_inspected &&
+        facts.code_43_detected &&
+        !facts.display_issue_escalated,
+    }
+  ),
+
+browser_running_slow_extension:
   defineScenarioProcedureRules("browser_running_slow_extension", {
     check_browser_cache: (facts) =>
       !facts.browser_cache_checked,

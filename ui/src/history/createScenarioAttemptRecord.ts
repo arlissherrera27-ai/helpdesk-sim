@@ -22,7 +22,8 @@ export function createScenarioAttemptRecord(
   }
 
   const completed =
-    options.endReason === "completed" &&
+    (options.endReason === "completed" ||
+      options.endReason === "takeover") &&
     state.result !== null;
 
 return {
@@ -34,7 +35,11 @@ return {
 
   mode: state.mode,
 
-    assessmentIntegrity: state.assessmentIntegrity,
+  investigationTicket: state.investigationTicket
+    ? { ...state.investigationTicket }
+    : null,
+
+  assessmentIntegrity: state.assessmentIntegrity,
 
     status: completed
       ? "completed"

@@ -5,6 +5,7 @@ import {
 } from "./commandRegistry";
 import {
   procedureCatalog,
+  type InvestigationCommandKind,
   type ProcedureCommandKind,
 } from "./procedureCatalog";
 
@@ -510,6 +511,27 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "test internet access": "test_internet_connection",
   "confirm internet access": "test_internet_connection",
 
+  // DNS
+  "check dns configuration": "check_dns_configuration",
+  "dns configuration check": "check_dns_configuration",
+  "check dns settings": "check_dns_configuration",
+  "dns settings check": "check_dns_configuration",
+
+  "test dns server connectivity": "test_dns_server_connectivity",
+  "dns server connectivity test": "test_dns_server_connectivity",
+  "test dns server": "test_dns_server_connectivity",
+  "check dns server connectivity": "test_dns_server_connectivity",
+
+  "test dns resolution": "test_dns_resolution",
+  "dns resolution test": "test_dns_resolution",
+  "test hostname resolution": "test_dns_resolution",
+  "check dns resolution": "test_dns_resolution",
+
+  "correct dns configuration": "correct_dns_configuration",
+  "fix dns configuration": "correct_dns_configuration",
+  "update dns configuration": "correct_dns_configuration",
+  "set dns configuration": "correct_dns_configuration",
+
   // Network Speed
   "check speed": "check_network_speed",
   "speed check": "check_network_speed",
@@ -936,14 +958,56 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "turn on second monitor":
     "enable_second_display",
 
-  "test monitor": "test_dual_display",
-  "monitor test": "test_dual_display",
-  "test dual display": "test_dual_display",
-  "dual display test": "test_dual_display",
-  "verify second monitor": "test_dual_display",
-  "confirm second monitor": "test_dual_display",
+"test monitor": "test_dual_display",
+"monitor test": "test_dual_display",
+"test dual display": "test_dual_display",
+"dual display test": "test_dual_display",
+"verify second monitor": "test_dual_display",
+"confirm second monitor": "test_dual_display",
 
-    // Audio
+// Second Monitor — Display Adapter Code 43
+
+"check display configuration": "check_display_configuration",
+"display configuration check": "check_display_configuration",
+"inspect display configuration": "check_display_configuration",
+
+"detect displays": "detect_displays",
+"detect connected displays": "detect_displays",
+"run display detection": "detect_displays",
+
+"isolate display hardware": "isolate_display_hardware",
+"isolate monitor hardware": "isolate_display_hardware",
+"test monitor hardware": "isolate_display_hardware",
+
+"reset graphics driver": "reset_graphics_driver",
+"graphics driver reset": "reset_graphics_driver",
+"reset display driver": "reset_graphics_driver",
+
+"restart workstation": "restart_workstation",
+"reboot workstation": "restart_workstation",
+"restart computer": "restart_workstation",
+
+"inspect display adapter": "inspect_display_adapter",
+"check display adapter": "inspect_display_adapter",
+"inspect graphics adapter": "inspect_display_adapter",
+
+"inspect device status": "inspect_device_status",
+"check device status": "inspect_device_status",
+"review device status": "inspect_device_status",
+
+"update display driver": "update_display_driver",
+"update graphics driver": "update_display_driver",
+"install display driver update": "update_display_driver",
+
+"reinstall display driver": "reinstall_display_driver",
+"reinstall graphics driver": "reinstall_display_driver",
+"remove and reinstall display driver": "reinstall_display_driver",
+
+"escalate display issue": "escalate_display_issue",
+"escalate monitor issue": "escalate_display_issue",
+"escalate display problem": "escalate_display_issue",
+
+// Audio
 
   "check audio": "check_audio_output",
   "audio check": "check_audio_output",
@@ -1063,10 +1127,41 @@ export const SIMPLE_PROCEDURE_COMMAND_COVERAGE:
     ? true
     : never = true;
 
+    const INVESTIGATION_COMMAND_KINDS: ReadonlySet<InvestigationCommandKind> =
+  new Set([
+    "check_primary_display",
+    "check_monitor_input_source",
+    "test_alternate_display_port",
+    "check_for_windows_updates",
+  ]);
+
+function isInvestigationCommandKind(
+  kind: string,
+): kind is InvestigationCommandKind {
+  return INVESTIGATION_COMMAND_KINDS.has(
+    kind as InvestigationCommandKind
+  );
+}
+
 function isProcedureCommandKind(
   kind: string,
 ): kind is ProcedureCommandKind {
   return Object.prototype.hasOwnProperty.call(procedureCatalog, kind);
+}
+
+function isSystemCommandKind(
+  kind: string,
+): kind is SystemCommandKind {
+  return (
+    kind === "start" ||
+    kind === "restart" ||
+    kind === "quit" ||
+    kind === "debug" ||
+    kind === "view_scorecard" ||
+    kind === "select" ||
+    kind === "help" ||
+    kind === "status"
+  );
 }
 
 function createProcedureCommand(
@@ -1154,17 +1249,30 @@ export function parseCommand(inputRaw: string): Command {
   // For non-select commands, normalize the full input so
   // "confirm reset" becomes "confirm_reset"
   const normalizedVerb = aliasedLower.replace(/\s+/g, "_");
+
+  if (isInvestigationCommandKind(normalizedVerb)) {
+    return {
+      kind: normalizedVerb,
+      readOnly: false,
+    };
+  }
+
   const verbKind = lookupCommandDef(normalizedVerb);
 
   if (!verbKind) {
     return { kind: "unknown", rawInput: inputRaw };
   }
 
-   // Every catalog procedure currently has the same command shape.
+  // Every catalog procedure currently has the same command shape.
   // Procedure identity and eligibility come from procedureCatalog.ts.
+
   if (isProcedureCommandKind(verbKind)) {
     return createProcedureCommand(verbKind);
   }
 
-  return createSystemCommand(verbKind, inputRaw);
+  if (isSystemCommandKind(verbKind)) {
+    return createSystemCommand(verbKind, inputRaw);
+  }
+
+  return { kind: "unknown", rawInput: inputRaw };
 }

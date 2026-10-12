@@ -106,15 +106,25 @@ test_internet_connection:
         !facts.internet_restored,
 
       internet_no_access_proxy: (facts) =>
-  (
-    facts.network_checked &&
-    !facts.first_internet_tested
-  ) ||
-  (
-    facts.first_internet_tested &&
-    facts.network_adapter_restarted &&
-    !facts.internet_restored
-  ),
+      (
+        facts.network_checked &&
+        !facts.first_internet_tested
+      ) ||
+      (
+        facts.first_internet_tested &&
+        facts.network_adapter_restarted &&
+        !facts.internet_restored
+      ),
+
+      dns_incorrect_configuration: (facts) =>
+      (
+        facts.network_status_checked &&
+        !facts.internet_connection_tested
+      ) ||
+      (
+        facts.dns_resolution_restored &&
+        !facts.internet_access_restored
+      ),
 
       slow_network_connection: (facts) =>
         facts.network_adapter_restarted &&
@@ -986,7 +996,7 @@ check_vpn_access:
     },
   }),
 
-  check_network_status:
+check_network_status:
 defineProcedureDecision({
   scenarios: {
     internet_no_access: (facts) =>
@@ -994,6 +1004,9 @@ defineProcedureDecision({
 
     internet_no_access_proxy: (facts) =>
       !facts.network_checked,
+
+    dns_incorrect_configuration: (facts) =>
+      !facts.network_status_checked,
   },
 }),
 

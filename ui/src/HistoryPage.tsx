@@ -340,15 +340,17 @@ sortedPlaylistRuns.length === 0 ? (
           );
 
         const resultLabel =
-  attempt.status === "completed"
-    ? attempt.completion === "FAIL"
-      ? "Failed Attempt"
-      : attempt.mistakes === 0
-        ? "Perfect Run"
-        : "Successful Run"
-    : attempt.endReason === "restart"
-      ? "Restart"
-      : "Quit";
+  attempt.endReason === "takeover"
+    ? "Senior Technician Takeover"
+    : attempt.status === "completed"
+      ? attempt.completion === "FAIL"
+        ? "Failed Attempt"
+        : attempt.mistakes === 0
+          ? "Perfect Run"
+          : "Successful Run"
+      : attempt.endReason === "restart"
+        ? "Restart"
+        : "Quit";
 
         const scoreLabel =
           attempt.score === null
@@ -421,7 +423,9 @@ sortedPlaylistRuns.length === 0 ? (
             >
               {attempt.mode === "practice"
                 ? "Practice"
-                : "Assessment"}
+                : attempt.mode === "investigation"
+                  ? "Investigation"
+                  : "Assessment"}
             </div>
 
             <div

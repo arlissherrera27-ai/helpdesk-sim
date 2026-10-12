@@ -103,6 +103,7 @@ export function executePlan(
         error: null,
         result: null,
         scenarioFacts: facts,
+        investigationTicket: null,
         procedureHelpOpenedCount: 0,
         procedureHelpUsedDuring: [],
       };
@@ -2127,7 +2128,8 @@ case "CheckNetworkStatus": {
     !facts ||
     (
       facts.kind !== "internet_no_access" &&
-      facts.kind !== "internet_no_access_proxy"
+      facts.kind !== "internet_no_access_proxy" &&
+      facts.kind !== "dns_incorrect_configuration"
     )
   ) {
     return wrongScenarioError(
@@ -2137,8 +2139,142 @@ case "CheckNetworkStatus": {
     );
   }
 
+  if (facts.kind === "dns_incorrect_configuration") {
+    return updateScenarioFacts(facts, {
+      network_status_checked: true,
+    });
+  }
+
   return updateScenarioFacts(facts, {
     network_checked: true,
+  });
+}
+
+case "CheckDnsConfiguration": {
+  const facts = getScenarioFacts(
+    state,
+    "dns_incorrect_configuration"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "CHECK_DNS_CONFIGURATION_WRONG_SCENARIO",
+      "check_dns_configuration is only valid in the DNS configuration scenario.",
+      "check_dns_configuration"
+    );
+  }
+
+  if (!facts.internet_connection_tested) {
+    return {
+      error: {
+        code: "CHECK_DNS_CONFIGURATION_CONNECTION_NOT_TESTED",
+        message:
+          "Must test internet connectivity before checking DNS configuration.",
+        failingCommand: "check_dns_configuration",
+      },
+    };
+  }
+
+  return updateScenarioFacts(facts, {
+    dns_configuration_checked: true,
+  });
+}
+
+case "TestDnsServerConnectivity": {
+  const facts = getScenarioFacts(
+    state,
+    "dns_incorrect_configuration"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "TEST_DNS_SERVER_CONNECTIVITY_WRONG_SCENARIO",
+      "test_dns_server_connectivity is only valid in the DNS configuration scenario.",
+      "test_dns_server_connectivity"
+    );
+  }
+
+  if (!facts.dns_configuration_checked) {
+    return {
+      error: {
+        code: "TEST_DNS_SERVER_CONNECTIVITY_CONFIGURATION_NOT_CHECKED",
+        message:
+          "Must check DNS configuration before testing DNS server connectivity.",
+        failingCommand: "test_dns_server_connectivity",
+      },
+    };
+  }
+
+  return updateScenarioFacts(facts, {
+    dns_server_connectivity_tested: true,
+  });
+}
+
+case "TestDnsResolution": {
+  const facts = getScenarioFacts(
+    state,
+    "dns_incorrect_configuration"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "TEST_DNS_RESOLUTION_WRONG_SCENARIO",
+      "test_dns_resolution is only valid in the DNS configuration scenario.",
+      "test_dns_resolution"
+    );
+  }
+
+  if (!facts.dns_server_connectivity_tested) {
+    return {
+      error: {
+        code: "TEST_DNS_RESOLUTION_SERVER_NOT_TESTED",
+        message:
+          "Must test DNS server connectivity before testing DNS resolution.",
+        failingCommand: "test_dns_resolution",
+      },
+    };
+  }
+
+  if (!facts.dns_configuration_corrected) {
+    return updateScenarioFacts(facts, {
+      dns_resolution_tested: true,
+      dns_resolution_restored: false,
+    });
+  }
+
+  return updateScenarioFacts(facts, {
+    dns_resolution_tested: true,
+    dns_resolution_restored: true,
+  });
+}
+
+case "CorrectDnsConfiguration": {
+  const facts = getScenarioFacts(
+    state,
+    "dns_incorrect_configuration"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "CORRECT_DNS_CONFIGURATION_WRONG_SCENARIO",
+      "correct_dns_configuration is only valid in the DNS configuration scenario.",
+      "correct_dns_configuration"
+    );
+  }
+
+  if (!facts.dns_resolution_tested) {
+    return {
+      error: {
+        code: "CORRECT_DNS_CONFIGURATION_RESOLUTION_NOT_TESTED",
+        message:
+          "Must confirm the DNS resolution failure before correcting DNS configuration.",
+        failingCommand: "correct_dns_configuration",
+      },
+    };
+  }
+
+  return updateScenarioFacts(facts, {
+    dns_configuration_corrected: true,
   });
 }
 
@@ -2151,7 +2287,8 @@ case "TestInternetConnection": {
       facts.kind !== "internet_no_access" &&
       facts.kind !== "internet_no_access_proxy" &&
       facts.kind !== "slow_network_connection" &&
-      facts.kind !== "ethernet_not_connected"
+      facts.kind !== "ethernet_not_connected" &&
+      facts.kind !== "dns_incorrect_configuration"
     )
   ) {
     return wrongScenarioError(
@@ -2193,6 +2330,41 @@ case "TestInternetConnection": {
       internet_restored: true,
     });
   }
+
+  if (facts.kind === "dns_incorrect_configuration") {
+  if (!facts.network_status_checked) {
+    return {
+      error: {
+        code: "TEST_INTERNET_CONNECTION_NETWORK_NOT_CHECKED",
+        message:
+          "Must check network status before testing internet connectivity.",
+        failingCommand: "test_internet_connection",
+      },
+    };
+  }
+
+  if (!facts.internet_connection_tested) {
+    return updateScenarioFacts(facts, {
+      internet_connection_tested: true,
+      internet_access_restored: false,
+    });
+  }
+
+  if (!facts.dns_resolution_restored) {
+    return {
+      error: {
+        code: "TEST_INTERNET_CONNECTION_DNS_NOT_RESTORED",
+        message:
+          "DNS resolution must be restored before the final internet connectivity test.",
+        failingCommand: "test_internet_connection",
+      },
+    };
+  }
+
+  return completeScenario(facts, {
+    internet_access_restored: true,
+  });
+}
 
   if (facts.kind === "slow_network_connection") {
     return completeScenario(facts, {
@@ -3847,7 +4019,8 @@ case "CheckDisplayConnection": {
     !facts ||
     (
       facts.kind !== "second_monitor_not_detected" &&
-      facts.kind !== "second_monitor_display_disabled"
+      facts.kind !== "second_monitor_display_disabled" &&
+      facts.kind !== "second_monitor_display_adapter_code_43"
     )
   ) {
     return wrongScenarioError(
@@ -4052,6 +4225,219 @@ case "TestDualDisplay": {
   });
 }
 
+// second_monitor_display_adapter_code_43
+
+case "CheckDisplayConfiguration": {
+  const facts = getScenarioFacts(
+    state,
+    "second_monitor_display_adapter_code_43"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "CHECK_DISPLAY_CONFIGURATION_WRONG_SCENARIO",
+      "check_display_configuration is only valid in the display-adapter Code 43 scenario.",
+      "check_display_configuration"
+    );
+  }
+
+  return updateScenarioFacts(facts, {
+    display_configuration_checked: true,
+  });
+}
+
+case "DetectDisplays": {
+  const facts = getScenarioFacts(
+    state,
+    "second_monitor_display_adapter_code_43"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "DETECT_DISPLAYS_WRONG_SCENARIO",
+      "detect_displays is only valid in the display-adapter Code 43 scenario.",
+      "detect_displays"
+    );
+  }
+
+  if (!facts.first_display_detection_attempted) {
+    return updateScenarioFacts(facts, {
+      first_display_detection_attempted: true,
+    });
+  }
+
+  return updateScenarioFacts(facts, {
+    second_display_detection_attempted: true,
+  });
+}
+
+case "IsolateDisplayHardware": {
+  const facts = getScenarioFacts(
+    state,
+    "second_monitor_display_adapter_code_43"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "ISOLATE_DISPLAY_HARDWARE_WRONG_SCENARIO",
+      "isolate_display_hardware is only valid in the display-adapter Code 43 scenario.",
+      "isolate_display_hardware"
+    );
+  }
+
+  return updateScenarioFacts(facts, {
+    display_hardware_isolated: true,
+  });
+}
+
+case "ResetGraphicsDriver": {
+  const facts = getScenarioFacts(
+    state,
+    "second_monitor_display_adapter_code_43"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "RESET_GRAPHICS_DRIVER_WRONG_SCENARIO",
+      "reset_graphics_driver is only valid in the display-adapter Code 43 scenario.",
+      "reset_graphics_driver"
+    );
+  }
+
+  return updateScenarioFacts(facts, {
+    graphics_driver_reset: true,
+  });
+}
+
+case "RestartWorkstation": {
+  const facts = getScenarioFacts(
+    state,
+    "second_monitor_display_adapter_code_43"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "RESTART_WORKSTATION_WRONG_SCENARIO",
+      "restart_workstation is only valid in the display-adapter Code 43 scenario.",
+      "restart_workstation"
+    );
+  }
+
+  return updateScenarioFacts(facts, {
+    workstation_restarted: true,
+  });
+}
+
+case "InspectDisplayAdapter": {
+  const facts = getScenarioFacts(
+    state,
+    "second_monitor_display_adapter_code_43"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "INSPECT_DISPLAY_ADAPTER_WRONG_SCENARIO",
+      "inspect_display_adapter is only valid in the display-adapter Code 43 scenario.",
+      "inspect_display_adapter"
+    );
+  }
+
+  return updateScenarioFacts(facts, {
+    display_adapter_inspected: true,
+  });
+}
+
+case "InspectDeviceStatus": {
+  const facts = getScenarioFacts(
+    state,
+    "second_monitor_display_adapter_code_43"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "INSPECT_DEVICE_STATUS_WRONG_SCENARIO",
+      "inspect_device_status is only valid in the display-adapter Code 43 scenario.",
+      "inspect_device_status"
+    );
+  }
+
+  if (!facts.first_device_status_inspected) {
+    return updateScenarioFacts(facts, {
+      first_device_status_inspected: true,
+      code_43_detected: true,
+    });
+  }
+
+  if (!facts.second_device_status_inspected) {
+    return updateScenarioFacts(facts, {
+      second_device_status_inspected: true,
+      code_43_detected: true,
+    });
+  }
+
+  return updateScenarioFacts(facts, {
+    final_device_status_inspected: true,
+    code_43_detected: true,
+  });
+}
+
+case "UpdateDisplayDriver": {
+  const facts = getScenarioFacts(
+    state,
+    "second_monitor_display_adapter_code_43"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "UPDATE_DISPLAY_DRIVER_WRONG_SCENARIO",
+      "update_display_driver is only valid in the display-adapter Code 43 scenario.",
+      "update_display_driver"
+    );
+  }
+
+  return updateScenarioFacts(facts, {
+    display_driver_updated: true,
+  });
+}
+
+case "ReinstallDisplayDriver": {
+  const facts = getScenarioFacts(
+    state,
+    "second_monitor_display_adapter_code_43"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "REINSTALL_DISPLAY_DRIVER_WRONG_SCENARIO",
+      "reinstall_display_driver is only valid in the display-adapter Code 43 scenario.",
+      "reinstall_display_driver"
+    );
+  }
+
+  return updateScenarioFacts(facts, {
+    display_driver_reinstalled: true,
+  });
+}
+
+case "EscalateDisplayIssue": {
+  const facts = getScenarioFacts(
+    state,
+    "second_monitor_display_adapter_code_43"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "ESCALATE_DISPLAY_ISSUE_WRONG_SCENARIO",
+      "escalate_display_issue is only valid in the display-adapter Code 43 scenario.",
+      "escalate_display_issue"
+    );
+  }
+
+  return completeScenario(facts, {
+    display_issue_escalated: true,
+  });
+}
+
 case "CheckAudioOutput": {
   const facts = getScenarioFacts(
     state,
@@ -4190,25 +4576,6 @@ case "CheckNetworkSpeed": {
 }
 
 // internet_no_access
-
-case "CheckNetworkStatus": {
-  const facts = getScenarioFacts(
-    state,
-    "internet_no_access"
-  );
-
-  if (!facts) {
-    return wrongScenarioError(
-      "CHECK_NETWORK_STATUS_WRONG_SCENARIO",
-      "check_network_status is only valid in internet_no_access scenario.",
-      "check_network_status"
-    );
-  }
-
-  return updateScenarioFacts(facts, {
-    network_checked: true,
-  });
-}
 
 case "CheckNetworkAdapter": {
   const facts = state.scenarioFacts;

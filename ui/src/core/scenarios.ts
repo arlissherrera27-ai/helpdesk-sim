@@ -41,6 +41,7 @@ export const SCENARIO_IDS = [
   "cannot_connect_wifi_corrupted_profile",
   "internet_no_access",
   "internet_no_access_proxy",
+  "dns_incorrect_configuration",
   "slow_network_connection",
   "ethernet_not_connected",
 
@@ -67,6 +68,7 @@ export const SCENARIO_IDS = [
   "webcam_not_working",
   "second_monitor_not_detected",
   "second_monitor_display_disabled",
+  "second_monitor_display_adapter_code_43",
   "audio_not_working",
 
   // SOFTWARE / APPLICATIONS

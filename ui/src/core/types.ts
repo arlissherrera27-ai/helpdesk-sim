@@ -14,15 +14,22 @@ export type Command =
   | { kind: "start"; readOnly: false }
   | { kind: "restart"; readOnly: false }
   | { kind: "quit"; readOnly: false }
-| { kind: "debug"; readOnly: true }
-| { kind: "view_scorecard"; readOnly: false }
-| { kind: "select"; readOnly: false; scenario_id: string }
+  | { kind: "debug"; readOnly: true }
+  | { kind: "view_scorecard"; readOnly: false }
+  | { kind: "select"; readOnly: false; scenario_id: string }
   | { kind: "help"; readOnly: true }
   | { kind: "status"; readOnly: true }
   | { kind: "unknown"; rawInput: string }
 
   // SHARED
   | { kind: "verify_identity"; readOnly: false }
+
+  // INVESTIGATION-ONLY
+  | { kind: "check_primary_display"; readOnly: false }
+  | { kind: "check_monitor_input_source"; readOnly: false }
+  | { kind: "test_alternate_display_port"; readOnly: false }
+  | { kind: "check_for_windows_updates"; readOnly: false }
+
 
   // ACCOUNT / ACCESS
   | { kind: "send_reset_code"; readOnly: false }
@@ -110,6 +117,10 @@ export type Command =
   | { kind: "reconnect_ethernet_cable"; readOnly: false }
   | { kind: "restart_network_adapter"; readOnly: false }
   | { kind: "test_internet_connection"; readOnly: false }
+  | { kind: "check_dns_configuration"; readOnly: false }
+  | { kind: "test_dns_server_connectivity"; readOnly: false }
+  | { kind: "test_dns_resolution"; readOnly: false }
+  | { kind: "correct_dns_configuration"; readOnly: false }
 
   // FILES / STORAGE
   | { kind: "check_disk_space"; readOnly: false }
@@ -162,9 +173,22 @@ export type Command =
   | { kind: "check_display_settings"; readOnly: false }
   | { kind: "detect_second_monitor"; readOnly: false }
   | { kind: "check_display_enabled_status"; readOnly: false }
-  | { kind: "enable_second_display"; readOnly: false }
-  | { kind: "test_dual_display"; readOnly: false }
-  | { kind: "check_audio_output"; readOnly: false }
+| { kind: "enable_second_display"; readOnly: false }
+| { kind: "test_dual_display"; readOnly: false }
+
+// SECOND MONITOR — DISPLAY ADAPTER CODE 43
+| { kind: "check_display_configuration"; readOnly: false }
+| { kind: "detect_displays"; readOnly: false }
+| { kind: "isolate_display_hardware"; readOnly: false }
+| { kind: "reset_graphics_driver"; readOnly: false }
+| { kind: "restart_workstation"; readOnly: false }
+| { kind: "inspect_display_adapter"; readOnly: false }
+| { kind: "inspect_device_status"; readOnly: false }
+| { kind: "update_display_driver"; readOnly: false }
+| { kind: "reinstall_display_driver"; readOnly: false }
+| { kind: "escalate_display_issue"; readOnly: false }
+
+| { kind: "check_audio_output"; readOnly: false }
   | { kind: "check_volume_status"; readOnly: false }
   | { kind: "select_audio_output"; readOnly: false }
   | { kind: "test_audio"; readOnly: false }
@@ -186,6 +210,7 @@ export type DenyType =
 
 export type Decision =
   | { kind: "ALLOW"; plan: ExecutionPlan }
+  | { kind: "RELATED"; command: string }
   | { kind: "DENY"; reason: string; denyType?: DenyType };
 
 // Execution plans describe WHAT should change, not whether it should
@@ -283,6 +308,10 @@ export type ExecutionPlan =
   | { kind: "ReconnectEthernetCable" }
   | { kind: "RestartNetworkAdapter" }
   | { kind: "TestInternetConnection" }
+  | { kind: "CheckDnsConfiguration" }
+  | { kind: "TestDnsServerConnectivity" }
+  | { kind: "TestDnsResolution" }
+  | { kind: "CorrectDnsConfiguration" }
 
   // FILES / STORAGE
   | { kind: "CheckDiskSpace" }
@@ -333,9 +362,22 @@ export type ExecutionPlan =
   | { kind: "CheckDisplaySettings" }
   | { kind: "DetectSecondMonitor" }
   | { kind: "CheckDisplayEnabledStatus" }
-  | { kind: "EnableSecondDisplay" }
-  | { kind: "TestDualDisplay" }
-  | { kind: "CheckAudioOutput" }
+| { kind: "EnableSecondDisplay" }
+| { kind: "TestDualDisplay" }
+
+// SECOND MONITOR — DISPLAY ADAPTER CODE 43
+| { kind: "CheckDisplayConfiguration" }
+| { kind: "DetectDisplays" }
+| { kind: "IsolateDisplayHardware" }
+| { kind: "ResetGraphicsDriver" }
+| { kind: "RestartWorkstation" }
+| { kind: "InspectDisplayAdapter" }
+| { kind: "InspectDeviceStatus" }
+| { kind: "UpdateDisplayDriver" }
+| { kind: "ReinstallDisplayDriver" }
+| { kind: "EscalateDisplayIssue" }
+
+| { kind: "CheckAudioOutput" }
   | { kind: "CheckVolumeStatus" }
   | { kind: "SelectAudioOutput" }
   | { kind: "TestAudio" }
@@ -360,6 +402,20 @@ export type Scenario = {
   id: string;
   version: number;
 };
+
+
+// --- V2 Investigation & Evidence Types ---
+
+export type EvidenceItem = {
+  id: string;
+  text: string;
+};
+
+export type InvestigationTicket = {
+  ticketNumber: string;
+  customerName: string;
+};
+
 
 // --- Scenario Hidden Facts (Private State) ---
 // These are scenario-private truths used later for gating/rules.
@@ -688,6 +744,18 @@ export type InternetNoAccessProxyFacts = {
   internet_restored: boolean;
 };
 
+export type DnsIncorrectConfigurationFacts = {
+  kind: "dns_incorrect_configuration";
+  network_status_checked: boolean;
+  internet_connection_tested: boolean;
+  dns_configuration_checked: boolean;
+  dns_server_connectivity_tested: boolean;
+  dns_resolution_tested: boolean;
+  dns_configuration_corrected: boolean;
+  dns_resolution_restored: boolean;
+  internet_access_restored: boolean;
+};
+
 export type SlowNetworkConnectionFacts = {
   kind: "slow_network_connection";
   identity_verified: boolean;
@@ -865,6 +933,26 @@ export type SecondMonitorDisplayDisabledFacts = {
   dual_display_working: boolean;
 };
 
+export type SecondMonitorDisplayAdapterCode43Facts = {
+  kind: "second_monitor_display_adapter_code_43";
+
+  display_connection_checked: boolean;
+  display_configuration_checked: boolean;
+  first_display_detection_attempted: boolean;
+  display_hardware_isolated: boolean;
+  graphics_driver_reset: boolean;
+  workstation_restarted: boolean;
+  second_display_detection_attempted: boolean;
+  display_adapter_inspected: boolean;
+  first_device_status_inspected: boolean;
+  code_43_detected: boolean;
+  display_driver_updated: boolean;
+  second_device_status_inspected: boolean;
+  display_driver_reinstalled: boolean;
+  final_device_status_inspected: boolean;
+  display_issue_escalated: boolean;
+};
+
 export type AudioNotWorkingFacts = {
   kind: "audio_not_working";
   identity_verified: boolean;
@@ -948,8 +1036,10 @@ export type ScenarioFacts =
   | CannotConnectWifiCorruptedProfileFacts
   | InternetNoAccessFacts
   | InternetNoAccessProxyFacts
+  | DnsIncorrectConfigurationFacts
   | SlowNetworkConnectionFacts
   | EthernetNotConnectedFacts
+  
   // FILES / STORAGE
   | DiskSpaceFullFacts
   | NetworkDriveMissingFacts
@@ -973,6 +1063,7 @@ export type ScenarioFacts =
   | WebcamNotWorkingFacts
   | SecondMonitorNotDetectedFacts
   | SecondMonitorDisplayDisabledFacts
+  | SecondMonitorDisplayAdapterCode43Facts
   | AudioNotWorkingFacts
 
   // SOFTWARE / APPLICATIONS
@@ -1000,7 +1091,7 @@ export type Result = ScoreSummary | null;
 
 export type LogEvent = {
   command: string;
-  decision: "ALLOW" | "DENY";
+  decision: "ALLOW" | "RELATED" | "DENY";
   plan: ExecutionPlan["kind"] | null;
   outcome: "denied" | "error" | "success";
   timestamp: string;
@@ -1009,7 +1100,10 @@ export type LogEvent = {
 };
 
 // This is the single source of truth
-export type SimMode = "practice" | "assessment";
+export type SimMode =
+  | "practice"
+  | "assessment"
+  | "investigation";
 
 export type AssessmentIntegrity =
   | "maintained"
@@ -1025,6 +1119,10 @@ export type SimState = {
   result: Result;
   runLog: LogEvent[];
   mode: SimMode;
+
+  evidence: EvidenceItem[];
+  investigationTicket: InvestigationTicket | null;
+
   assessmentIntegrity: AssessmentIntegrity;
   procedureHelpOpenedCount: number;
   procedureHelpUsedDuring: string[];
@@ -1034,6 +1132,10 @@ export type SimState = {
 // It is applied by the Update layer only.
 export type StatePatch = {
   mode?: SimMode;
+
+  evidence?: EvidenceItem[];
+  investigationTicket?: InvestigationTicket | null;
+
   assessmentIntegrity?: AssessmentIntegrity;
   procedureHelpOpenedCount?: number;
   procedureHelpUsedDuring?: string[];

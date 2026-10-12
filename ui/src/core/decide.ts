@@ -11,6 +11,7 @@ import {
   type ProcedurePlanKind,
 } from "./procedureCatalog";
 import { scenarioDecisionRegistry } from "./scenarioDecisionRegistry";
+import { isScenarioInvestigationRelatedAction } from "./scenarioRegistry";
 import {
   procedureDecisionRegistry,
   type ProcedureDecisionDefinition,
@@ -375,13 +376,32 @@ if (command.kind === "restart") {
   }
   
   // --- SHARED COMMANDS --- //
+
   // verify_identity gating rule
   if (command.kind === "verify_identity") {
     const runningCheck = mustBeRunning(state);
 
-if (runningCheck) {
-  return runningCheck;
-}
+    if (runningCheck) {
+      return runningCheck;
+    }
+
+    // Investigation scenarios may register identity verification
+    // as a legitimate RELATED action even when identity_verified
+    // is not part of the scenario's required procedure facts.
+    if (
+      state.mode === "investigation" &&
+      state.scenario !== null &&
+      isValidScenarioId(state.scenario) &&
+      isScenarioInvestigationRelatedAction(
+        state.scenario,
+        command.kind
+      )
+    ) {
+      return {
+        kind: "RELATED",
+        command: command.kind,
+      };
+    }
 
     // verify_identity works in scenarios using command
     if (
@@ -400,11 +420,55 @@ if (runningCheck) {
     return allowProcedure(command.kind);
   }
 
-    const registeredProcedureDecision =
-    decideRegisteredProcedure(
-      state,
-      command.kind
-    );
+    // Investigation-only commands never enter procedure routing.
+  if (
+    command.kind === "check_primary_display" ||
+    command.kind === "check_monitor_input_source" ||
+    command.kind === "test_alternate_display_port" ||
+    command.kind === "check_for_windows_updates"
+  ) {
+    if (
+      state.mode === "investigation" &&
+      state.executionState === "RUNNING" &&
+      state.scenario !== null &&
+      isValidScenarioId(state.scenario) &&
+      isScenarioInvestigationRelatedAction(
+        state.scenario,
+        command.kind
+      )
+    ) {
+      return {
+        kind: "RELATED",
+        command: command.kind,
+      };
+    }
+
+    return denyProcedure(command.kind);
+  }
+
+  // Investigation-related actions return evidence before ordinary
+// procedure validation. They do not advance the required procedure.
+if (
+  state.mode === "investigation" &&
+  state.executionState === "RUNNING" &&
+  state.scenario !== null &&
+  isValidScenarioId(state.scenario) &&
+  isScenarioInvestigationRelatedAction(
+    state.scenario,
+    command.kind
+  )
+) {
+  return {
+    kind: "RELATED",
+    command: command.kind,
+  };
+}
+
+const registeredProcedureDecision =
+  decideRegisteredProcedure(
+    state,
+    command.kind
+  );
 
   if (registeredProcedureDecision) {
     return registeredProcedureDecision;

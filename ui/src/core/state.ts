@@ -12,6 +12,10 @@ export function initialState(): SimState {
     result: null,
     runLog: [],
     mode: "practice",
+
+    evidence: [],
+    investigationTicket: null,
+
     assessmentIntegrity: "maintained",
     procedureHelpOpenedCount: 0,
     procedureHelpUsedDuring: [],
@@ -21,4 +25,11 @@ export function initialState(): SimState {
 // Minimal unique-ish id for now (good enough for first slice proof)
 export function newAttemptId(): string {
   return `att_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
+export function newInvestigationTicket() {
+  return {
+    ticketNumber: `INC-${Date.now().toString().slice(-6)}`,
+    customerName: "Customer",
+  };
 }

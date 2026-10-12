@@ -11,6 +11,7 @@
 import type { Command } from "./types";
 import {
   procedureCatalog,
+  type InvestigationCommandKind,
   type ProcedureCommandKind,
 } from "./procedureCatalog";
 
@@ -18,7 +19,7 @@ type KnownVerb = Exclude<Command["kind"], "unknown">;
 
 export type SystemCommandKind = Exclude<
   KnownVerb,
-  ProcedureCommandKind
+  ProcedureCommandKind | InvestigationCommandKind
 >;
 
 // System/control commands are not procedure-catalog entries because they

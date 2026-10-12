@@ -1,9 +1,20 @@
 import type { ScenarioId } from "./scenarios";
-import type { ScenarioFacts } from "./types";
+import type {
+  EvidenceItem,
+  ScenarioFacts,
+} from "./types";
 
 type ScenarioProcedureStep = {
   command: string;
   preview: string;
+  evidence?: EvidenceItem;
+};
+
+type InvestigationRelatedAction = {
+  agent?: string;
+  system: string;
+  customer?: string;
+  evidence?: EvidenceItem;
 };
 
 type ScenarioLevel =
@@ -52,6 +63,13 @@ type ScenarioDefinition = {
   scenarioType: ScenarioTypeId;
   category: ScenarioCategoryId;
   procedure: readonly ScenarioProcedureStep[];
+
+  investigation?: {
+    relatedActions: Readonly<
+      Record<string, InvestigationRelatedAction>
+    >;
+  };
+
   completion: {
     command: string;
     fact: string;
@@ -2225,6 +2243,10 @@ What is your first troubleshooting step?`,
       command: "check_app_status",
       preview:
         "Check the email application status to confirm it is not launching.",
+      evidence: {
+        id: "email_app_startup_hanging",
+        text: "Email application starts but hangs before opening a usable window.",
+      },
     },
     {
       command: "restart_application",
@@ -2235,16 +2257,28 @@ What is your first troubleshooting step?`,
       command: "test_application_launch",
       preview:
         "Test the application to determine whether the restart resolved the issue.",
+      evidence: {
+        id: "email_launch_failed_after_restart",
+        text: "Email application still fails to launch after restarting.",
+      },
     },
     {
       command: "check_email_client_profile",
       preview:
         "Check the email client's profile for corruption after the restart fails.",
+      evidence: {
+        id: "email_profile_corrupted",
+        text: "Email client profile contains damaged configuration data preventing startup.",
+      },
     },
     {
       command: "repair_email_client_profile",
       preview:
         "Repair the corrupted email profile.",
+      evidence: {
+        id: "email_profile_repaired",
+        text: "Damaged email client profile configuration was repaired successfully.",
+      },
     },
     {
       command: "test_application_launch",
@@ -2252,6 +2286,36 @@ What is your first troubleshooting step?`,
         "Verify the application launches successfully after the profile repair.",
     },
   ],
+
+  investigation: {
+    relatedActions: {
+      check_email_status: {
+        agent:
+          "I'm checking whether the email service is experiencing an outage.",
+        system:
+          "The email service is operational. No service outage is reported for this user's organization.",
+        customer:
+          "Okay, so the email service is still running.",
+        evidence: {
+          id: "email_service_operational",
+          text: "Email service is operational with no reported outage.",
+        },
+      },
+
+      check_email_login_status: {
+        agent:
+          "I'm checking whether the user's email account can authenticate successfully.",
+        system:
+          "The user's email account is active and authentication is successful. No account sign-in restriction is detected.",
+        customer:
+          "Okay, good to know my account is still working.",
+        evidence: {
+          id: "email_account_authentication_successful",
+          text: "Email account authentication succeeds without restrictions.",
+        },
+      },
+    },
+  },
 
   completion: {
     command: "test_application_launch",
@@ -2640,22 +2704,127 @@ What is your first troubleshooting step?`,
     internet_restored: false,
   },
 
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "5–7 min",
+      description:
+        "Restore internet access by identifying and disabling an incorrect proxy configuration.",
+      skillFocus: [
+        "Internet Troubleshooting",
+        "Proxy Configuration",
+        "Dependency Awareness",
+      ],
+      scenarioContext:
+        "A user's computer is connected to the local network, but an incorrect proxy configuration is blocking internet traffic.",
+      successOutcome:
+        "The incorrect proxy is disabled, the network connection is refreshed, and internet access is verified.",
+      selectCommand:
+        "select internet no access proxy",
+  },
+},
+
+dns_incorrect_configuration: {
+  label: "DNS — Incorrect/Unreachable DNS Configuration",
+
+  startPrompt: `Customer: My computer says it’s connected to the network, but websites are not loading.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "network",
+
+  procedure: [
+    {
+      command: "check_network_status",
+      preview:
+        "Check the active network connection and IP configuration.",
+    },
+    {
+      command: "test_internet_connection",
+      preview:
+        "Test external connectivity to determine whether the network path is working.",
+    },
+    {
+      command: "check_dns_configuration",
+      preview:
+        "Check the DNS configuration assigned to the active network adapter.",
+    },
+    {
+      command: "test_dns_server_connectivity",
+      preview:
+        "Test connectivity to the configured DNS server.",
+    },
+    {
+      command: "test_dns_resolution",
+      preview:
+        "Test hostname resolution through the configured DNS resolver.",
+    },
+    {
+      command: "correct_dns_configuration",
+      preview:
+        "Replace the incorrect DNS configuration with the approved DNS configuration.",
+    },
+    {
+      command: "test_dns_resolution",
+      preview:
+        "Test hostname resolution again after correcting the DNS configuration.",
+    },
+    {
+      command: "test_internet_connection",
+      preview:
+        "Verify normal internet access by hostname after DNS resolution is restored.",
+    },
+  ],
+
+  completion: {
+    command: "test_internet_connection",
+    fact: "internet_access_restored",
+  },
+
+  proofLines: [
+    "Inspected the DNS configuration assigned to the active network adapter",
+    "Confirmed the configured DNS server could not be reached",
+    "Confirmed hostname resolution failed through the configured resolver",
+    "Corrected the DNS configuration using the approved resolver",
+    "Verified hostname resolution after correcting the DNS configuration",
+    "Verified normal internet access by hostname",
+  ],
+
+  successLines: [
+    "Agent: DNS configuration has been corrected and internet access has been verified.",
+    "System: Hostname resolution and internet access are working normally with the corrected DNS configuration.",
+    "Customer: Great, websites are loading again.",
+  ],
+
+  defaults: {
+    kind: "dns_incorrect_configuration",
+    network_status_checked: false,
+    internet_connection_tested: false,
+    dns_configuration_checked: false,
+    dns_server_connectivity_tested: false,
+    dns_resolution_tested: false,
+    dns_configuration_corrected: false,
+    dns_resolution_restored: false,
+    internet_access_restored: false,
+  },
+
   previewMetadata: {
-    level: "Beginner",
-    estimatedTime: "5–7 min",
+    level: "Intermediate",
+    estimatedTime: "5–8 min",
     description:
-      "Restore internet access by identifying and disabling an incorrect proxy configuration.",
+      "Diagnose and correct a DNS configuration issue when network connectivity exists but hostname resolution fails.",
     skillFocus: [
-      "Internet Troubleshooting",
-      "Proxy Configuration",
-      "Dependency Awareness",
+      "Network Troubleshooting",
+      "DNS Configuration",
+      "DNS Resolution",
+      "Connectivity Testing",
     ],
     scenarioContext:
-      "A user's computer is connected to the local network, but an incorrect proxy configuration is blocking internet traffic.",
+      "A workstation is connected to the network, but hostname-based internet access fails because the configured DNS resolver is unreachable or incorrect.",
     successOutcome:
-      "The incorrect proxy is disabled, the network connection is refreshed, and internet access is verified.",
+      "The DNS configuration is corrected, hostname resolution succeeds, and normal internet access is verified.",
     selectCommand:
-      "select internet no access proxy",
+      "select dns incorrect configuration",
   },
 },
 
@@ -4486,6 +4655,248 @@ What is your first troubleshooting step?`,
   },
 },
 
+second_monitor_display_adapter_code_43: {
+  label: "Second Monitor — Display Adapter Code 43",
+
+  startPrompt: `Customer: My second monitor stopped working. It worked before, but now I'm not getting anything on it.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "operational_challenges",
+  category: "hardware_peripherals",
+
+  procedure: [
+    {
+      command: "check_display_connection",
+      preview:
+        "Check the second monitor's physical connection, display cable, and power connection.",
+      evidence: {
+        id: "display_connection_confirmed",
+        text: "Monitor has power and a secure physical connection.",
+      },
+    },
+    {
+      command: "check_display_configuration",
+      preview:
+        "Check the current Windows display configuration.",
+      evidence: {
+        id: "multiple_displays_configured",
+        text: "Windows is configured for multiple displays.",
+      },
+    },
+    {
+      command: "detect_displays",
+      preview:
+        "Ask Windows to detect connected displays again.",
+      evidence: {
+        id: "second_display_not_detected",
+        text: "Windows cannot detect the second monitor.",
+      },
+    },
+    {
+      command: "isolate_display_hardware",
+      preview:
+        "Isolate the monitor and connection hardware to determine whether the display itself is causing the failure.",
+      evidence: {
+        id: "display_hardware_known_good",
+        text: "Monitor functions with a known-good workstation and connection.",
+      },
+    },
+    {
+      command: "reset_graphics_driver",
+      preview:
+        "Reset the Windows graphics driver to see whether the display subsystem recovers.",
+    },
+    {
+      command: "restart_workstation",
+      preview:
+        "Restart the workstation to reinitialize Windows and the display hardware.",
+    },
+    {
+      command: "detect_displays",
+      preview:
+        "Run display detection again after the restart.",
+    },
+    {
+      command: "inspect_display_adapter",
+      preview:
+        "Inspect the display adapter in Device Manager for a device or driver problem.",
+      evidence: {
+        id: "display_adapter_warning",
+        text: "Display adapter shows a warning in Device Manager.",
+      },
+    },
+    {
+      command: "inspect_device_status",
+      preview:
+        "Inspect the display adapter's device status for details about the warning.",
+      evidence: {
+        id: "display_adapter_code_43",
+        text: "Display adapter reports Code 43.",
+      },
+    },
+    {
+      command: "update_display_driver",
+      preview:
+        "Update the display adapter using the approved driver available for the workstation.",
+    },
+    {
+      command: "inspect_device_status",
+      preview:
+        "Check the display adapter's device status again after the driver update.",
+      evidence: {
+        id: "code_43_persists_after_driver_update",
+        text: "Code 43 persists after the approved driver update.",
+      },
+    },
+    {
+      command: "reinstall_display_driver",
+      preview:
+        "Reinstall the approved display driver to replace the current driver installation and reinitialize the adapter.",
+    },
+    {
+      command: "inspect_device_status",
+      preview:
+        "Check the display adapter's device status after the driver reinstall.",
+      evidence: {
+        id: "code_43_persists_after_driver_reinstall",
+        text: "Code 43 persists after the approved driver reinstall.",
+      },
+    },
+    {
+      command: "escalate_display_issue",
+      preview:
+        "Document the troubleshooting evidence and escalate the unresolved display issue.",
+    },
+  ],
+
+  investigation: {
+    relatedActions: {
+      verify_identity: {
+        agent:
+          "I’ll verify your identity before continuing with the troubleshooting.",
+        system:
+          "The customer's identity is verified successfully.",
+        customer:
+          "Sure, that's me.",
+        evidence: {
+          id: "customer_identity_verified",
+          text: "Customer identity has been verified.",
+        },
+      },
+
+      check_primary_display: {
+        agent:
+          "I’m checking whether the primary display is working normally.",
+        system:
+          "The primary display is functioning normally and continues to show the Windows desktop.",
+        evidence: {
+          id: "primary_display_working",
+          text: "Primary display is functioning normally.",
+        },
+      },
+
+      check_monitor_input_source: {
+        agent:
+          "I’m checking the second monitor’s selected input source.",
+        system:
+          "The second monitor is set to the correct input source for the connected display cable.",
+        evidence: {
+          id: "monitor_input_source_correct",
+          text: "Second monitor is set to the correct input source.",
+        },
+      },
+
+      test_alternate_display_port: {
+        agent:
+          "I’m testing the second monitor through another available display output on the workstation.",
+        system:
+          "The second monitor still does not display through the alternate video output.",
+        evidence: {
+          id: "alternate_display_port_issue_persists",
+          text: "Display issue persists through an alternate video output.",
+        },
+      },
+
+      check_for_windows_updates: {
+        agent:
+          "I’m checking Windows Update for pending updates relevant to the display issue.",
+        system:
+          "No relevant pending Windows updates are available.",
+        evidence: {
+          id: "no_relevant_windows_updates",
+          text: "No relevant Windows updates are pending.",
+        },
+      },
+    },
+  },
+
+  completion: {
+    command: "escalate_display_issue",
+    fact: "display_issue_escalated",
+  },
+
+  proofLines: [
+    "Confirmed the second monitor had power and a secure physical connection",
+    "Confirmed Windows was configured for multiple displays but the second monitor was unavailable",
+    "Confirmed Windows could not detect the second monitor",
+    "Isolated the monitor and confirmed the display hardware functioned with a known-good workstation and connection",
+    "Reset the graphics driver without restoring the second monitor",
+    "Restarted the workstation and confirmed the display remained unavailable",
+    "Confirmed display detection still failed after the restart",
+    "Identified a warning on the display adapter in Device Manager",
+    "Confirmed the display adapter reported Code 43",
+    "Installed the approved display driver and confirmed Code 43 remained",
+    "Reinstalled the approved display driver and confirmed Code 43 remained",
+    "Escalated the unresolved display issue with the troubleshooting evidence documented",
+  ],
+
+  successLines: [
+    "Agent: The monitor and physical connection have been isolated, Windows still cannot detect the display, and the display adapter continues to report Code 43 after approved driver remediation. I'm documenting the troubleshooting results and escalating the unresolved display issue.",
+    "System: The ticket is escalated with the troubleshooting history documented, including successful monitor isolation, failed Windows display detection, persistent Code 43, and unsuccessful approved driver update and reinstallation.",
+    "Customer: Okay, thank you.",
+  ],
+
+defaults: {
+  kind: "second_monitor_display_adapter_code_43",
+  display_connection_checked: false,
+  display_configuration_checked: false,
+  first_display_detection_attempted: false,
+  display_hardware_isolated: false,
+  graphics_driver_reset: false,
+  workstation_restarted: false,
+  second_display_detection_attempted: false,
+  display_adapter_inspected: false,
+  first_device_status_inspected: false,
+  code_43_detected: false,
+  display_driver_updated: false,
+  second_device_status_inspected: false,
+  display_driver_reinstalled: false,
+  final_device_status_inspected: false,
+  display_issue_escalated: false,
+},
+
+  previewMetadata: {
+    level: "Intermediate",
+    estimatedTime: "8–12 min",
+    description:
+      "Troubleshoot an undetected second monitor, identify a persistent display-adapter Code 43 error, perform approved L1 driver remediation, and escalate when the fault remains unresolved.",
+    skillFocus: [
+      "Display Troubleshooting",
+      "Hardware Isolation",
+      "Device Manager",
+      "Driver Troubleshooting",
+      "Escalation Judgment",
+    ],
+    scenarioContext:
+      "A user's second monitor previously worked but is no longer detected by Windows. The monitor itself functions, but the workstation's display adapter reports a persistent Code 43 error.",
+    successOutcome:
+      "The technician isolates the display problem, identifies the persistent adapter error, performs approved L1 remediation, and escalates the unresolved issue with useful troubleshooting evidence.",
+    selectCommand:
+      "select second monitor display adapter code 43",
+  },
+},
+
 audio_not_working: {
   label: "No Sound / Audio Not Working",
   startPrompt: `Customer: I can’t hear any sound from my computer.
@@ -4926,6 +5337,66 @@ export function getScenarioLabel(scenarioId: string): string {
     SCENARIO_REGISTRY[scenarioId as keyof typeof SCENARIO_REGISTRY];
 
   return scenario?.label ?? scenarioId;
+}
+
+export function getScenarioProcedureEvidence(
+  scenarioId: string,
+  command: string
+): EvidenceItem | null {
+  const scenario =
+    SCENARIO_REGISTRY[
+      scenarioId as keyof typeof SCENARIO_REGISTRY
+    ] as ScenarioDefinition | undefined;
+
+  if (!scenario) {
+    return null;
+  }
+
+  const step = scenario.procedure.find(
+    (item) => item.command === command
+  );
+
+  return step?.evidence ?? null;
+}
+
+export function getScenarioInvestigationRelatedAction(
+  scenarioId: string,
+  command: string
+): InvestigationRelatedAction | null {
+  const scenario =
+    SCENARIO_REGISTRY[
+      scenarioId as keyof typeof SCENARIO_REGISTRY
+    ] as ScenarioDefinition;
+
+  return (
+    scenario.investigation?.relatedActions[command] ??
+    null
+  );
+}
+
+export function getScenarioInvestigationRelatedCommands(
+  scenarioId: string
+): string[] {
+  const scenario =
+    SCENARIO_REGISTRY[
+      scenarioId as keyof typeof SCENARIO_REGISTRY
+    ] as ScenarioDefinition;
+
+  return Object.keys(
+    scenario.investigation?.relatedActions ?? {}
+  );
+}
+
+export function isScenarioInvestigationRelatedAction(
+  scenarioId: string,
+  command: string
+): boolean {
+  return (
+    getScenarioInvestigationRelatedAction(
+      scenarioId,
+      command
+    ) !== null
+  );
 }
 
 export function assertScenarioRegistryComplete(): void {

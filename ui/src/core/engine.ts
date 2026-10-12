@@ -1,10 +1,23 @@
-import type { Decision, LogEvent, SimState } from "./types";
+import type {
+  Decision,
+  EvidenceItem,
+  LogEvent,
+  SimState,
+} from "./types";
 import { parseCommand } from "./parse";
 import { decide } from "./decide";
 import { executePlan } from "./execute";
 import { applyPatch } from "./update";
-import { getScenarioProcedureCommands } from "./scenarioRegistry";
-import { evaluateRun } from "./score";
+import { newInvestigationTicket } from "./state";
+import {
+  getScenarioInvestigationRelatedAction,
+  getScenarioProcedureCommands,
+  getScenarioProcedureEvidence,
+} from "./scenarioRegistry";
+import {
+  canStillPassRun,
+  evaluateRun,
+} from "./score";
 
 import {
   getScenarioLabel,
@@ -64,10 +77,48 @@ function assertNeverPlan(plan: never): never {
   );
 }
 
+function mergeEvidence(
+  existing: EvidenceItem[],
+  discovered: EvidenceItem | null | undefined
+): EvidenceItem[] {
+  if (!discovered) {
+    return existing;
+  }
+
+  if (
+    existing.some(
+      (item) => item.id === discovered.id
+    )
+  ) {
+    return existing;
+  }
+
+  return [...existing, discovered];
+}
+
 // Engine: runs the pipeline (Parse → Decide → Execute → Update).
 export function handleInput(state: SimState, inputRaw: string): EngineOutput {
   const command = parseCommand(inputRaw);
-  const decision = decide(state, command);
+  let decision = decide(state, command);
+
+  if (
+    state.mode === "investigation" &&
+    state.executionState === "RUNNING" &&
+    state.scenario === "email_client_corrupted_profile" &&
+    command.kind === "check_email_login_status" &&
+    !(
+      state.scenarioFacts !== null &&
+      "identity_verified" in state.scenarioFacts &&
+      state.scenarioFacts.identity_verified === true
+    )
+  ) {
+    decision = {
+      kind: "DENY",
+      reason:
+        "Identity verification is required before accessing account-specific information.",
+      denyType: "PROCEDURE_DENIED",
+    };
+  }
 
   // 3F Proof #2 — Lock B (Engine tripwire):
   // If parse ever yields an unknown command, the engine must observe that decision DENIES it.
@@ -116,9 +167,109 @@ if (decision.kind === "DENY") {
     mistakeType,
   };
 
-    const nextState = applyPatch(state, {}, logEvent);
+    const fullRunLog = [...state.runLog, logEvent];
+
+    const requiredSteps =
+      state.scenario
+        ? getScenarioProcedureCommands(state.scenario).length
+        : 0;
+
+    const investigationTakeover =
+      state.mode === "investigation" &&
+      state.executionState === "RUNNING" &&
+      !canStillPassRun(fullRunLog, requiredSteps);
+
+    if (investigationTakeover) {
+      const result = evaluateRun(
+        fullRunLog,
+        requiredSteps
+      );
+
+      const nextState = applyPatch(
+        state,
+        {
+          executionState: "SCORECARD",
+          result,
+        },
+        logEvent
+      );
+
+      return {
+        state: nextState,
+        message:
+          message +
+          "\n\nSenior Technician Takeover\n\nThe ticket has been transferred to a senior technician because the investigation can no longer reach the minimum passing score.",
+        decision,
+      };
+    }
+
+    const nextState = applyPatch(
+      state,
+      {},
+      logEvent
+    );
 
     return { state: nextState, message, decision };
+  }
+
+  if (decision.kind === "RELATED") {
+    if (!state.scenario) {
+      throw new Error(
+        "[ENGINE RELATED INVARIANT] RELATED decision requires an active scenario."
+      );
+    }
+
+    const relatedAction =
+      getScenarioInvestigationRelatedAction(
+        state.scenario,
+        decision.command
+      );
+
+    if (!relatedAction) {
+      throw new Error(
+        `[ENGINE RELATED INVARIANT] Missing registered RELATED action for scenario=${state.scenario} command=${decision.command}`
+      );
+    }
+
+    const message = [
+      relatedAction.agent
+        ? `Agent: ${relatedAction.agent}`
+        : null,
+      `System: ${relatedAction.system}`,
+      relatedAction.customer
+        ? `Customer: ${relatedAction.customer}`
+        : null,
+      NEXT_STEP_PROMPTS.default,
+    ]
+      .filter((line): line is string => line !== null)
+      .join("\n\n");
+
+    const logEvent: LogEvent = {
+      command: decision.command,
+      decision: "RELATED",
+      plan: null,
+      outcome: "success",
+      timestamp: new Date().toISOString(),
+    };
+
+    const nextEvidence = mergeEvidence(
+      state.evidence,
+      relatedAction.evidence
+    );
+
+    const nextState = applyPatch(
+      state,
+      {
+        evidence: nextEvidence,
+      },
+      logEvent
+    );
+
+    return {
+      state: nextState,
+      message,
+      decision,
+    };
   }
 
   // ReadOnly: execute view logic (output only), prove no mutation, return to caller
@@ -204,7 +355,18 @@ State: ${state.executionState}${resultLine}`;
 
   let finalPatch = patch;
 
-  if (patch.result?.completion === "PASS" || patch.result?.completion === "FAIL") {
+if (
+  decision.plan.kind === "StartNewAttempt" &&
+  state.mode === "investigation"
+) {
+  finalPatch = {
+    ...finalPatch,
+    investigationTicket:
+      state.investigationTicket ?? newInvestigationTicket(),
+  };
+}
+
+if (patch.result?.completion === "PASS" || patch.result?.completion === "FAIL") {
   const requiredSteps =
   state.scenario
     ? getScenarioProcedureCommands(state.scenario).length
@@ -218,7 +380,29 @@ State: ${state.executionState}${resultLine}`;
   finalPatch = { ...patch, result: score };
 }
 
-  const nextState = applyPatch(state, finalPatch, logEvent);
+  const procedureEvidence =
+    state.scenario
+      ? getScenarioProcedureEvidence(
+          state.scenario,
+          command.kind
+        )
+      : null;
+
+  const nextEvidence = mergeEvidence(
+    state.evidence,
+    procedureEvidence
+  );
+
+  finalPatch = {
+    ...finalPatch,
+    evidence: nextEvidence,
+  };
+
+  const nextState = applyPatch(
+    state,
+    finalPatch,
+    logEvent
+  );
 
   let message = "";
 
@@ -1093,6 +1277,15 @@ case "CheckNetworkSpeed":
 
 
 case "CheckNetworkStatus":
+  if (state.scenario === "dns_incorrect_configuration") {
+    message =
+      "Agent: I’m checking the active network connection and IP configuration first.\n\n" +
+      "System: The active network adapter is connected. The workstation has a valid IP configuration and default gateway.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   if (state.scenario === "internet_no_access_proxy") {
     message =
       "Agent: I’m checking the network status to confirm whether the device is connected locally.\n\n" +
@@ -1109,7 +1302,55 @@ case "CheckNetworkStatus":
     NEXT_STEP_PROMPTS.default;
   break;
 
-  case "CheckProxySettings":
+case "CheckDnsConfiguration":
+  message =
+    "Agent: I’m checking the DNS configuration assigned to the active network adapter.\n\n" +
+    "System: The active network adapter is configured to use a specific DNS resolver. The configured resolver does not match the approved DNS configuration for this network.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "TestDnsServerConnectivity":
+  message =
+    "Agent: I’m testing connectivity to the DNS server currently configured on the workstation.\n\n" +
+    "System: The workstation cannot successfully reach the configured DNS resolver.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "TestDnsResolution":
+  if (
+    state.scenario === "dns_incorrect_configuration" &&
+    state.scenarioFacts?.kind === "dns_incorrect_configuration"
+  ) {
+    if (!state.scenarioFacts.dns_resolution_tested) {
+      message =
+        "Agent: I’m testing hostname resolution through the configured DNS resolver.\n\n" +
+        "System: The hostname lookup was sent using the configured resolver, but the query timed out and no address record was returned.\n\n" +
+        "Customer: The name still isn’t resolving.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    message =
+      "Agent: I’m testing hostname resolution again after correcting the DNS configuration.\n\n" +
+      "System: The hostname lookup now completes successfully and returns an address record.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
+  break;
+
+case "CorrectDnsConfiguration":
+  message =
+    "Agent: I’m replacing the incorrect DNS configuration with the approved DNS configuration for this network.\n\n" +
+    "System: The active network adapter has been updated to use the approved DNS resolver.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.alright}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "CheckProxySettings":
   message =
     "Agent: Since the device is connected but still cannot reach the internet, I’m checking the proxy settings.\n\n" +
     "System: Proxy settings show internet traffic is configured to use an unavailable proxy server. Outbound web traffic is being routed through that configuration.\n\n" +
@@ -1167,6 +1408,25 @@ case "RestartNetworkAdapter":
   break;
 
 case "TestInternetConnection":
+  if (
+  state.scenario === "dns_incorrect_configuration" &&
+  state.scenarioFacts?.kind === "dns_incorrect_configuration"
+) {
+  if (!state.scenarioFacts.internet_connection_tested) {
+    message =
+      "Agent: I’m testing external connectivity to determine whether the workstation can reach the internet independently of hostname resolution.\n\n" +
+      "System: External connectivity by IP succeeds, but access using hostnames fails.\n\n" +
+      "Customer: So it can reach the internet, but websites still aren’t loading normally?\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
+  message =
+    "Agent: I’m testing normal internet access again after hostname resolution was restored.\n\n" +
+    "System: The workstation can now reach external services successfully by hostname. Normal internet access is working.\n\n" +
+    "Customer: Great, websites are loading again.";
+  break;
+}
   if (
     state.scenario === "internet_no_access_proxy" &&
     state.scenarioFacts?.kind === "internet_no_access_proxy"
@@ -1520,9 +1780,9 @@ break;
 
   case "CheckEmailClientProfile":
   message =
-    "Agent: Since the restart did not resolve the launch issue, I’m checking the email client profile for corruption.\n\n" +
-    "System: Email client profile inspection shows damaged configuration data in the current profile. The application does not complete its launch process while using that profile.\n\n" +
-    "Customer: That explains why restarting it did not help.\n\n" +
+    "Agent: I’m inspecting the email client profile and its configuration.\n\n" +
+    "System: Profile inspection detects damaged configuration data in the current email profile. The application cannot complete startup while loading this profile.\n\n" +
+    "Customer: Okay, let me know what you find.\n\n" +
     NEXT_STEP_PROMPTS.default;
   break;
 
@@ -2232,15 +2492,148 @@ case "TestDualDisplay":
     break;
   }
 
-  message =
+    message =
     "Agent: I’m testing the dual monitor setup now to confirm both screens work.\n\n" +
     "System: Both monitors are detected and displaying correctly. Dual display functionality has been restored.\n\n" +
     "Customer: Great, both screens are working now.";
   break;
 
-    case "SelectScenario":
-      message = `Scenario selected: ${decision.plan.scenario_id.replace(/_/g, " ")}`;
+// SECOND MONITOR — DISPLAY ADAPTER CODE 43
+
+case "CheckDisplayConfiguration":
+  message =
+    "Agent: I’m checking the current Windows display configuration.\n\n" +
+    "System: Windows is configured for multiple displays, but only the primary display is currently available. The second monitor is not listed as an active display.\n\n" +
+    "Customer: Alright.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "DetectDisplays":
+  if (
+    state.scenario ===
+      "second_monitor_display_adapter_code_43" &&
+    state.scenarioFacts?.kind ===
+      "second_monitor_display_adapter_code_43"
+  ) {
+    if (!state.scenarioFacts.first_display_detection_attempted) {
+      message =
+        "Agent: I’m asking Windows to detect connected displays again.\n\n" +
+        "System: Display detection completes. Windows still does not detect a second monitor.\n\n" +
+        "Customer: It’s still blank.\n\n" +
+        NEXT_STEP_PROMPTS.default;
       break;
+    }
+
+    message =
+      "Agent: I’m running display detection again after the restart.\n\n" +
+      "System: Windows completes display detection but still does not detect the second monitor.\n\n" +
+      "Customer: No change.\n\n" +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
+  message =
+    "Agent: I’m asking Windows to detect connected displays again.\n\n" +
+    "System: Display detection completes.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+    "Agent: I’m running display detection again after the restart.\n\n" +
+    "System: Windows completes display detection but still does not detect the second monitor.\n\n" +
+    "Customer: No change.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "IsolateDisplayHardware":
+  message =
+    "Agent: I’m isolating the monitor and connection hardware to determine whether the display itself is causing the failure.\n\n" +
+    "System: The second monitor displays normally when tested with a known-good workstation and connection. The monitor itself is functioning.\n\n" +
+    "Customer: Okay, so the screen works.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "ResetGraphicsDriver":
+  message =
+    "Agent: I’m resetting the Windows graphics driver to see whether the display subsystem recovers.\n\n" +
+    "System: Windows performs a graphics-driver reset equivalent to Win + Ctrl + Shift + B. The display subsystem refreshes, but the second monitor remains unavailable.\n\n" +
+    "Customer: Still nothing on the second screen.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "RestartWorkstation":
+  message =
+    "Agent: I’m restarting the workstation to reinitialize Windows and the display hardware.\n\n" +
+    "System: The workstation restarts successfully. Windows loads normally, but the second monitor remains unavailable.\n\n" +
+    "Customer: The computer is back up, but the second monitor still isn’t working.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "InspectDisplayAdapter":
+  message =
+    "Agent: I’m inspecting the display adapter in Device Manager for a device or driver problem.\n\n" +
+    "System: Device Manager lists the display adapter with a warning indicator.\n\n" +
+    "Customer: Okay.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "InspectDeviceStatus":
+  if (
+    state.scenario ===
+      "second_monitor_display_adapter_code_43" &&
+    state.scenarioFacts?.kind ===
+      "second_monitor_display_adapter_code_43"
+  ) {
+    if (!state.scenarioFacts.first_device_status_inspected) {
+      message =
+        "Agent: I’m inspecting the display adapter’s device status for details about the warning.\n\n" +
+        "System: Device status reports Code 43. Windows has stopped the display adapter because the device or its driver reported a problem.\n\n" +
+        "Customer: Alright.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+
+    if (!state.scenarioFacts.second_device_status_inspected) {
+      message =
+        "Agent: I’m checking the display adapter’s status again after the driver update.\n\n" +
+        "System: The display adapter continues to report Code 43. The driver update completed successfully, but the device error remains.\n\n" +
+        "Customer: Okay.\n\n" +
+        NEXT_STEP_PROMPTS.default;
+      break;
+    }
+  }
+
+  message =
+    "Agent: I’m checking the display adapter’s device status after the reinstall.\n\n" +
+    "System: Device Manager continues to report Code 43. The driver reinstallation completed correctly, but it did not clear the device error.\n\n" +
+    "Customer: Alright.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "UpdateDisplayDriver":
+  message =
+    "Agent: I’m updating the display adapter using the approved driver available for this workstation.\n\n" +
+    "System: The approved display driver installs successfully and the adapter reinitializes. Device Manager continues to report Code 43, and the second monitor remains unavailable.\n\n" +
+    "Customer: The second screen still isn’t working.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "ReinstallDisplayDriver":
+  message =
+    "Agent: I’m reinstalling the approved display driver to replace the current driver installation and reinitialize the adapter.\n\n" +
+    "System: The display driver is removed and reinstalled successfully. Windows reinitializes the display adapter, but the second monitor remains unavailable.\n\n" +
+    "Customer: Still nothing.\n\n" +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "EscalateDisplayIssue":
+  message =
+    "Agent: The monitor and physical connection have been isolated, Windows still cannot detect the display, and the display adapter continues to report Code 43 after approved driver remediation. I’m documenting the troubleshooting results and escalating the unresolved display issue.\n\n" +
+    "System: The ticket is escalated with the troubleshooting history documented, including successful monitor isolation, failed Windows display detection, persistent Code 43, and unsuccessful approved driver update and reinstallation.\n\n" +
+    "Customer: Okay, thank you.";
+  break;
+
+case "SelectScenario":
+  message = `Scenario selected: ${decision.plan.scenario_id.replace(/_/g, " ")}`;
+  break;
 
     case "ViewScorecard":
       message = "";

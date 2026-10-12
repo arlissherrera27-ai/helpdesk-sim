@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useResponsive } from "./useResponsive";
 import { handleInput } from "./core/engine";
-import { initialState } from "./core/state";
+import {
+  initialState,
+  newInvestigationTicket,
+} from "./core/state";
 import type { SimState } from "./core/types";
 import type { AppView } from "./appTypes";
 import ProfilePage from "./ProfilePage";
@@ -80,9 +83,38 @@ import {
 } from "./playlists/playlistRunLifecycle";
 
 import {
+  runInvestigationValidation,
   runScenarioValidation,
+  type InvestigationValidationReport,
   type ScenarioValidationReport,
 } from "./core/scenarioValidation";
+
+const INVESTIGATION_SCENARIO_LABELS = [
+  "Second Monitor — Display Adapter Code 43",
+  "Email Client Won't Open — Corrupted Profile",
+] as const;
+
+function pickRandomInvestigationScenario() {
+  const eligibleScenarios = scenarioTree
+    .flatMap((scenarioType) => scenarioType.branches)
+    .flatMap((branch) => branch.scenarios)
+    .filter(
+      (scenario) =>
+        INVESTIGATION_SCENARIO_LABELS.some(
+          (label) => label === scenario.label
+        ) && Boolean(scenario.selectCommand)
+    );
+
+  if (eligibleScenarios.length === 0) {
+    return undefined;
+  }
+
+  const randomIndex = Math.floor(
+    Math.random() * eligibleScenarios.length
+  );
+
+  return eligibleScenarios[randomIndex];
+}
 
 const LAYOUT = {
   completedHero: "1fr 340px",
@@ -124,8 +156,12 @@ function buildScenarioPreview(
     successOutcome: string;
     previewSteps: string[];
   },
-  mode: "practice" | "assessment"
+  mode: SimState["mode"]
 ): string {
+  if (mode === "investigation") {
+    return "Incoming ticket ready.\n\nNext step: type 'start' to begin.";
+  }
+
   return [
     `Scenario selected: ${scenario.label} — Standard`,
     "",
@@ -333,7 +369,11 @@ const [log, setLog] = useState<string[]>([]);
 const [
   scenarioValidationReport,
   setScenarioValidationReport,
-] = useState<ScenarioValidationReport | null>(null);
+] = useState<
+  ScenarioValidationReport |
+  InvestigationValidationReport |
+  null
+>(null);
 
 const [showDeveloperTools, setShowDeveloperTools] = useState(false);
 
@@ -772,15 +812,19 @@ if (
   attemptStartedAt !== null
 ) {
   if (activeProfile !== null) {
-    const attemptRecord = createScenarioAttemptRecord(
-      out.state,
-      {
-        profileId: activeProfile.profileId,
-        startedAt: attemptStartedAt,
-        endedAt: commandTime,
-        endReason: "completed",
-      }
-    );
+const attemptRecord = createScenarioAttemptRecord(
+  out.state,
+  {
+    profileId: activeProfile.profileId,
+    startedAt: attemptStartedAt,
+    endedAt: commandTime,
+    endReason:
+      out.state.mode === "investigation" &&
+      out.state.result?.completion === "FAIL"
+        ? "takeover"
+        : "completed",
+  }
+);
 
     if (attemptRecord !== null) {
   const updatedHistory =
@@ -1019,6 +1063,17 @@ function runCurrentScenarioValidation() {
     return;
   }
 
+  if (state.mode === "investigation") {
+    const report = runInvestigationValidation(
+      scenarioId,
+      selectCommand,
+      ""
+    );
+
+    setScenarioValidationReport(report);
+    return;
+  }
+
   const report = runScenarioValidation(
     scenarioId,
     selectCommand
@@ -1026,6 +1081,7 @@ function runCurrentScenarioValidation() {
 
   setScenarioValidationReport(report);
 }
+
 
 const showState3Preview =
   state.executionState === "LOBBY" &&
@@ -1902,7 +1958,7 @@ state.previewScenario === null &&
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+                gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
                 gap: isMobile ? "14px" : "22px",
                 marginBottom: "28px",
               }}
@@ -2120,6 +2176,112 @@ state.previewScenario === null &&
     </div>
   </div>
 </button>
+<button
+  type="button"
+onClick={() => {
+  setState((current) => ({
+    ...current,
+    mode: "investigation",
+    assessmentIntegrity: "maintained",
+  }));
+}}
+  style={{
+    minHeight: "154px",
+    display: "block",
+    padding: SPACE.lg,
+    textAlign: "left",
+    fontFamily: "monospace",
+    borderRadius: RADIUS.card,
+    border:
+      mode === "investigation"
+        ? `1px solid ${COLORS.primaryStrong}`
+        : `1px solid ${COLORS.border}`,
+    background:
+      mode === "investigation"
+        ? "rgba(109, 74, 255, 0.10)"
+        : COLORS.panel,
+    color: COLORS.text,
+    cursor: "pointer",
+  }}
+>
+  <div>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: SPACE.md,
+        marginBottom: SPACE.sm,
+      }}
+    >
+      <strong
+        style={{
+          color: COLORS.primary,
+          fontSize: "17px",
+        }}
+      >
+        Investigation Mode
+      </strong>
+
+      {mode === "investigation" && (
+        <span
+          aria-label="Selected"
+          style={{
+            width: "24px",
+            height: "24px",
+            display: "grid",
+            placeItems: "center",
+            flex: "0 0 auto",
+            borderRadius: RADIUS.pill,
+            background: COLORS.primary,
+            color: COLORS.appBg,
+            fontSize: TEXT.body,
+            fontWeight: 700,
+          }}
+        >
+          ✓
+        </span>
+      )}
+    </div>
+
+    <div
+      style={{
+        color: COLORS.body,
+        fontSize: TEXT.detail,
+        lineHeight: 1.5,
+      }}
+    >
+      Investigate an incoming ticket without being shown the solution path.
+    </div>
+
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: SPACE.sm,
+        marginTop: SPACE.md,
+      }}
+    >
+      {["Mystery Ticket", "Gather Evidence", "Troubleshoot Freely"].map(
+        (item) => (
+          <span
+            key={item}
+            style={{
+              padding: "5px 8px",
+              color: COLORS.body,
+              fontSize: TEXT.label,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: RADIUS.pill,
+              background: COLORS.panelSoft,
+            }}
+          >
+            {item}
+          </span>
+        )
+      )}
+    </div>
+  </div>
+</button>
             </div>
 
             <div
@@ -2156,43 +2318,89 @@ state.previewScenario === null &&
                 </div>
 
                 <div>
-                  <h3
-                    style={{
-                      margin: 0,
-                      color: COLORS.text,
-                      fontSize: TEXT.section,
-                    }}
-                  >
-                    Choose a Scenario
-                  </h3>
+                <h3
+                  style={{
+                    margin: 0,
+                    color: COLORS.text,
+                    fontSize: TEXT.section,
+                  }}
+                >
+                  {mode === "investigation"
+                    ? "Start Investigation"
+                    : "Choose a Scenario"}
+                </h3>
 
-                  <p
-                    style={{
-                      margin: `${SPACE.sm} 0 0`,
-                      color: COLORS.body,
-                      fontSize: TEXT.body,
-                    }}
-                  >
-                    Pick a customer issue to work on.
-                  </p>
-                </div>
+                <p
+                  style={{
+                    margin: `${SPACE.sm} 0 0`,
+                    color: COLORS.body,
+                    fontSize: TEXT.body,
+                  }}
+                >
+                  {mode === "investigation"
+                    ? "Receive an unknown customer issue and diagnose the problem."
+                    : "Pick a customer issue to work on."}
+                </p>
+              </div>
               </div>
 
               <button
                 type="button"
-                onClick={() => {
-                  setShowSelector(true);
-                  setOpenScenarioTypeId("standard");
+onClick={() => {
+  if (mode === "investigation") {
+    const investigationScenario =
+  pickRandomInvestigationScenario();
 
-const standardType = scenarioTree.find(
-  (type) => type.typeId === "standard"
+    if (
+      investigationScenario === undefined ||
+      !investigationScenario.selectCommand
+    ) {
+      return;
+    }
+
+const out = handleInput(
+  state,
+  investigationScenario.selectCommand
 );
 
-setOpenBranchId(standardType?.branches[0]?.tierId ?? null);
-setProcedureHelpPinned(false);
-setShowMobileProcedureHelp(false);
-setLog(["Select a scenario to begin"]);
-                }}
+setState({
+  ...out.state,
+  investigationTicket: newInvestigationTicket(),
+});
+
+    setLog(
+      buildLogBlock(
+        buildScenarioPreview(
+          investigationScenario,
+          "investigation"
+        )
+      )
+    );
+
+    setScenarioValidationReport(null);
+    setProcedureHelpPinned(false);
+    setShowMobileProcedureHelp(false);
+    setShowSelector(false);
+    setOpenScenarioTypeId(null);
+    setOpenBranchId(null);
+
+    return;
+  }
+
+  setShowSelector(true);
+  setOpenScenarioTypeId("standard");
+
+  const standardType = scenarioTree.find(
+    (type) => type.typeId === "standard"
+  );
+
+  setOpenBranchId(
+    standardType?.branches[0]?.tierId ?? null
+  );
+  setProcedureHelpPinned(false);
+  setShowMobileProcedureHelp(false);
+  setLog(["Select a scenario to begin"]);
+}}
                 style={{
   width: "100%",
   minHeight: "88px",
@@ -2209,27 +2417,31 @@ setLog(["Select a scenario to begin"]);
 }}
 >
   <div>
-    <div
-      style={{
-        color: COLORS.primary,
-        fontSize: TEXT.body,
-        fontWeight: 700,
-      }}
-    >
-      Pick a scenario
-    </div>
-
-    <div
-      style={{
-        marginTop: SPACE.sm,
-        color: COLORS.muted,
-        fontSize: TEXT.detail,
-        fontWeight: 400,
-      }}
-    >
-      Browse the scenario library to begin.
-    </div>
+  <div
+    style={{
+      color: COLORS.primary,
+      fontSize: TEXT.body,
+      fontWeight: 700,
+    }}
+  >
+    {mode === "investigation"
+      ? "Start investigation"
+      : "Pick a scenario"}
   </div>
+
+  <div
+    style={{
+      marginTop: SPACE.sm,
+      color: COLORS.muted,
+      fontSize: TEXT.detail,
+      fontWeight: 400,
+    }}
+  >
+    {mode === "investigation"
+      ? "Receive an incoming ticket without knowing the underlying scenario."
+      : "Browse the scenario library to begin."}
+  </div>
+</div>
 </button>
             </div>
           </section>
@@ -2262,10 +2474,18 @@ setLog(["Select a scenario to begin"]);
             <button
               type="button"
               onClick={() => {
+                setState((current) => ({
+                  ...current,
+                  scenario: null,
+                  previewScenario: null,
+                }));
+
+                setScenarioValidationReport(null);
                 setShowSelector(false);
+
                 const defaultScenarioType = scenarioTree.find(
-  (scenarioType) => scenarioType.enabled
-);
+                  (scenarioType) => scenarioType.enabled
+                );
 
 setOpenScenarioTypeId(defaultScenarioType?.typeId ?? null);
 setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
@@ -2411,10 +2631,47 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
                   key={scenarioType.typeId}
                   type="button"
                   onClick={() => {
+                    if (scenarioType.typeId === "chaos") {
+                    const investigationScenario =
+  pickRandomInvestigationScenario();
+
+                    if (!investigationScenario?.selectCommand) return;
+
+                    const investigationState: SimState = {
+                      ...initialState(),
+                      mode: "investigation",
+                    };
+
+                    const out = handleInput(
+                      investigationState,
+                      investigationScenario.selectCommand
+                    );
+
+                    setState({
+                      ...out.state,
+                      investigationTicket: newInvestigationTicket(),
+                    });
+
+                    setLog(
+                      buildLogBlock(
+                        buildScenarioPreview(investigationScenario, "investigation")
+                      )
+                    );
+
+                    setScenarioValidationReport(null);
+                    setProcedureHelpPinned(false);
+                    setShowMobileProcedureHelp(false);
+                    setShowSelector(false);
+                    setOpenScenarioTypeId(null);
+                    setOpenBranchId(null);
+
+                    return;
+                  }
+
                     if (!scenarioType.enabled) return;
 
                     setOpenScenarioTypeId(scenarioType.typeId);
-setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
+                    setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
                   }}
                   style={{
                     minWidth: "150px",
@@ -2435,8 +2692,11 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
                         ? `1px solid ${COLORS.primaryStrong}`
                         : `1px solid ${COLORS.border}`,
                     borderRadius: RADIUS.button,
-                    opacity: scenarioType.enabled ? 1 : 0.45,
-                    cursor: scenarioType.enabled ? "pointer" : "default",
+                    opacity: scenarioType.enabled || scenarioType.typeId === "chaos" ? 1 : 0.45,
+                    cursor:
+                      scenarioType.enabled || scenarioType.typeId === "chaos"
+                        ? "pointer"
+                        : "default",
                   }}
                 >
                   {scenarioType.typeLabel}
@@ -2716,30 +2976,50 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
           fontSize: "24px",
           lineHeight: 1.2,
         }}
-      >
-        Scenario Preview
-      </h2>
+    >
+      {mode === "investigation"
+        ? "Incoming Ticket"
+        : "Scenario Preview"}
+    </h2>
 
-      <p
-        style={{
-          margin: 0,
-          color: "#9aa4b2",
-          fontSize: "14px",
-          lineHeight: 1.6,
-        }}
-      >
-        Review the scenario before starting your simulation.
-      </p>
+    <p
+      style={{
+        margin: 0,
+        color: "#9aa4b2",
+        fontSize: "14px",
+        lineHeight: 1.6,
+      }}
+    >
+      {mode === "investigation"
+        ? "Review the incoming request before accepting it."
+        : "Review the scenario before starting your simulation."}
+    </p>
     </div>
 
     <button
       type="button"
-      onClick={() => {
+onClick={() => {
+  setScenarioValidationReport(null);
+
+  if (mode === "investigation") {
+    setState((current) => ({
+      ...current,
+      scenario: null,
+      previewScenario: null,
+    }));
+
+    setShowSelector(false);
+    setOpenScenarioTypeId(null);
+    setOpenBranchId(null);
+    setLog([]);
+
+    return;
+  }
+
   const defaultScenarioType = scenarioTree.find(
     (scenarioType) => scenarioType.enabled
   );
 
-  setScenarioValidationReport(null);
   setShowSelector(true);
   setOpenScenarioTypeId(defaultScenarioType?.typeId ?? null);
   setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
@@ -2755,7 +3035,9 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
               padding: 0,
             }}
           >
-            ← Back to Scenario Library
+            {mode === "investigation"
+            ? "← Back to Home"
+            : "← Back to Scenario Library"}
           </button>
 
           <div
@@ -2768,27 +3050,50 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
   }}
 >
   <div
-    style={{
-      marginBottom: SPACE.xs,
-      color: COLORS.muted,
-      fontSize: TEXT.label,
-    }}
-  >
-    Scenario selected:
-  </div>
-
-  <div
-    style={{
-      color: COLORS.text,
-      fontSize: TEXT.section,
-      fontWeight: 700,
-      lineHeight: 1.3,
-    }}
-  >
-    {previewScenarioDetails.label} — Standard
-  </div>
+  style={{
+    marginBottom: SPACE.xs,
+    color: COLORS.muted,
+    fontSize: TEXT.label,
+  }}
+>
+  {mode === "investigation"
+    ? "Incoming ticket:"
+    : "Scenario selected:"}
 </div>
 
+<div
+  style={{
+    color: COLORS.text,
+    fontSize: TEXT.section,
+    fontWeight: 700,
+    lineHeight: 1.3,
+  }}
+>
+{mode === "investigation" ? (
+  <>
+    <div>
+      {state.investigationTicket?.ticketNumber ?? "Incoming Ticket"}
+    </div>
+
+    <div
+      style={{
+        marginTop: SPACE.xs,
+        color: COLORS.body,
+        fontSize: TEXT.body,
+        fontWeight: 400,
+      }}
+    >
+      Customer:{" "}
+      {state.investigationTicket?.customerName ?? "Customer"}
+    </div>
+  </>
+) : (
+  `${previewScenarioDetails.label} — Standard`
+)}
+</div>
+</div>
+
+{mode !== "investigation" && (
 <div
   style={{
     display: "flex",
@@ -2894,7 +3199,10 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
     </button>
   </div>
 </div>
+)}
 
+
+{mode !== "investigation" && (
 <div
   style={{
     display: "grid",
@@ -3068,9 +3376,9 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
     )}
   </div>
 </div>
+)}
 
-
-         <div
+<div
   style={{
     marginTop: SPACE.lg,
   }}
@@ -3159,31 +3467,33 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
     style={{
       marginTop: "14px",
       padding: "16px",
-      border:
-        scenarioValidationReport.status === "PASS"
-          ? `1px solid ${COLORS.successDark}`
-          : "1px solid #b91c1c",
+      border: `1px solid ${COLORS.border}`,
       borderRadius: RADIUS.card,
-      background:
-        scenarioValidationReport.status === "PASS"
-          ? "rgba(22, 163, 74, 0.08)"
-          : "rgba(185, 28, 28, 0.08)",
+      background: COLORS.panelSoft,
     }}
   >
     <h3
-      style={{
-        margin: `0 0 ${SPACE.md}`,
-        color:
-          scenarioValidationReport.status === "PASS"
-            ? COLORS.success
-            : "#f87171",
-        fontSize: STATE3_TEXT.heading,
-      }}
-    >
-      Combined Test: {scenarioValidationReport.status}
-    </h3>
+  style={{
+    margin: `0 0 ${SPACE.md}`,
+    color: COLORS.text,
+    fontSize: STATE3_TEXT.heading,
+  }}
+>
+  Combined Test:{" "}
+  <span
+    style={{
+      color:
+        scenarioValidationReport.status === "PASS"
+          ? COLORS.success
+          : "#f87171",
+    }}
+  >
+    {scenarioValidationReport.status}
+  </span>
+</h3>
 
-    {scenarioValidationReport.status === "PASS" ? (
+    {"matchedSteps" in scenarioValidationReport &&
+    scenarioValidationReport.status === "PASS" ? (
       <div
         style={{
           color: COLORS.body,
@@ -3192,32 +3502,117 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
         }}
       >
         <div>
-          <strong>Steps matched:</strong>{" "}
+          <strong>Golden Path:</strong>{" "}
+          {scenarioValidationReport.steps.filter(
+            (step) =>
+              step.phase === "correct" && step.matched
+          ).length}
+          /
+          {scenarioValidationReport.steps.filter(
+            (step) => step.phase === "correct"
+          ).length}
+          {" — "}
+          {scenarioValidationReport.finalCompletion ?? "Not completed"}
+        </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>Golden Path score:</strong>{" "}
+          {scenarioValidationReport.finalScore ?? "N/A"}/10
+        </div>
+
+        <div style={{ marginTop: SPACE.md }}>
+          <strong>Negative Tests:</strong>{" "}
+          {scenarioValidationReport.steps.filter(
+            (step) =>
+              (step.phase === "repeat" ||
+                step.phase === "wrong-order") &&
+              step.matched
+          ).length}
+          /
+          {scenarioValidationReport.steps.filter(
+            (step) =>
+              step.phase === "repeat" ||
+              step.phase === "wrong-order"
+          ).length}
+          {" — Repeat and wrong-order checks"}
+        </div>
+
+        <div style={{ marginTop: SPACE.md }}>
+          <strong>Total checks passed:</strong>{" "}
           {scenarioValidationReport.matchedSteps}/
           {scenarioValidationReport.totalSteps}
         </div>
-
-        <div style={{ marginTop: SPACE.sm }}>
-          <strong>Expected ALLOW:</strong>{" "}
-          {scenarioValidationReport.expectedAllows}
+      </div>
+    ) : "procedureCommandCount" in scenarioValidationReport ? (
+      <div
+        style={{
+          color: COLORS.body,
+          fontSize: STATE3_TEXT.body,
+          lineHeight: STATE3_TEXT.lineHeight,
+        }}
+      >
+        <div>
+          <strong>Procedures:</strong>{" "}
+          {scenarioValidationReport.procedureCommandsPassed}/
+          {scenarioValidationReport.procedureCommandCount}
         </div>
 
         <div style={{ marginTop: SPACE.sm }}>
-          <strong>Expected DENY:</strong>{" "}
-          {scenarioValidationReport.expectedDenies}
+          <strong>Related commands:</strong>{" "}
+          {scenarioValidationReport.relatedCommandsPassed}/
+          {scenarioValidationReport.relatedCommandCount}
         </div>
 
         <div style={{ marginTop: SPACE.sm }}>
-          <strong>Final completion:</strong>{" "}
-          {scenarioValidationReport.finalCompletion ?? "None"}
+          <strong>Repeat checks:</strong>{" "}
+          {scenarioValidationReport.repeatChecksPassed}/
+          {scenarioValidationReport.repeatChecks}
         </div>
 
         <div style={{ marginTop: SPACE.sm }}>
-          <strong>Final score:</strong>{" "}
-          {scenarioValidationReport.finalScore === null
-            ? "None"
-            : `${scenarioValidationReport.finalScore}/10`}
+          <strong>PASS path:</strong>{" "}
+          {scenarioValidationReport.passCompletion ?? "Not reached"}
         </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>PASS score:</strong>{" "}
+          {scenarioValidationReport.passScore ?? "N/A"}
+          {" | Mistakes: "}
+          {scenarioValidationReport.passMistakes ?? "N/A"}
+        </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>DENY count:</strong>{" "}
+          {scenarioValidationReport.denyCount}
+        </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>Senior takeover:</strong>{" "}
+          {scenarioValidationReport.takeoverReached ? "Reached" : "Not reached"}
+        </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>FAIL path:</strong>{" "}
+          {scenarioValidationReport.failCompletion ?? "Not reached"}
+        </div>
+
+        <div style={{ marginTop: SPACE.sm }}>
+          <strong>FAIL score:</strong>{" "}
+          {scenarioValidationReport.failScore ?? "N/A"}
+          {" | Mistakes: "}
+          {scenarioValidationReport.failMistakes ?? "N/A"}
+        </div>
+
+        {scenarioValidationReport.failure && (
+          <div style={{ marginTop: SPACE.md, color: "#f87171" }}>
+            <strong>Failure:</strong>{" "}
+            {scenarioValidationReport.failure.phase}
+            {" — Expected: "}
+            {scenarioValidationReport.failure.expected}
+            {" | Actual: "}
+            {scenarioValidationReport.failure.actual}
+          </div>
+        )}
       </div>
     ) : (
       <div
@@ -3253,12 +3648,75 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
         </div>
       </div>
     )}
+    <div
+  style={{
+    marginTop: SPACE.lg,
+    paddingTop: SPACE.md,
+    borderTop: `1px solid ${COLORS.border}`,
+  }}
+>
+  <h4
+    style={{
+      margin: `0 0 ${SPACE.md}`,
+      fontFamily: "monospace",
+      fontSize: TEXT.label,
+      color: COLORS.body,
+    }}
+  >
+    Full Test Transcript
+  </h4>
+
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      gap: SPACE.md,
+    }}
+  >
+    {scenarioValidationReport.transcript.map((entry, index) => (
+      <div
+        key={`${entry.phase}-${entry.stepNumber}-${entry.input}-${index}`}
+        style={{
+          padding: SPACE.md,
+          border: `1px solid ${COLORS.border}`,
+          borderRadius: RADIUS.button,
+          background: COLORS.panel,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "monospace",
+            fontSize: TEXT.label,
+            fontWeight: 700,
+            color: COLORS.muted,
+            marginBottom: SPACE.sm,
+          }}
+        >
+          {entry.phase.toUpperCase()} · {entry.input} ·{" "}
+          {entry.decision}
+        </div>
+
+        <div
+          style={{
+            whiteSpace: "pre-wrap",
+            fontSize: STATE3_TEXT.body,
+            lineHeight: STATE3_TEXT.lineHeight,
+            color: COLORS.body,
+          }}
+        >
+          {entry.message || "(No message returned)"}
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
     </section>
         )}
       </div>
     )}
   </div>
 </div>
+
                 </section>
       )}
       {state.executionState === "RUNNING" &&
@@ -3348,78 +3806,107 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
       >
         <div style={{ flex: 1 }}>
           <div
-            style={{
-              marginBottom: SPACE.xs,
-              color: COLORS.muted,
-              fontSize: TEXT.label,
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.6px",
-            }}
-          >
-            Active Ticket
-          </div>
+  style={{
+    marginBottom: SPACE.xs,
+    color: COLORS.muted,
+    fontSize: TEXT.label,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.6px",
+  }}
+>
+  {mode === "investigation"
+    ? "Incoming Ticket"
+    : "Active Ticket"}
+</div>
 
-          <h2
-            style={{
-              margin: 0,
-              color: COLORS.text,
-              fontSize: STATE4_TEXT.title,
-              lineHeight: 1.25,
-            }}
-          >
-            {activeScenarioId
-              ? getScenarioLabel(activeScenarioId)
-              : "Active Scenario"}{" "}
-            —{" "}
-            {activeScenarioId
-              ? getScenarioTypeDisplayLabel(activeScenarioId)
-              : "Standard"}
-          </h2>
+<h2
+  style={{
+    margin: 0,
+    color: COLORS.text,
+    fontSize: STATE4_TEXT.title,
+    lineHeight: 1.25,
+  }}
+>
+  {mode === "investigation" ? (
+    state.investigationTicket?.ticketNumber ?? "Incoming Ticket"
+  ) : (
+    <>
+      {activeScenarioId
+        ? getScenarioLabel(activeScenarioId)
+        : "Active Scenario"}{" "}
+      —{" "}
+      {activeScenarioId
+        ? getScenarioTypeDisplayLabel(activeScenarioId)
+        : "Standard"}
+    </>
+  )}
+</h2>
 
           <div
-            style={{
-              display: "grid",
-              gap: SPACE.sm,
-              marginTop: SPACE.md,
-            }}
-          >
-            <div
-              style={{
-                color: COLORS.body,
-                fontSize: STATE4_TEXT.body,
-                lineHeight: STATE4_TEXT.lineHeight,
-              }}
-            >
-              <strong
-                style={{
-                  color: COLORS.assessmentStrong,
-                }}
-              >
-                Customer Issue:
-              </strong>{" "}
-              {previewScenarioDetails?.scenarioContext ??
-                "Customer issue is active."}
-            </div>
+  style={{
+    display: "grid",
+    gap: SPACE.sm,
+    marginTop: SPACE.md,
+  }}
+>
+  {mode === "investigation" ? (
+    <div
+      style={{
+        color: COLORS.body,
+        fontSize: STATE4_TEXT.body,
+        lineHeight: STATE4_TEXT.lineHeight,
+      }}
+    >
+      <strong
+        style={{
+          color: COLORS.assessmentStrong,
+        }}
+      >
+        Customer:
+      </strong>{" "}
+      {state.investigationTicket?.customerName ?? "Customer"}
+    </div>
+  ) : (
+    <>
+      <div
+        style={{
+          color: COLORS.body,
+          fontSize: STATE4_TEXT.body,
+          lineHeight: STATE4_TEXT.lineHeight,
+        }}
+      >
+        <strong
+          style={{
+            color: COLORS.assessmentStrong,
+          }}
+        >
+          Customer Issue:
+        </strong>{" "}
+        {previewScenarioDetails?.scenarioContext ??
+          "Customer issue is active."}
+      </div>
 
-            <div
-              style={{
-                color: COLORS.body,
-                fontSize: STATE4_TEXT.body,
-                lineHeight: STATE4_TEXT.lineHeight,
-              }}
-            >
-              <strong
-                style={{
-                  color: COLORS.assessmentStrong,
-                }}
-              >
-                Scenario Goal:
-              </strong>{" "}
-              {previewScenarioDetails?.successOutcome ??
-                "Resolve the customer issue."}
-            </div>
-          </div>
+      <div
+        style={{
+          color: COLORS.body,
+          fontSize: STATE4_TEXT.body,
+          lineHeight: STATE4_TEXT.lineHeight,
+        }}
+      >
+        <strong
+          style={{
+            color: COLORS.assessmentStrong,
+          }}
+        >
+          Scenario Goal:
+        </strong>{" "}
+        {previewScenarioDetails?.successOutcome ??
+          "Resolve the customer issue."}
+      </div>
+    </>
+  )}
+</div>
         </div>
 
         <div
@@ -3432,29 +3919,37 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
           }}
         >
           <div
-            style={{
-              padding: "6px 10px",
-              border:
-                mode === "practice"
-                  ? `1px solid ${COLORS.practiceStrong}`
-                  : `1px solid ${COLORS.assessmentStrong}`,
-              borderRadius: RADIUS.pill,
-              color:
-                mode === "practice"
-                  ? COLORS.practice
-                  : COLORS.assessment,
-              background:
-                mode === "practice"
-                  ? "rgba(34, 197, 94, 0.08)"
-                  : "rgba(96, 165, 250, 0.08)",
-              fontSize: TEXT.label,
-              fontWeight: 700,
-            }}
-          >
-            {mode === "practice"
-              ? "Practice Mode"
-              : "Assessment Mode"}
-          </div>
+  style={{
+    padding: "6px 10px",
+    border:
+      mode === "practice"
+        ? `1px solid ${COLORS.practiceStrong}`
+        : mode === "investigation"
+          ? `1px solid ${COLORS.primaryStrong}`
+          : `1px solid ${COLORS.assessmentStrong}`,
+    borderRadius: RADIUS.pill,
+    color:
+      mode === "practice"
+        ? COLORS.practice
+        : mode === "investigation"
+          ? COLORS.primary
+          : COLORS.assessment,
+    background:
+      mode === "practice"
+        ? "rgba(34, 197, 94, 0.08)"
+        : mode === "investigation"
+          ? "rgba(109, 74, 255, 0.08)"
+          : "rgba(96, 165, 250, 0.08)",
+    fontSize: TEXT.label,
+    fontWeight: 700,
+  }}
+>
+  {mode === "practice"
+    ? "Practice Mode"
+    : mode === "investigation"
+      ? "Investigation Mode"
+      : "Assessment Mode"}
+</div>
 
           {mode === "assessment" && (
             <button
@@ -3552,103 +4047,151 @@ setOpenBranchId(scenarioType.branches[0]?.tierId ?? null);
     borderTop: isMobile ? `1px solid ${COLORS.border}` : "none",
     paddingLeft: isMobile ? 0 : SPACE.lg,
     paddingTop: isMobile ? SPACE.md : 0,
+    minWidth: 0,
   }}
 >
-<div
-  style={{
-    marginBottom: SPACE.sm,
-    color: COLORS.text,
-    fontSize: STATE4_TEXT.section,
-    lineHeight: 1.25,
-    fontWeight: 700,
-  }}
->
-  Available commands:
-</div>
-
-{visibleCommands.map((command) => (
-  <div
-    key={command}
-    style={{
-      color: COLORS.body,
-      fontSize: STATE4_TEXT.detail,
-      lineHeight: STATE4_TEXT.lineHeight,
-      marginBottom: SPACE.xs,
-    }}
-  >
-    - {command}
-  </div>
-))}
-
-        {showProcedureHelp && (
-          <button
-            type="button"
-onClick={() => {
-  if (isMobile) {
-    setProcedureHelpPinned(true);
-    setShowMobileProcedureHelp(true);
-    return;
-  }
-
-  setProcedureHelpPinned((current) => !current);
-}}
-            style={{
-              ...BUTTON.secondary,
-              width: "100%",
-              marginTop: SPACE.md,
-              border: `1px solid ${COLORS.practiceStrong}`,
-              color: COLORS.practice,
-            }}
->
-  {procedureHelpOpen ? "Hide Procedure Help" : "Show Procedure Help"}
-</button>
-)}
-
-{showProcedureHelp && !procedureHelpOpen && (
   <div
     style={{
-      marginTop: SPACE.xs,
-      color: COLORS.muted,
-      fontSize: TEXT.label,
-      lineHeight: 1.4,
-      textAlign: "center",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: SPACE.sm,
+      marginBottom: SPACE.md,
     }}
   >
-    Opening Procedure Help will be recorded as assistance on your scorecard.
-  </div>
-)}
+    <div
+      style={{
+        color: COLORS.text,
+        fontSize: STATE4_TEXT.section,
+        lineHeight: 1.25,
+        fontWeight: 700,
+      }}
+    >
+      Evidence Gathered
+    </div>
 
-        {procedureHelpOpen && !isMobile && (
+    {showProcedureHelp && (
+      <button
+        type="button"
+        title={
+          "Procedure Help\nOpening Procedure Help will be recorded as assistance on your scorecard."
+        }
+        aria-label="Procedure Help"
+        onClick={() => {
+          if (isMobile) {
+            setProcedureHelpPinned(true);
+            setShowMobileProcedureHelp(true);
+            return;
+          }
+
+          setProcedureHelpPinned((current) => !current);
+        }}
+        style={{
+          width: "30px",
+          height: "30px",
+          flex: "0 0 auto",
+          display: "grid",
+          placeItems: "center",
+          padding: 0,
+          border: `1px solid ${COLORS.practiceStrong}`,
+          borderRadius: RADIUS.pill,
+          background: procedureHelpOpen
+            ? "rgba(34, 197, 94, 0.12)"
+            : "transparent",
+          color: COLORS.practice,
+          fontFamily: "monospace",
+          fontSize: TEXT.body,
+          fontWeight: 700,
+          cursor: "pointer",
+        }}
+      >
+        ?
+      </button>
+    )}
+  </div>
+
+  <div
+    style={{
+      maxHeight: isMobile ? "none" : "245px",
+      overflowY: isMobile ? "visible" : "auto",
+      paddingRight: isMobile ? 0 : SPACE.sm,
+    }}
+  >
+    {state.evidence.length === 0 ? (
+      <div
+        style={{
+          color: COLORS.muted,
+          fontSize: STATE4_TEXT.detail,
+          lineHeight: STATE4_TEXT.lineHeight,
+        }}
+      >
+        No meaningful evidence gathered yet.
+      </div>
+    ) : (
+      <div
+        style={{
+          display: "grid",
+          gap: SPACE.sm,
+        }}
+      >
+        {state.evidence.map((evidence) => (
           <div
+            key={evidence.id}
             style={{
-              marginTop: SPACE.md,
-              padding: SPACE.md,
-              border: `1px solid ${COLORS.border}`,
-              borderRadius: RADIUS.button,
-              background: COLORS.panelSoft,
               color: COLORS.body,
-              maxHeight: "220px",
-              overflowY: "auto",
+              fontSize: STATE4_TEXT.detail,
+              lineHeight: STATE4_TEXT.lineHeight,
             }}
           >
-            <div style={{ marginBottom: SPACE.sm, fontWeight: "bold" }}>
-              Parser accepts these expressions:
+            ✓ {evidence.text}
+          </div>
+        ))}
+      </div>
+    )}
+
+    {procedureHelpOpen && !isMobile && (
+      <div
+        style={{
+          marginTop: SPACE.md,
+          padding: SPACE.md,
+          border: `1px solid ${COLORS.border}`,
+          borderRadius: RADIUS.button,
+          background: COLORS.panelSoft,
+          color: COLORS.body,
+        }}
+      >
+        <div
+          style={{
+            marginBottom: SPACE.sm,
+            fontWeight: "bold",
+          }}
+        >
+          Parser accepts these expressions:
+        </div>
+
+        {parserAliasHelp.map((item) => (
+          <div
+            key={item.command}
+            style={{ marginTop: SPACE.sm }}
+          >
+            <div style={{ fontWeight: "bold" }}>
+              {item.label}
             </div>
 
-            {parserAliasHelp.map((item) => (
-              <div key={item.command} style={{ marginTop: SPACE.sm }}>
-                <div style={{ fontWeight: "bold" }}>{item.label}</div>
-
-                {item.aliases.map((alias) => (
-                  <div key={alias} style={{ marginLeft: "10px" }}>
-                    - {alias}
-                  </div>
-                ))}
+            {item.aliases.map((alias) => (
+              <div
+                key={alias}
+                style={{ marginLeft: "10px" }}
+              >
+                - {alias}
               </div>
             ))}
           </div>
-        )}
-      </aside>
+        ))}
+      </div>
+    )}
+  </div>
+</aside>
     </div>
   </section>
 )}
@@ -3721,27 +4264,44 @@ onClick={() => {
 
       <button
         onClick={() => runCommand()}
-style={{
-  ...BUTTON.secondary,
-  width: isMobile ? "100%" : "auto",
-  border: `1px solid ${COLORS.successDark}`,
-  background: "rgba(22, 163, 74, 0.35)",
-}}
+        style={{
+          ...BUTTON.secondary,
+          width: isMobile ? "100%" : "auto",
+        }}
       >
         Enter
       </button>
     </div>
 
-<div
-  style={{
-    marginTop: SPACE.sm,
-    color: COLORS.muted,
-    fontSize: STATE4_TEXT.detail,
-    lineHeight: STATE4_TEXT.lineHeight,
-  }}
->
-  Type a procedure you believe is the best next step.
-</div>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        flexWrap: "wrap",
+        gap: SPACE.sm,
+        marginTop: SPACE.sm,
+        color: COLORS.muted,
+        fontSize: TEXT.label,
+      }}
+    >
+      {visibleCommands.map((command, index) => (
+        <span key={command}>
+          {index > 0 && (
+            <span
+              aria-hidden="true"
+              style={{
+                marginRight: SPACE.sm,
+                color: COLORS.muted,
+              }}
+            >
+              •
+            </span>
+          )}
+          {command}
+        </span>
+      ))}
+    </div>
+
     </section>
 )}
 {state.executionState === "SCORECARD" && (
@@ -3894,23 +4454,29 @@ style={{
         </h3>
 
         <div style={{ marginTop: SPACE.lg, color: COLORS.body }}>
-          <strong>Mode:</strong>{" "}
-          {mode === "practice" ? "Practice" : "Assessment"}
+        <strong>Mode:</strong>{" "}
+        {mode === "practice"
+          ? "Practice"
+          : mode === "investigation"
+            ? "Investigation"
+            : "Assessment"}
         </div>
 
+      {mode !== "investigation" && (
         <div
           style={{
             marginTop: SPACE.md,
             color: COLORS.body,
           }}
         >
-<strong>Assessment Status:</strong>{" "}
-{mode === "practice"
-  ? "Remained in Practice"
-  : reportMeasurements.assessmentIntegrity === "maintained"
-    ? "Maintained"
-    : "Converted to Practice"}
+          <strong>Assessment Status:</strong>{" "}
+          {mode === "practice"
+            ? "Remained in Practice"
+            : reportMeasurements.assessmentIntegrity === "maintained"
+              ? "Maintained"
+              : "Converted to Practice"}
         </div>
+      )}
       </div>
     </div>
   </section>
@@ -3949,7 +4515,7 @@ style={{
             fontWeight: 700,
           }}
         >
-          {reportMeasurements.score}/10
+          {state.result?.totalScore ?? 0}/10
         </div>
       </section>
 

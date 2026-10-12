@@ -22,15 +22,17 @@ export default function AttemptDetailPage({
     getScenarioLabel(attempt.scenarioId);
 
   const resultLabel =
-  attempt.status === "completed"
-    ? attempt.completion === "FAIL"
-      ? "Failed Attempt"
-      : attempt.mistakes === 0
-        ? "Perfect Run"
-        : "Successful Run"
-    : attempt.endReason === "restart"
-      ? "Restart"
-      : "Quit";
+  attempt.endReason === "takeover"
+    ? "Senior Technician Takeover"
+    : attempt.status === "completed"
+      ? attempt.completion === "FAIL"
+        ? "Failed Attempt"
+        : attempt.mistakes === 0
+          ? "Perfect Run"
+          : "Successful Run"
+      : attempt.endReason === "restart"
+        ? "Restart"
+        : "Quit";
 
   const scoreLabel =
     attempt.score === null
@@ -157,7 +159,9 @@ function getProcedureDisplayLabel(
               value:
                 attempt.mode === "practice"
                   ? "Practice"
-                  : "Assessment",
+                  : attempt.mode === "investigation"
+                    ? "Investigation"
+                    : "Assessment",
             },
             {
               label: "Result",
@@ -233,17 +237,31 @@ function getProcedureDisplayLabel(
             {startedLabel}
           </div>
 
-          <div>
+                    <div>
             <strong>Ended:</strong>{" "}
             {endedLabel}
           </div>
+
+          {attempt.investigationTicket && (
+            <>
+              <div>
+                <strong>Ticket:</strong>{" "}
+                {attempt.investigationTicket.ticketNumber}
+              </div>
+
+              <div>
+                <strong>Customer:</strong>{" "}
+                {attempt.investigationTicket.customerName}
+              </div>
+            </>
+          )}
 
           <div>
             <strong>End reason:</strong>{" "}
             {attempt.endReason}
           </div>
         </div>
-            </section>
+      </section>
 
       <section
         style={{
@@ -281,11 +299,13 @@ function getProcedureDisplayLabel(
               const statusLabel =
                 event.decision === "ALLOW"
                   ? "✓ CORRECT"
-                  : event.mistakeType === "repeated"
-                  ? "✕ REPEATED"
-                  : event.mistakeType === "unknown"
-                  ? "✕ UNKNOWN"
-                  : "✕ WRONG";
+                  : event.decision === "RELATED"
+                    ? "• RELATED"
+                    : event.mistakeType === "repeated"
+                      ? "✕ REPEATED"
+                      : event.mistakeType === "unknown"
+                        ? "✕ UNKNOWN"
+                        : "✕ WRONG";
 
               return (
                 <div
@@ -340,7 +360,9 @@ function getProcedureDisplayLabel(
                       color:
                         event.decision === "ALLOW"
                           ? COLORS.success
-                          : "#f87171",
+                          : event.decision === "RELATED"
+                            ? COLORS.muted
+                            : "#f87171",
                       fontSize: TEXT.label,
                       fontWeight: 700,
                       textAlign: "right",

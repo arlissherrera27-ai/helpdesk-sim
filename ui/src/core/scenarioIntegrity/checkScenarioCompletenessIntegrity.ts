@@ -52,8 +52,12 @@ const APPROVED_FINAL_VERIFICATION_COMMANDS = new Set<string>([
   "test_audio",
   "test_application_launch",
   "test_software_install",
-  "test_permission_access",
+    "test_permission_access",
   "test_shared_drive_access",
+]);
+
+const APPROVED_FINAL_ESCALATION_COMMANDS = new Set<string>([
+  "escalate_display_issue",
 ]);
 
 export const checkScenarioCompletenessIntegrity:
@@ -185,9 +189,12 @@ const completionFact =
   });
 }     
 
-        if (
+     if (
   isNonEmptyString(completionCommand) &&
   !APPROVED_FINAL_VERIFICATION_COMMANDS.has(
+    completionCommand
+  ) &&
+  !APPROVED_FINAL_ESCALATION_COMMANDS.has(
     completionCommand
   )
 ) {
@@ -199,7 +206,7 @@ const completionFact =
     command: completionCommand,
     source: "scenarioRegistry.ts",
     message:
-      `Scenario completion command "${completionCommand}" is not an approved final verification action.`,
+      `Scenario completion command "${completionCommand}" is not an approved final verification or escalation action.`,
   });
 }
       }

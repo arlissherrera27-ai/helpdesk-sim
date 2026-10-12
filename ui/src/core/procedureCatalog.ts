@@ -14,6 +14,7 @@ import type { Command, ExecutionPlan } from "./types";
 
 // System/control commands require special construction or behavior.
 // They remain explicit in parse.ts and decide.ts.
+
 type SystemCommandKind =
   | "start"
   | "restart"
@@ -25,6 +26,12 @@ type SystemCommandKind =
   | "status"
   | "unknown";
 
+export type InvestigationCommandKind =
+  | "check_primary_display"
+  | "check_monitor_input_source"
+  | "test_alternate_display_port"
+  | "check_for_windows_updates";
+
 type SystemPlanKind =
   | "StartNewAttempt"
   | "SelectScenario"
@@ -34,7 +41,7 @@ type SystemPlanKind =
 
 export type ProcedureCommandKind = Exclude<
   Command["kind"],
-  SystemCommandKind
+  SystemCommandKind | InvestigationCommandKind
 >;
 
 export type ProcedurePlanKind = Exclude<
@@ -174,6 +181,19 @@ check_outlook_mailbox_configuration: {
   restart_network_adapter: { plan: "RestartNetworkAdapter" },
   test_internet_connection: { plan: "TestInternetConnection" },
 
+  check_dns_configuration: {
+    plan: "CheckDnsConfiguration",
+  },
+  test_dns_server_connectivity: {
+    plan: "TestDnsServerConnectivity",
+  },
+  test_dns_resolution: {
+    plan: "TestDnsResolution",
+  },
+  correct_dns_configuration: {
+    plan: "CorrectDnsConfiguration",
+  },
+
   // FILES / STORAGE
   check_disk_space: { plan: "CheckDiskSpace" },
   clear_temp_files: { plan: "ClearTempFiles" },
@@ -262,7 +282,49 @@ enable_second_display: {
 test_dual_display: {
   plan: "TestDualDisplay",
 },
-  check_audio_output: { plan: "CheckAudioOutput" },
+
+// SECOND MONITOR — DISPLAY ADAPTER CODE 43
+check_display_configuration: {
+  plan: "CheckDisplayConfiguration",
+},
+
+detect_displays: {
+  plan: "DetectDisplays",
+},
+
+isolate_display_hardware: {
+  plan: "IsolateDisplayHardware",
+},
+
+reset_graphics_driver: {
+  plan: "ResetGraphicsDriver",
+},
+
+restart_workstation: {
+  plan: "RestartWorkstation",
+},
+
+inspect_display_adapter: {
+  plan: "InspectDisplayAdapter",
+},
+
+inspect_device_status: {
+  plan: "InspectDeviceStatus",
+},
+
+update_display_driver: {
+  plan: "UpdateDisplayDriver",
+},
+
+reinstall_display_driver: {
+  plan: "ReinstallDisplayDriver",
+},
+
+escalate_display_issue: {
+  plan: "EscalateDisplayIssue",
+},
+
+check_audio_output: { plan: "CheckAudioOutput" },
   check_volume_status: { plan: "CheckVolumeStatus" },
   select_audio_output: { plan: "SelectAudioOutput" },
   test_audio: { plan: "TestAudio" },

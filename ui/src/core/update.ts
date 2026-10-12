@@ -11,6 +11,12 @@ export function applyPatch(
     ...state,
     // apply simple patch fields explicitly (and only those)
     ...(patch.mode !== undefined ? { mode: patch.mode } : {}),
+    ...(patch.evidence !== undefined
+      ? { evidence: patch.evidence }
+      : {}),
+    ...(patch.investigationTicket !== undefined
+      ? { investigationTicket: patch.investigationTicket }
+      : {}),
     ...(patch.assessmentIntegrity !== undefined
       ? { assessmentIntegrity: patch.assessmentIntegrity }
       : {}),

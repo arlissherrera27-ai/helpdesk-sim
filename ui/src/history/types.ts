@@ -6,6 +6,7 @@ export type ScenarioAttemptStatus =
 
 export type ScenarioAttemptEndReason =
   | "completed"
+  | "takeover"
   | "quit"
   | "restart";
 
@@ -17,6 +18,8 @@ export type ScenarioAttemptRecord = {
   scenarioId: NonNullable<SimState["scenario"]>;
 
   mode: SimState["mode"];
+
+  investigationTicket: SimState["investigationTicket"];
 
   assessmentIntegrity: SimState["assessmentIntegrity"];
 

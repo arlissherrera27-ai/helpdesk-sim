@@ -425,13 +425,13 @@ export const scenarioTree: ScenarioType[] = [
     enabled: true,
     branches: generatedOperationalScenarioBranches,
   },
-  {
-    typeId: "chaos",
-    typeLabel: "Chaos Scenarios",
-    description: "Multiple issues interact at once.",
-    enabled: false,
-    branches: [],
-  },
+    {
+      typeId: "chaos",
+      typeLabel: "Investigation Mode",
+      description: "Investigate realistic tickets without guided procedures.",
+      enabled: false,
+      branches: [],
+    },
 ];
 
 export function getScenarioTypeDisplayLabel(

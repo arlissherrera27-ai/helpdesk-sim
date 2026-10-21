@@ -15,7 +15,6 @@ CREATE TABLE IF NOT EXISTS training_events (
             'completion',
             'retry',
             'quit',
-            'mode_conversion',
             'profile_created'
         )),
     scenario_id TEXT,
@@ -76,8 +75,6 @@ CREATE TABLE IF NOT EXISTS scenario_lifetime_totals (
     fails BIGINT NOT NULL DEFAULT 0 CHECK (fails >= 0),
     retries BIGINT NOT NULL DEFAULT 0 CHECK (retries >= 0),
     quits BIGINT NOT NULL DEFAULT 0 CHECK (quits >= 0),
-    conversions BIGINT NOT NULL DEFAULT 0 CHECK (conversions >= 0),
-    last_played_at TIMESTAMPTZ,
 
     PRIMARY KEY (scenario_id, mode)
 );

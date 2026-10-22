@@ -1,7 +1,12 @@
 // MyHelpDeskSim V2 — Training Analytics Event Receiver
-// Collection remains disabled until testing and release approval.
+// Server-side only.
+// Public collection remains disabled until release approval.
 
 import { isValidScenarioId } from "../src/core/scenarios";
+import {
+  saveTrainingEvents,
+  type TrainingEvent,
+} from "../server/trainingAnalytics";
 
 const EVENT_TYPES = [
   "start",
@@ -20,10 +25,11 @@ const MODES = [
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const MAX_BATCH_SIZE = 10;
 const MAX_BODY_LENGTH = 10000;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(
+  value: unknown
+): value is Record<string, unknown> {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -35,24 +41,33 @@ function hasOnlyKeys(
   value: Record<string, unknown>,
   allowed: readonly string[]
 ): boolean {
-  return Object.keys(value).every((key) => allowed.includes(key));
+  return Object.keys(value).every((key) =>
+    allowed.includes(key)
+  );
 }
 
 function isUuid(value: unknown): value is string {
-  return typeof value === "string" && UUID_PATTERN.test(value);
+  return (
+    typeof value === "string" &&
+    UUID_PATTERN.test(value)
+  );
 }
 
-function isValidEvent(value: unknown): boolean {
+function isValidEvent(
+  value: unknown
+): value is TrainingEvent {
   if (!isRecord(value)) return false;
 
-  if (!hasOnlyKeys(value, [
-    "event_id",
-    "attempt_id",
-    "event_type",
-    "scenario_id",
-    "mode_at_start",
-    "outcome",
-  ])) {
+  if (
+    !hasOnlyKeys(value, [
+      "event_id",
+      "attempt_id",
+      "event_type",
+      "scenario_id",
+      "mode_at_start",
+      "outcome",
+    ])
+  ) {
     return false;
   }
 
@@ -85,43 +100,42 @@ function isValidEvent(value: unknown): boolean {
   }
 
   if (
-    !MODES.includes(value.mode_at_start as (typeof MODES)[number])
+    !MODES.includes(
+      value.mode_at_start as (typeof MODES)[number]
+    )
   ) {
     return false;
   }
 
   if (value.event_type === "completion") {
-    return value.outcome === "PASS" || value.outcome === "FAIL";
+    return (
+      value.outcome === "PASS" ||
+      value.outcome === "FAIL"
+    );
   }
 
   return value.outcome == null;
 }
 
-function validatePayload(body: unknown): boolean {
+function validatePayload(
+  body: unknown
+): body is { events: [TrainingEvent] } {
   if (!isRecord(body)) return false;
-  if (!hasOnlyKeys(body, ["events"])) return false;
 
-  if (!Array.isArray(body.events)) return false;
-
-  if (
-    body.events.length === 0 ||
-    body.events.length > MAX_BATCH_SIZE
-  ) {
+  if (!hasOnlyKeys(body, ["events"])) {
     return false;
   }
 
-  const ids = new Set<string>();
-
-  for (const event of body.events) {
-    if (!isValidEvent(event)) return false;
-
-    const id = event.event_id as string;
-
-    if (ids.has(id)) return false;
-    ids.add(id);
+  if (!Array.isArray(body.events)) {
+    return false;
   }
 
-  return true;
+  // Exactly one event per request.
+  if (body.events.length !== 1) {
+    return false;
+  }
+
+  return isValidEvent(body.events[0]);
 }
 
 export default async function handler(
@@ -134,15 +148,18 @@ export default async function handler(
     });
   }
 
-  // Collection remains off unless explicitly enabled on the server.
-  if (process.env.TRAINING_ANALYTICS_ENABLED !== "true") {
+  // Disabled by default.
+  if (
+    process.env.TRAINING_ANALYTICS_ENABLED !== "true"
+  ) {
     return response.status(503).json({
       error: "Training analytics is disabled",
     });
   }
 
-  // Never fall back to the production feedback database.
-  const databaseUrl = process.env.TRAINING_ANALYTICS_DATABASE_URL;
+  // Never use the production feedback DATABASE_URL.
+  const databaseUrl =
+    process.env.TRAINING_ANALYTICS_DATABASE_URL;
 
   if (!databaseUrl) {
     return response.status(503).json({
@@ -158,7 +175,10 @@ export default async function handler(
         ? request.body
         : JSON.stringify(request.body ?? null);
 
-    if (raw.length > MAX_BODY_LENGTH) {
+    if (
+      typeof raw !== "string" ||
+      raw.length > MAX_BODY_LENGTH
+    ) {
       return response.status(413).json({
         error: "Request too large",
       });
@@ -177,9 +197,24 @@ export default async function handler(
     });
   }
 
-  // Database insertion and atomic counters are not implemented yet.
-  // No events are accepted or stored at this stage.
-  return response.status(503).json({
-    error: "Training analytics receiver is not ready",
-  });
+  try {
+    const insertedCount = await saveTrainingEvents(
+      databaseUrl,
+      body.events
+    );
+
+    return response.status(200).json({
+      success: true,
+      recorded: insertedCount === 1,
+    });
+  } catch (error) {
+    console.error(
+      "Training analytics event failed:",
+      error
+    );
+
+    return response.status(500).json({
+      error: "Could not record training event",
+    });
+  }
 }

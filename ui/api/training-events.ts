@@ -2,11 +2,11 @@
 // Server-side only.
 // Public collection remains disabled until release approval.
 
-import { isValidScenarioId } from "../src/core/scenarios";
+import { isValidScenarioId } from "../src/core/scenarios.js";
 import {
   saveTrainingEvents,
   type TrainingEvent,
-} from "../server/trainingAnalytics";
+} from "../server/trainingAnalytics.js";
 
 const EVENT_TYPES = [
   "start",

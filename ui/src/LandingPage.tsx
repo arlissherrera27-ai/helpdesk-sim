@@ -15,7 +15,7 @@ const trainingModes = [
   {
     name: "Investigation Mode",
     color: COLORS.primary,
-    description: "Investigate incoming tickets without knowing the underlying issue in advance.",
+    description: "Investigate incoming tickets without knowing the underlying issue in advance. Currently available for 2 scenarios.",
   },
 ];
 
@@ -243,6 +243,20 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section style={{ marginBottom: SPACE.xxl }}>
+        <h2 style={{ color: COLORS.text, fontFamily: "monospace" }}>
+          Custom Playlists
+        </h2>
+        <p
+          style={{
+            color: COLORS.muted,
+            lineHeight: 1.7,
+          }}
+        >
+          Combine scenarios into a custom playlist and practice tickets back-to-back in your chosen order. Create a local profile to save playlists and return to them in the same browser. Profiles and playlists do not currently sync across devices.
+        </p>
+      </section>
+
       <section
         style={{
           padding: `${SPACE.xxl} ${SPACE.md}`,
@@ -260,7 +274,7 @@ export default function LandingPage() {
             lineHeight: 1.7,
           }}
         >
-          Enter the simulator, select a training mode, and start troubleshooting.
+          Enter the simulator, select a training mode, start troubleshooting, or create a playlist for back-to-back practice.
         </p>
         <a
           href="/simulator"

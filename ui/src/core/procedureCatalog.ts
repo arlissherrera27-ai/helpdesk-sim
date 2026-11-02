@@ -97,6 +97,13 @@ export const procedureCatalog = {
 
   // EMAIL
   check_email_status: { plan: "CheckEmailStatus" },
+  check_email_connectivity: {
+    plan: "CheckEmailConnectivity",
+  },
+  check_webmail: { plan: "CheckWebmail" },
+  check_work_offline: { plan: "CheckWorkOffline" },
+  disable_work_offline: { plan: "DisableWorkOffline" },
+  test_email: { plan: "TestEmail" },
   enable_email_client: { plan: "EnableEmailClient" },
   check_outbox: { plan: "CheckOutbox" },
   send_stuck_outbox_email: {

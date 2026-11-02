@@ -774,7 +774,8 @@ case "UpdateSavedCredentials": {
     !facts ||
     (
       facts.kind !== "email_not_sending" &&
-      facts.kind !== "email_not_sending_outbox"
+      facts.kind !== "email_not_sending_outbox" &&
+      facts.kind !== "email_client_working_offline"
     )
   ) {
     return wrongScenarioError(
@@ -807,6 +808,213 @@ case "UpdateSavedCredentials": {
 
   return updateScenarioFacts(facts, {
     email_status_checked: true,
+  });
+}
+
+case "CheckEmailConnectivity": {
+  const facts = getScenarioFacts(
+    state,
+    "email_client_working_offline"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "CHECK_EMAIL_CONNECTIVITY_WRONG_SCENARIO",
+      "check_email_connectivity is only valid in the Outlook working-offline scenario.",
+      "check_email_connectivity"
+    );
+  }
+
+  if (!facts.identity_verified) {
+    return {
+      error: {
+        code: "CHECK_EMAIL_CONNECTIVITY_IDENTITY_NOT_VERIFIED",
+        message: "Must verify identity before checking email connectivity.",
+        failingCommand: "check_email_connectivity",
+      },
+    };
+  }
+
+  if (facts.email_connectivity_checked) {
+    return {
+      error: {
+        code: "CHECK_EMAIL_CONNECTIVITY_ALREADY_DONE",
+        message: "Email connectivity already checked.",
+        failingCommand: "check_email_connectivity",
+      },
+    };
+  }
+
+  return updateScenarioFacts(facts, {
+    email_connectivity_checked: true,
+  });
+}
+
+case "CheckWebmail": {
+  const facts = getScenarioFacts(
+    state,
+    "email_client_working_offline"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "CHECK_WEBMAIL_WRONG_SCENARIO",
+      "check_webmail is only valid in the Outlook working-offline scenario.",
+      "check_webmail"
+    );
+  }
+
+  if (!facts.identity_verified) {
+    return {
+      error: {
+        code: "CHECK_WEBMAIL_IDENTITY_NOT_VERIFIED",
+        message: "Must verify identity before checking webmail.",
+        failingCommand: "check_webmail",
+      },
+    };
+  }
+
+  if (facts.webmail_checked) {
+    return {
+      error: {
+        code: "CHECK_WEBMAIL_ALREADY_DONE",
+        message: "Webmail already checked.",
+        failingCommand: "check_webmail",
+      },
+    };
+  }
+
+  return updateScenarioFacts(facts, {
+    webmail_checked: true,
+  });
+}
+
+case "CheckWorkOffline": {
+  const facts = getScenarioFacts(
+    state,
+    "email_client_working_offline"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "CHECK_WORK_OFFLINE_WRONG_SCENARIO",
+      "check_work_offline is only valid in the Outlook working-offline scenario.",
+      "check_work_offline"
+    );
+  }
+
+  if (!facts.identity_verified) {
+    return {
+      error: {
+        code: "CHECK_WORK_OFFLINE_IDENTITY_NOT_VERIFIED",
+        message: "Must verify identity before checking Work Offline.",
+        failingCommand: "check_work_offline",
+      },
+    };
+  }
+
+  if (facts.work_offline_checked) {
+    return {
+      error: {
+        code: "CHECK_WORK_OFFLINE_ALREADY_DONE",
+        message: "Work Offline status already checked.",
+        failingCommand: "check_work_offline",
+      },
+    };
+  }
+
+  return updateScenarioFacts(facts, {
+    work_offline_checked: true,
+    work_offline_enabled: true,
+  });
+}
+
+case "DisableWorkOffline": {
+  const facts = getScenarioFacts(
+    state,
+    "email_client_working_offline"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "DISABLE_WORK_OFFLINE_WRONG_SCENARIO",
+      "disable_work_offline is only valid in the Outlook working-offline scenario.",
+      "disable_work_offline"
+    );
+  }
+
+  if (!facts.identity_verified) {
+    return {
+      error: {
+        code: "DISABLE_WORK_OFFLINE_IDENTITY_NOT_VERIFIED",
+        message: "Must verify identity before disabling Work Offline.",
+        failingCommand: "disable_work_offline",
+      },
+    };
+  }
+
+  if (!facts.work_offline_checked) {
+    return {
+      error: {
+        code: "DISABLE_WORK_OFFLINE_NOT_CHECKED",
+        message: "Must check Work Offline before disabling it.",
+        failingCommand: "disable_work_offline",
+      },
+    };
+  }
+
+  if (!facts.work_offline_enabled) {
+    return {
+      error: {
+        code: "DISABLE_WORK_OFFLINE_ALREADY_DISABLED",
+        message: "Work Offline is already disabled.",
+        failingCommand: "disable_work_offline",
+      },
+    };
+  }
+
+  return updateScenarioFacts(facts, {
+    work_offline_enabled: false,
+    work_offline_disabled: true,
+  });
+}
+
+case "TestEmail": {
+  const facts = getScenarioFacts(
+    state,
+    "email_client_working_offline"
+  );
+
+  if (!facts) {
+    return wrongScenarioError(
+      "TEST_EMAIL_WRONG_SCENARIO",
+      "test_email is only valid in the Outlook working-offline scenario.",
+      "test_email"
+    );
+  }
+
+  if (!facts.identity_verified) {
+    return {
+      error: {
+        code: "TEST_EMAIL_IDENTITY_NOT_VERIFIED",
+        message: "Must verify identity before testing email.",
+        failingCommand: "test_email",
+      },
+    };
+  }
+
+  if (!facts.work_offline_disabled || facts.work_offline_enabled !== false) {
+    return {
+      error: {
+        code: "TEST_EMAIL_WORK_OFFLINE_NOT_DISABLED",
+        message: "Work Offline must be disabled before testing the mailbox.",
+        failingCommand: "test_email",
+      },
+    };
+  }
+
+  return completeScenario(facts, {
+    can_send_and_receive_email: true,
   });
 }
 

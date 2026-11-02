@@ -33,6 +33,7 @@ export const SCENARIO_IDS = [
   "shared_mailbox_missing",
   "shared_mailbox_outlook_profile_not_updated",
   "shared_mailbox_automapping_missing",
+  "email_client_working_offline",
   "email_application_will_not_open",
   "email_client_corrupted_profile",
 

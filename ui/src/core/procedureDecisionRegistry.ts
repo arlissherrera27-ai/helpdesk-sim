@@ -938,6 +938,9 @@ check_email_status:
 
       email_not_sending_outbox: (facts) =>
         !facts.email_status_checked,
+
+      email_client_working_offline: (facts) =>
+        !facts.email_status_checked,
     },
   }),
 

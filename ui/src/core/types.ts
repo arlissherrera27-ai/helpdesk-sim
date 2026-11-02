@@ -70,6 +70,11 @@ export type Command =
 
   // EMAIL
   | { kind: "check_email_status"; readOnly: false }
+  | { kind: "check_email_connectivity"; readOnly: false }
+  | { kind: "check_webmail"; readOnly: false }
+  | { kind: "check_work_offline"; readOnly: false }
+  | { kind: "disable_work_offline"; readOnly: false }
+  | { kind: "test_email"; readOnly: false }
   | { kind: "enable_email_client"; readOnly: false }
   | { kind: "check_outbox"; readOnly: false }
   | { kind: "send_stuck_outbox_email"; readOnly: false }
@@ -261,6 +266,11 @@ export type ExecutionPlan =
 
   // EMAIL
   | { kind: "CheckEmailStatus" }
+  | { kind: "CheckEmailConnectivity" }
+  | { kind: "CheckWebmail" }
+  | { kind: "CheckWorkOffline" }
+  | { kind: "DisableWorkOffline" }
+  | { kind: "TestEmail" }
   | { kind: "EnableEmailClient" }
   | { kind: "CheckOutbox" }
   | { kind: "SendStuckOutboxEmail" }
@@ -636,6 +646,18 @@ export type EmailClientNotSyncingFacts = {
   sync_settings_checked: boolean;
   email_client_resynced: boolean;
   email_sync_working: boolean;
+};
+
+export type EmailClientWorkingOfflineFacts = {
+  kind: "email_client_working_offline";
+  identity_verified: boolean;
+  email_status_checked: boolean;
+  email_connectivity_checked: boolean;
+  webmail_checked: boolean;
+  work_offline_checked: boolean;
+  work_offline_enabled: boolean;
+  work_offline_disabled: boolean;
+  can_send_and_receive_email: boolean;
 };
 
 export type EmailClientCachedSessionStuckFacts = {
@@ -1023,6 +1045,7 @@ export type ScenarioFacts =
   | EmailLoginIssueFacts
   | EmailLoginCachedCredentialsFacts
   | EmailClientNotSyncingFacts
+  | EmailClientWorkingOfflineFacts
   | EmailClientCachedSessionStuckFacts
   | AttachmentTooLargeFacts
   | SharedMailboxMissingFacts

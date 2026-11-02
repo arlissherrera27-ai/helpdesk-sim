@@ -1120,6 +1120,104 @@ What is your first troubleshooting step?`,
   },
 },
 
+email_client_working_offline: {
+  label: "Classic Outlook — Working Offline",
+  startPrompt: `Customer: Outlook is not receiving mail and my outgoing emails keep staying in the Outbox.
+
+What is your first troubleshooting step?`,
+
+  scenarioType: "standard",
+  category: "email",
+
+  procedure: [
+    {
+      command: "verify_identity",
+      preview:
+        "Verify the user's identity before troubleshooting the email client.",
+    },
+    {
+      command: "check_email_status",
+      preview:
+        "Check the email client status to confirm whether Outlook is disconnected from the mailbox.",
+    },
+    {
+      command: "check_email_connectivity",
+      preview:
+        "Check the mailbox connectivity to confirm whether the mail service is reachable outside the client state.",
+    },
+    {
+      command: "check_webmail",
+      preview:
+        "Open the mailbox in a browser to observe whether the account itself is accessible outside Outlook.",
+    },
+    {
+      command: "check_work_offline",
+      preview:
+        "Check the Outlook desktop setting to confirm whether the client is currently configured to Work Offline.",
+    },
+    {
+      command: "disable_work_offline",
+      preview:
+        "Turn off Work Offline so Outlook can reconnect to the mailbox and resume synchronization.",
+    },
+    {
+      command: "test_email",
+      preview:
+        "Send and receive a test message to confirm the mailbox is working normally again.",
+    },
+  ],
+
+  completion: {
+    command: "test_email",
+    fact: "can_send_and_receive_email",
+  },
+
+  proofLines: [
+    "Verified the user before troubleshooting the Outlook client state",
+    "Confirmed the desktop client was disconnected and messages remained queued in the Outbox",
+    "Confirmed the mail service was accessible outside the client state",
+    "Confirmed the desktop client was set to Work Offline",
+    "Disabled Work Offline to reconnect Outlook to the mailbox",
+    "Validated successful send and receive with a final test message",
+  ],
+
+  successLines: [
+    "Agent: Outlook has been reconnected to the mailbox and email delivery has been verified.",
+    "System: Work Offline has been disabled and Outlook can now send and receive mail normally.",
+    "Customer: Great, my email is working again.",
+  ],
+
+  defaults: {
+    kind: "email_client_working_offline",
+    identity_verified: false,
+    email_status_checked: false,
+    email_connectivity_checked: false,
+    webmail_checked: false,
+    work_offline_checked: false,
+    work_offline_enabled: true,
+    work_offline_disabled: false,
+    can_send_and_receive_email: false,
+  },
+
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–7 min",
+    description:
+      "Restore Outlook mail flow when the desktop client is disconnected by Work Offline mode.",
+    skillFocus: [
+      "Email Troubleshooting",
+      "Outlook Configuration",
+      "Operational Verification",
+    ],
+    scenarioContext:
+      "A user reports that Outlook is not receiving mail and outgoing messages remain stuck in the Outbox while the account itself remains active.",
+    successOutcome:
+      "Work Offline is disabled and Outlook successfully sends and receives mail again.",
+    selectCommand:
+      "select email client working offline",
+  },
+},
+
 not_receiving_email: {
   label: "Not Receiving Email",
   startPrompt: `Customer: I'm not receiving any emails.

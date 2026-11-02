@@ -661,11 +661,59 @@ case "ConfirmConnection":
     break;
   }
 
+  if (state.scenario === "email_client_working_offline") {
+    message =
+      "Agent: I’m checking Outlook’s current connection state and message queue.\n\n" +
+      "System: Outlook shows Working Offline. Two outgoing messages remain in the Outbox. No recent incoming messages are displayed.\n\n" +
+      `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+      NEXT_STEP_PROMPTS.default;
+    break;
+  }
+
   message =
     "Agent: I’m checking the email client status to see why messages are not sending.\n\n" +
     "System: Email client connection status shows the client is Offline and is not connected to the mail service.\n\n" +
     "Customer: Oh, I didn’t realize that.\n\n" +
     NEXT_STEP_PROMPTS.default;
+  break;
+
+case "CheckEmailConnectivity":
+  message =
+    "Agent: I’m checking whether Outlook can reach the mail service.\n\n" +
+    "System: Network connectivity is available. The email service endpoint is reachable.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "CheckWebmail":
+  message =
+    "Agent: I’m checking the mailbox in a browser to compare the desktop client state.\n\n" +
+    "System: The user’s mailbox opens successfully in a browser.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "CheckWorkOffline":
+  message =
+    "Agent: I’m checking Classic Outlook’s Work Offline setting.\n\n" +
+    "System: Classic Outlook’s Work Offline setting is enabled.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "DisableWorkOffline":
+  message =
+    "Agent: I’m disabling Work Offline so Outlook can reconnect to the mail service.\n\n" +
+    "System: Work Offline has been disabled. Outlook is reconnecting to the mailbox.\n\n" +
+    `Customer: ${CUSTOMER_REACTIONS.acknowledge.okay}\n\n` +
+    NEXT_STEP_PROMPTS.default;
+  break;
+
+case "TestEmail":
+  message =
+    "Agent: I’m sending and receiving a test message to confirm Outlook is connected correctly.\n\n" +
+    "System: Outlook is connected. The outgoing test message was sent successfully and the incoming test message was received. Both directions are verified.\n\n" +
+    "Customer: Great, the email is working again.";
   break;
 
 case "EnableEmailClient":

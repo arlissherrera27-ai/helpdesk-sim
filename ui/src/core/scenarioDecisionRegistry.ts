@@ -263,6 +263,32 @@ account_lockout_saved_credentials:
           !facts.email_sync_working,
       }),
 
+    email_client_working_offline:
+      defineScenarioProcedureRules("email_client_working_offline", {
+        check_email_status: (facts) =>
+          !facts.email_status_checked,
+
+        check_email_connectivity: (facts) =>
+          facts.email_status_checked &&
+          !facts.email_connectivity_checked,
+
+        check_webmail: (facts) =>
+          facts.email_connectivity_checked &&
+          !facts.webmail_checked,
+
+        check_work_offline: (facts) =>
+          facts.webmail_checked &&
+          !facts.work_offline_checked,
+
+        disable_work_offline: (facts) =>
+          facts.work_offline_checked &&
+          !facts.work_offline_disabled,
+
+        test_email: (facts) =>
+          facts.work_offline_disabled &&
+          !facts.can_send_and_receive_email,
+      }),
+
     attachment_too_large:
       defineScenarioProcedureRules("attachment_too_large", {
         check_attachment_size: (facts) =>

@@ -33,6 +33,7 @@ const APPROVED_FINAL_VERIFICATION_COMMANDS = new Set<string>([
   "confirm_connection",
   "test_mfa_login",
   "send_test_email",
+  "test_email",
   "test_email_login",
   "test_email_sync",
   "test_shared_mailbox_access",

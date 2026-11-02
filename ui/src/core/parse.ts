@@ -98,6 +98,21 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "check outgoing email": "check_email_status",
   "outgoing email check": "check_email_status",
 
+  "check email connectivity": "check_email_connectivity",
+  "test email connectivity": "check_email_connectivity",
+
+  "check webmail": "check_webmail",
+  "open webmail": "check_webmail",
+
+  "check work offline": "check_work_offline",
+  "check offline setting": "check_work_offline",
+
+  "disable work offline": "disable_work_offline",
+  "turn off work offline": "disable_work_offline",
+
+  "test email": "test_email",
+  "test send receive": "test_email",
+
   "check email client profile": "check_email_client_profile",
   "email client profile check": "check_email_client_profile",
   "check email profile": "check_email_client_profile",

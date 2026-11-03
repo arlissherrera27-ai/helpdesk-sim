@@ -1139,21 +1139,37 @@ What is your first troubleshooting step?`,
       command: "check_email_status",
       preview:
         "Check the email client status to confirm whether Outlook is disconnected from the mailbox.",
+      evidence: {
+        id: "outlook_working_offline_status",
+        text: "Outlook shows Working Offline and outgoing messages remain queued in the Outbox.",
+      },
     },
     {
       command: "check_email_connectivity",
       preview:
         "Check the mailbox connectivity to confirm whether the mail service is reachable outside the client state.",
+      evidence: {
+        id: "outlook_email_service_reachable",
+        text: "Network connectivity is available and the email service is reachable.",
+      },
     },
     {
       command: "check_webmail",
       preview:
         "Open the mailbox in a browser to observe whether the account itself is accessible outside Outlook.",
+      evidence: {
+        id: "outlook_webmail_accessible",
+        text: "The mailbox opens successfully in the browser.",
+      },
     },
     {
       command: "check_work_offline",
       preview:
         "Check the Outlook desktop setting to confirm whether the client is currently configured to Work Offline.",
+      evidence: {
+        id: "outlook_work_offline_enabled",
+        text: "Classic Outlook Work Offline is enabled.",
+      },
     },
     {
       command: "disable_work_offline",

@@ -5,6 +5,10 @@
       "destination": "/"
     },
     {
+      "source": "/admin/analytics",
+      "destination": "/"
+    },
+    {
       "source": "/simulator",
       "destination": "/"
     }

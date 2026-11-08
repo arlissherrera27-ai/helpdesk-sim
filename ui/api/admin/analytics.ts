@@ -3,7 +3,7 @@ import { neon } from "@neondatabase/serverless";
 import {
   getAdminSession,
   hasValidAdminSession,
-} from "../../lib/adminSession";
+} from "../../lib/adminSession.js";
 
 const ANALYTICS_DATABASE_ENV = "TRAINING_ANALYTICS_DATABASE_URL";
 

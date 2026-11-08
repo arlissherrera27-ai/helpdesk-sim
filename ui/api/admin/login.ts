@@ -2,12 +2,12 @@ import { scryptSync, timingSafeEqual } from "node:crypto";
 
 import {
   createAuthenticatedAdminSession,
-} from "../../lib/adminSession";
+} from "../../lib/adminSession.js";
 import {
   clearAdminLoginFailureState,
   recordAdminLoginFailure,
   reserveAdminLoginAttempt,
-} from "../../server/adminLoginThrottle";
+} from "../../server/adminLoginThrottle.js";
 
 const ADMIN_LOGIN_PASSWORD_HASH_ENV = "ADMIN_LOGIN_PASSWORD_HASH";
 const MAX_BODY_BYTES = 2048;

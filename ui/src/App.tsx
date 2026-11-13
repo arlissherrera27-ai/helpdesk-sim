@@ -89,6 +89,13 @@ import {
   type ScenarioValidationReport,
 } from "./core/scenarioValidation";
 
+import {
+  trackAttemptCompletion,
+  trackAttemptStart,
+  trackAttemptQuit,
+  trackAttemptRetry,
+} from "./analytics/trainingEvents";
+
 const INVESTIGATION_SCENARIO_LABELS = [
   "Second Monitor — Display Adapter Code 43",
   "Email Client Won't Open — Corrupted Profile",
@@ -676,9 +683,18 @@ function advancePlaylistRun(
   );
 
   if (
+    startedOut.decision.kind === "ALLOW" &&
     startedOut.state.attempt !== null
   ) {
     setAttemptStartedAt(startedAt);
+
+    if (startedOut.state.scenario !== null) {
+      trackAttemptStart(
+        startedOut.state.attempt.id,
+        startedOut.state.scenario,
+        startedOut.state.mode
+      );
+    }
   } else {
     setAttemptStartedAt(null);
   }
@@ -811,6 +827,17 @@ if (
   out.state.executionState === "SCORECARD" &&
   attemptStartedAt !== null
 ) {
+  if (
+    out.state.attempt !== null &&
+    (out.state.result?.completion === "PASS" ||
+      out.state.result?.completion === "FAIL")
+  ) {
+    trackAttemptCompletion(
+      out.state.attempt.id,
+      out.state.result.completion
+    );
+  }
+
   if (activeProfile !== null) {
 const attemptRecord = createScenarioAttemptRecord(
   out.state,
@@ -864,6 +891,10 @@ playlistRunToAdvance =
   out.decision.kind === "ALLOW" &&
   attemptStartedAt !== null
 ) {
+  if (state.attempt !== null) {
+    trackAttemptQuit(state.attempt.id);
+  }
+
   if (activeProfile !== null) {
     const attemptRecord = createScenarioAttemptRecord(
       state,
@@ -947,8 +978,21 @@ if (
 }
   }
 
+  if (state.attempt !== null && attemptStartedAt !== null) {
+    trackAttemptRetry(state.attempt.id);
+    trackAttemptQuit(state.attempt.id);
+  }
+
   if (out.state.attempt !== null) {
     setAttemptStartedAt(commandTime);
+
+    if (out.state.scenario !== null) {
+      trackAttemptStart(
+        out.state.attempt.id,
+        out.state.scenario,
+        out.state.mode
+      );
+    }
   } else {
     setAttemptStartedAt(null);
   }
@@ -958,6 +1002,14 @@ if (
   out.state.attempt !== null
 ) {
   setAttemptStartedAt(commandTime);
+
+  if (out.state.scenario !== null) {
+    trackAttemptStart(
+      out.state.attempt.id,
+      out.state.scenario,
+      out.state.mode
+    );
+  }
 }
 
 if (playlistRunToAdvance !== null) {
@@ -4694,6 +4746,24 @@ onClick={() => {
           if (!scenarioCommand) return;
 
           const out = handleInput(state, "restart");
+
+          if (
+            out.decision.kind === "ALLOW" &&
+            out.state.attempt !== null &&
+            out.state.scenario !== null
+          ) {
+            if (state.attempt !== null) {
+              trackAttemptRetry(state.attempt.id);
+            }
+
+            trackAttemptStart(
+              out.state.attempt.id,
+              out.state.scenario,
+              out.state.mode
+            );
+
+            setAttemptStartedAt(new Date().toISOString());
+          }
 
           setState(out.state);
           setLog(buildLogBlock(out.message || ""));

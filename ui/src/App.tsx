@@ -94,6 +94,10 @@ import {
   trackAttemptStart,
   trackAttemptQuit,
   trackAttemptRetry,
+  trackProfileCreated,
+  trackPlaylistCreated,
+  trackPlaylistRunStarted,
+  trackPlaylistScenarioIncluded,
 } from "./analytics/trainingEvents";
 
 const INVESTIGATION_SCENARIO_LABELS = [
@@ -536,6 +540,8 @@ const scoringOutput = JSON.stringify(
 
   const updatedRuns =
   appendPlaylistRun(playlistRun);
+
+  trackPlaylistRunStarted();
 
 const ownedRuns =
   updatedRuns.filter(
@@ -980,7 +986,6 @@ if (
 
   if (state.attempt !== null && attemptStartedAt !== null) {
     trackAttemptRetry(state.attempt.id);
-    trackAttemptQuit(state.attempt.id);
   }
 
   if (out.state.attempt !== null) {
@@ -1761,6 +1766,23 @@ flexWrap: "wrap",
   const updatedPlaylists =
     appendSavedPlaylist(playlist);
 
+  trackPlaylistCreated();
+
+  if (
+    playlistScenarioId !== null &&
+    updatedPlaylists.some(
+      (item) =>
+        item.playlistId === playlist.playlistId &&
+        item.profileId === activeProfile.profileId &&
+        item.scenarioIds.includes(playlistScenarioId)
+    )
+  ) {
+    trackPlaylistScenarioIncluded(
+      playlist.playlistId,
+      playlistScenarioId
+    );
+  }
+
   const ownedPlaylists =
     updatedPlaylists.filter(
       (item) =>
@@ -1847,6 +1869,7 @@ onBackToPlaylists={() => {
     onBack={() => setAppView("profile")}
     onCreate={(profile) => {
       saveActiveProfile(profile);
+      trackProfileCreated();
       setActiveProfile(profile);
       setAppView("profile");
     }}
@@ -1876,11 +1899,38 @@ onBackToPlaylists={() => {
           return;
         }
 
+        const playlistBeforeAdd =
+          savedPlaylists.find(
+            (playlist) =>
+              playlist.playlistId === playlistId &&
+              playlist.profileId === activeProfile.profileId
+          );
+
+        const wasAlreadyIncluded =
+          playlistBeforeAdd?.scenarioIds.includes(
+            playlistScenario.id
+          ) ?? true;
+
         const updatedPlaylists =
           addScenarioToSavedPlaylist(
             playlistId,
             playlistScenario.id
           );
+
+        if (
+          !wasAlreadyIncluded &&
+          updatedPlaylists.some(
+            (playlist) =>
+              playlist.playlistId === playlistId &&
+              playlist.profileId === activeProfile.profileId &&
+              playlist.scenarioIds.includes(playlistScenario.id)
+          )
+        ) {
+          trackPlaylistScenarioIncluded(
+            playlistId,
+            playlistScenario.id
+          );
+        }
 
         const ownedPlaylists =
           updatedPlaylists.filter(
@@ -2886,11 +2936,36 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
     playlistAddTargetId !== null &&
     activeProfile !== null
   ) {
+    const playlistBeforeAdd =
+      savedPlaylists.find(
+        (playlist) =>
+          playlist.playlistId === playlistAddTargetId
+      );
+
+    const wasAlreadyIncluded =
+      playlistBeforeAdd?.scenarioIds.includes(
+        scenario.id
+      ) ?? true;
+
     const updatedPlaylists =
       addScenarioToSavedPlaylist(
         playlistAddTargetId,
         scenario.id
       );
+
+    if (
+      !wasAlreadyIncluded &&
+      updatedPlaylists.some(
+        (playlist) =>
+          playlist.playlistId === playlistAddTargetId &&
+          playlist.scenarioIds.includes(scenario.id)
+      )
+    ) {
+      trackPlaylistScenarioIncluded(
+        playlistAddTargetId,
+        scenario.id
+      );
+    }
 
     const ownedPlaylists =
       updatedPlaylists.filter(

@@ -12,6 +12,17 @@ type EventType =
   | "retry"
   | "quit";
 
+type ProductEvent =
+  | {
+      event_id: string;
+      event_type: "profile_created" | "playlist_created" | "playlist_run_started";
+    }
+  | {
+      event_id: string;
+      event_type: "playlist_scenario_included";
+      scenario_id: string;
+    };
+
 type TerminalEvent = "completion" | "quit";
 
 type TrainingEvent = {
@@ -44,7 +55,7 @@ function delay(ms: number): Promise<void> {
 }
 
 async function deliverEvent(
-  event: TrainingEvent
+  event: TrainingEvent | ProductEvent
 ): Promise<void> {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
@@ -163,4 +174,79 @@ export function trackAttemptRetry(
   if (!attempt) return;
 
   recordEvent(attempt, "retry");
+}
+
+function trackProductEvent(
+  event: ProductEvent
+): void {
+  // Analytics must never block simulator actions.
+  void deliverEvent(event);
+}
+
+export function trackProfileCreated(): void {
+  trackProductEvent({
+    event_id: crypto.randomUUID(),
+    event_type: "profile_created",
+  });
+}
+
+export function trackPlaylistCreated(): void {
+  trackProductEvent({
+    event_id: crypto.randomUUID(),
+    event_type: "playlist_created",
+  });
+}
+
+export function trackPlaylistRunStarted(): void {
+  trackProductEvent({
+    event_id: crypto.randomUUID(),
+    event_type: "playlist_run_started",
+  });
+}
+
+const PLAYLIST_INCLUSION_LEDGER_KEY =
+  "myhelpdesksim_playlist_inclusion_ledger_v1";
+
+export function trackPlaylistScenarioIncluded(
+  playlistId: string,
+  scenarioId: string
+): void {
+  const pair = JSON.stringify([playlistId, scenarioId]);
+
+  try {
+    const stored = localStorage.getItem(
+      PLAYLIST_INCLUSION_LEDGER_KEY
+    );
+
+    const parsed: unknown = stored === null
+      ? []
+      : JSON.parse(stored);
+
+    const seen = new Set(
+      Array.isArray(parsed)
+        ? parsed.filter(
+            (value): value is string =>
+              typeof value === "string"
+          )
+        : []
+    );
+
+    if (seen.has(pair)) return;
+
+    seen.add(pair);
+
+    localStorage.setItem(
+      PLAYLIST_INCLUSION_LEDGER_KEY,
+      JSON.stringify([...seen])
+    );
+  } catch {
+    // Storage failure must not interrupt playlist actions.
+    return;
+  }
+
+  trackProductEvent({
+    event_id: crypto.randomUUID(),
+    event_type: "playlist_scenario_included",
+    scenario_id: scenarioId,
+  });
 }

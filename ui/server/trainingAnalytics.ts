@@ -8,19 +8,27 @@
 
 import { neon } from "@neondatabase/serverless";
 
-export type TrainingEvent = {
+type BaseEvent = {
   event_id: string;
-  attempt_id?: string | null;
-  event_type:
-    | "start"
-    | "completion"
-    | "retry"
-    | "quit"
-    | "profile_created";
-  scenario_id?: string | null;
-  mode_at_start?: "practice" | "assessment" | "investigation" | null;
-  outcome?: "PASS" | "FAIL" | null;
 };
+
+type TrainingAttemptEvent = BaseEvent & {
+  attempt_id: string;
+  event_type: "start" | "completion" | "retry" | "quit";
+  scenario_id: string;
+  mode_at_start: "practice" | "assessment" | "investigation";
+  outcome?: "PASS" | "FAIL";
+};
+
+export type TrainingEvent =
+  | TrainingAttemptEvent
+  | (BaseEvent & { event_type: "profile_created" })
+  | (BaseEvent & { event_type: "playlist_created" })
+  | (BaseEvent & { event_type: "playlist_run_started" })
+  | (BaseEvent & {
+      event_type: "playlist_scenario_included";
+      scenario_id: string;
+    });
 
 export async function saveTrainingEvents(
   databaseUrl: string,
@@ -106,7 +114,7 @@ export async function saveTrainingEvents(
         ) AS quits
 
       FROM inserted
-      WHERE scenario_id IS NOT NULL
+      WHERE event_type IN ('start', 'completion', 'retry', 'quit')
       GROUP BY
         scenario_id,
         mode_at_start
@@ -166,28 +174,80 @@ export async function saveTrainingEvents(
     global_updates AS (
       INSERT INTO global_lifetime_totals (
         id,
-        profile_creations
+        profile_creations,
+        playlist_creations,
+        playlist_runs_started
       )
       SELECT
         1,
-        COUNT(*)
+        COUNT(*) FILTER (
+          WHERE event_type = 'profile_created'
+        ),
+        COUNT(*) FILTER (
+          WHERE event_type = 'playlist_created'
+        ),
+        COUNT(*) FILTER (
+          WHERE event_type = 'playlist_run_started'
+        )
       FROM inserted
-      WHERE event_type = 'profile_created'
-      HAVING COUNT(*) > 0
+      HAVING COUNT(*) FILTER (
+        WHERE event_type IN (
+          'profile_created',
+          'playlist_created',
+          'playlist_run_started'
+        )
+      ) > 0
 
       ON CONFLICT (id)
       DO UPDATE SET
         profile_creations =
           global_lifetime_totals.profile_creations
-          + EXCLUDED.profile_creations
+          + EXCLUDED.profile_creations,
+
+        playlist_creations =
+          global_lifetime_totals.playlist_creations
+          + EXCLUDED.playlist_creations,
+
+        playlist_runs_started =
+          global_lifetime_totals.playlist_runs_started
+          + EXCLUDED.playlist_runs_started
 
       RETURNING id
+    ),
+
+    playlist_scenario_counts AS (
+      SELECT
+        scenario_id,
+        COUNT(*) AS inclusions
+      FROM inserted
+      WHERE event_type = 'playlist_scenario_included'
+      GROUP BY scenario_id
+    ),
+
+    playlist_scenario_updates AS (
+      INSERT INTO playlist_scenario_totals (
+        scenario_id,
+        inclusions
+      )
+      SELECT
+        scenario_id,
+        inclusions
+      FROM playlist_scenario_counts
+
+      ON CONFLICT (scenario_id)
+      DO UPDATE SET
+        inclusions =
+          playlist_scenario_totals.inclusions
+          + EXCLUDED.inclusions
+
+      RETURNING scenario_id
     )
 
     SELECT
       (SELECT COUNT(*) FROM inserted) AS inserted_count,
       (SELECT COUNT(*) FROM scenario_updates) AS scenario_rows,
-      (SELECT COUNT(*) FROM global_updates) AS global_rows
+      (SELECT COUNT(*) FROM global_updates) AS global_rows,
+      (SELECT COUNT(*) FROM playlist_scenario_updates) AS playlist_scenario_rows
   `;
 
   return Number(result[0]?.inserted_count ?? 0);

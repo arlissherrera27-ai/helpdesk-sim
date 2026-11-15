@@ -2,11 +2,11 @@
 // Server-side only.
 // Public collection remains disabled until release approval.
 
-import { isValidScenarioId } from "../src/core/scenarios";
+import { isValidScenarioId } from "../src/core/scenarios.js";
 import {
   saveTrainingEvents,
   type TrainingEvent,
-} from "../server/trainingAnalytics";
+} from "../server/trainingAnalytics.js";
 
 const EVENT_TYPES = [
   "start",
@@ -14,6 +14,9 @@ const EVENT_TYPES = [
   "retry",
   "quit",
   "profile_created",
+  "playlist_created",
+  "playlist_scenario_included",
+  "playlist_run_started",
 ] as const;
 
 const MODES = [
@@ -46,6 +49,16 @@ function hasOnlyKeys(
   );
 }
 
+function hasExactlyKeys(
+  value: Record<string, unknown>,
+  expected: readonly string[]
+): boolean {
+  return (
+    Object.keys(value).length === expected.length &&
+    hasOnlyKeys(value, expected)
+  );
+}
+
 function isUuid(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -58,19 +71,6 @@ function isValidEvent(
 ): value is TrainingEvent {
   if (!isRecord(value)) return false;
 
-  if (
-    !hasOnlyKeys(value, [
-      "event_id",
-      "attempt_id",
-      "event_type",
-      "scenario_id",
-      "mode_at_start",
-      "outcome",
-    ])
-  ) {
-    return false;
-  }
-
   if (!isUuid(value.event_id)) return false;
 
   if (
@@ -81,13 +81,50 @@ function isValidEvent(
     return false;
   }
 
-  if (value.event_type === "profile_created") {
+  if (
+    value.event_type === "profile_created" ||
+    value.event_type === "playlist_created" ||
+    value.event_type === "playlist_run_started"
+  ) {
+    return hasExactlyKeys(value, ["event_id", "event_type"]);
+  }
+
+  if (value.event_type === "playlist_scenario_included") {
     return (
-      value.attempt_id == null &&
-      value.scenario_id == null &&
-      value.mode_at_start == null &&
-      value.outcome == null
+      hasExactlyKeys(value, [
+        "event_id",
+        "event_type",
+        "scenario_id",
+      ]) &&
+      typeof value.scenario_id === "string" &&
+      isValidScenarioId(value.scenario_id)
     );
+  }
+
+  const isCompletion = value.event_type === "completion";
+
+  if (
+    !hasExactlyKeys(
+      value,
+      isCompletion
+        ? [
+            "event_id",
+            "attempt_id",
+            "event_type",
+            "scenario_id",
+            "mode_at_start",
+            "outcome",
+          ]
+        : [
+            "event_id",
+            "attempt_id",
+            "event_type",
+            "scenario_id",
+            "mode_at_start",
+          ]
+    )
+  ) {
+    return false;
   }
 
   if (!isUuid(value.attempt_id)) return false;
@@ -107,14 +144,14 @@ function isValidEvent(
     return false;
   }
 
-  if (value.event_type === "completion") {
+  if (isCompletion) {
     return (
       value.outcome === "PASS" ||
       value.outcome === "FAIL"
     );
   }
 
-  return value.outcome == null;
+  return true;
 }
 
 function validatePayload(

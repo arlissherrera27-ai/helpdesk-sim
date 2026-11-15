@@ -5,8 +5,18 @@
       "destination": "/"
     },
     {
+      "source": "/admin/analytics",
+      "destination": "/"
+    },
+    {
       "source": "/simulator",
       "destination": "/"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/maintenance/cleanup",
+      "schedule": "0 4 * * *"
     }
   ]
 }

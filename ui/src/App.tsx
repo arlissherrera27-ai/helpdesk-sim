@@ -89,6 +89,17 @@ import {
   type ScenarioValidationReport,
 } from "./core/scenarioValidation";
 
+import {
+  trackAttemptCompletion,
+  trackAttemptStart,
+  trackAttemptQuit,
+  trackAttemptRetry,
+  trackProfileCreated,
+  trackPlaylistCreated,
+  trackPlaylistRunStarted,
+  trackPlaylistScenarioIncluded,
+} from "./analytics/trainingEvents";
+
 const INVESTIGATION_SCENARIO_LABELS = [
   "Second Monitor — Display Adapter Code 43",
   "Email Client Won't Open — Corrupted Profile",
@@ -531,6 +542,8 @@ const scoringOutput = JSON.stringify(
   const updatedRuns =
   appendPlaylistRun(playlistRun);
 
+  trackPlaylistRunStarted();
+
 const ownedRuns =
   updatedRuns.filter(
     (run) =>
@@ -677,9 +690,18 @@ function advancePlaylistRun(
   );
 
   if (
+    startedOut.decision.kind === "ALLOW" &&
     startedOut.state.attempt !== null
   ) {
     setAttemptStartedAt(startedAt);
+
+    if (startedOut.state.scenario !== null) {
+      trackAttemptStart(
+        startedOut.state.attempt.id,
+        startedOut.state.scenario,
+        startedOut.state.mode
+      );
+    }
   } else {
     setAttemptStartedAt(null);
   }
@@ -812,6 +834,17 @@ if (
   out.state.executionState === "SCORECARD" &&
   attemptStartedAt !== null
 ) {
+  if (
+    out.state.attempt !== null &&
+    (out.state.result?.completion === "PASS" ||
+      out.state.result?.completion === "FAIL")
+  ) {
+    trackAttemptCompletion(
+      out.state.attempt.id,
+      out.state.result.completion
+    );
+  }
+
   if (activeProfile !== null) {
 const attemptRecord = createScenarioAttemptRecord(
   out.state,
@@ -865,6 +898,10 @@ playlistRunToAdvance =
   out.decision.kind === "ALLOW" &&
   attemptStartedAt !== null
 ) {
+  if (state.attempt !== null) {
+    trackAttemptQuit(state.attempt.id);
+  }
+
   if (activeProfile !== null) {
     const attemptRecord = createScenarioAttemptRecord(
       state,
@@ -948,8 +985,20 @@ if (
 }
   }
 
+  if (state.attempt !== null && attemptStartedAt !== null) {
+    trackAttemptRetry(state.attempt.id);
+  }
+
   if (out.state.attempt !== null) {
     setAttemptStartedAt(commandTime);
+
+    if (out.state.scenario !== null) {
+      trackAttemptStart(
+        out.state.attempt.id,
+        out.state.scenario,
+        out.state.mode
+      );
+    }
   } else {
     setAttemptStartedAt(null);
   }
@@ -959,6 +1008,14 @@ if (
   out.state.attempt !== null
 ) {
   setAttemptStartedAt(commandTime);
+
+  if (out.state.scenario !== null) {
+    trackAttemptStart(
+      out.state.attempt.id,
+      out.state.scenario,
+      out.state.mode
+    );
+  }
 }
 
 if (playlistRunToAdvance !== null) {
@@ -1710,6 +1767,23 @@ flexWrap: "wrap",
   const updatedPlaylists =
     appendSavedPlaylist(playlist);
 
+  trackPlaylistCreated();
+
+  if (
+    playlistScenarioId !== null &&
+    updatedPlaylists.some(
+      (item) =>
+        item.playlistId === playlist.playlistId &&
+        item.profileId === activeProfile.profileId &&
+        item.scenarioIds.includes(playlistScenarioId)
+    )
+  ) {
+    trackPlaylistScenarioIncluded(
+      playlist.playlistId,
+      playlistScenarioId
+    );
+  }
+
   const ownedPlaylists =
     updatedPlaylists.filter(
       (item) =>
@@ -1796,6 +1870,7 @@ onBackToPlaylists={() => {
     onBack={() => setAppView("profile")}
     onCreate={(profile) => {
       saveActiveProfile(profile);
+      trackProfileCreated();
       setActiveProfile(profile);
       setAppView("profile");
     }}
@@ -1825,11 +1900,38 @@ onBackToPlaylists={() => {
           return;
         }
 
+        const playlistBeforeAdd =
+          savedPlaylists.find(
+            (playlist) =>
+              playlist.playlistId === playlistId &&
+              playlist.profileId === activeProfile.profileId
+          );
+
+        const wasAlreadyIncluded =
+          playlistBeforeAdd?.scenarioIds.includes(
+            playlistScenario.id
+          ) ?? true;
+
         const updatedPlaylists =
           addScenarioToSavedPlaylist(
             playlistId,
             playlistScenario.id
           );
+
+        if (
+          !wasAlreadyIncluded &&
+          updatedPlaylists.some(
+            (playlist) =>
+              playlist.playlistId === playlistId &&
+              playlist.profileId === activeProfile.profileId &&
+              playlist.scenarioIds.includes(playlistScenario.id)
+          )
+        ) {
+          trackPlaylistScenarioIncluded(
+            playlistId,
+            playlistScenario.id
+          );
+        }
 
         const ownedPlaylists =
           updatedPlaylists.filter(
@@ -2835,11 +2937,36 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
     playlistAddTargetId !== null &&
     activeProfile !== null
   ) {
+    const playlistBeforeAdd =
+      savedPlaylists.find(
+        (playlist) =>
+          playlist.playlistId === playlistAddTargetId
+      );
+
+    const wasAlreadyIncluded =
+      playlistBeforeAdd?.scenarioIds.includes(
+        scenario.id
+      ) ?? true;
+
     const updatedPlaylists =
       addScenarioToSavedPlaylist(
         playlistAddTargetId,
         scenario.id
       );
+
+    if (
+      !wasAlreadyIncluded &&
+      updatedPlaylists.some(
+        (playlist) =>
+          playlist.playlistId === playlistAddTargetId &&
+          playlist.scenarioIds.includes(scenario.id)
+      )
+    ) {
+      trackPlaylistScenarioIncluded(
+        playlistAddTargetId,
+        scenario.id
+      );
+    }
 
     const ownedPlaylists =
       updatedPlaylists.filter(
@@ -4695,6 +4822,24 @@ onClick={() => {
           if (!scenarioCommand) return;
 
           const out = handleInput(state, "restart");
+
+          if (
+            out.decision.kind === "ALLOW" &&
+            out.state.attempt !== null &&
+            out.state.scenario !== null
+          ) {
+            if (state.attempt !== null) {
+              trackAttemptRetry(state.attempt.id);
+            }
+
+            trackAttemptStart(
+              out.state.attempt.id,
+              out.state.scenario,
+              out.state.mode
+            );
+
+            setAttemptStartedAt(new Date().toISOString());
+          }
 
           setState(out.state);
           setLog(buildLogBlock(out.message || ""));

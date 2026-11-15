@@ -252,3 +252,28 @@ export async function saveTrainingEvents(
 
   return Number(result[0]?.inserted_count ?? 0);
 }
+
+
+/**
+ * Delete raw analytics events older than 60 days.
+ *
+ * Lifetime counters are stored in separate tables
+ * and must never be deleted by this function.
+ */
+export async function cleanupExpiredTrainingEvents(
+  databaseUrl: string
+): Promise<number> {
+  if (!databaseUrl.trim()) {
+    throw new Error("Analytics database URL is required");
+  }
+
+  const sql = neon(databaseUrl);
+
+  const deleted = await sql`
+    DELETE FROM training_events
+    WHERE created_at < NOW() - INTERVAL '60 days'
+    RETURNING event_id;
+  `;
+
+  return deleted.length;
+}

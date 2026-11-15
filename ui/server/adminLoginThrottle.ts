@@ -340,21 +340,22 @@ export async function clearAdminLoginFailureState(
   }
 }
 
-export async function cleanupExpiredAdminLoginLimits(): Promise<void> {
+
+export async function cleanupExpiredAdminLoginLimits(): Promise<number> {
   const databaseUrl = getTrainingAnalyticsDatabaseUrl();
 
   if (!databaseUrl) {
-    return;
+    throw new Error("Analytics database URL is required for cleanup");
   }
 
   const sql = neon(databaseUrl);
 
-  try {
-    await sql`
-      DELETE FROM analytics_request_limits
-      WHERE expires_at < NOW();
-    `;
-  } catch {
-    // Fail closed: stale cleanup errors are not a security bypass.
-  }
+  const deleted = await sql`
+    DELETE FROM analytics_request_limits
+    WHERE expires_at < NOW()
+    RETURNING scope;
+  `;
+
+  return deleted.length;
 }
+

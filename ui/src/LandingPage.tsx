@@ -259,6 +259,39 @@ export default function LandingPage() {
 
       <section
         style={{
+          marginBottom: SPACE.xl,
+          padding: SPACE.md,
+          borderTop: `1px solid ${COLORS.border}`,
+        }}
+      >
+        <h2
+          style={{
+            color: COLORS.text,
+            fontFamily: "monospace",
+            fontSize: TEXT.body,
+          }}
+        >
+          Privacy & Training Analytics
+        </h2>
+
+        <p
+          style={{
+            color: COLORS.muted,
+            fontSize: TEXT.detail,
+            lineHeight: 1.7,
+          }}
+        >
+          MyHelpDeskSim records which training scenarios are played
+          and whether they are completed, passed, failed, retried,
+          or quit. We use this information to understand simulator
+          activity and improve training. Our training analytics
+          do not record player names or identities. We also use
+          Vercel Web Analytics to measure website traffic.
+        </p>
+      </section>
+
+      <section
+        style={{
           padding: `${SPACE.xxl} ${SPACE.md}`,
           textAlign: "center",
           borderTop: `1px solid ${COLORS.border}`,

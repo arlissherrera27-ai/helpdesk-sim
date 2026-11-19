@@ -1,12 +1,21 @@
 import type { ScenarioId } from "./scenarios";
 import type {
   EvidenceItem,
+  LogEvent,
   ScenarioFacts,
 } from "./types";
+import type {
+  ProcedureResultPresentation,
+  TechnicalOutputLine,
+} from "./procedurePresentation";
+import { DHCP_EDUCATIONAL_CONTENT } from "./dhcpEducationalContent";
 
 type ScenarioProcedureStep = {
   command: string;
   preview: string;
+  technicianEntry?: string;
+  systemResult?: string;
+  technicalOutput?: string;
   evidence?: EvidenceItem;
 };
 
@@ -3102,6 +3111,377 @@ What is your first troubleshooting step?`,
     },
   },
 
+  dhcp_apipa_troubleshooting: {
+    label: "DHCP Address Renewal",
+    startPrompt: "Customer: Websites would not load.",
+    scenarioType: "standard",
+    category: "network",
+    procedure: [
+      {
+        command: "verify_identity",
+        preview: "verify_identity",
+        systemResult: "User identity verified successfully. Troubleshooting may proceed.",
+        technicalOutput: `Identity Verification
+Status : Verified`,
+      },
+      {
+        command: "check_network_status",
+        preview: "check_network_status",
+        systemResult: "The laptop is connected to the office Wi-Fi network.",
+        technicalOutput: `Network Status
+
+Connection Type : Wi-Fi
+Network Name    : Office Wi-Fi
+Connection      : Connected`,
+      },
+      {
+        command: "open_command_prompt",
+        preview: "open_command_prompt",
+        systemResult: "Windows Command Prompt opened successfully.",
+        technicalOutput: `Command Prompt
+
+
+Microsoft Windows [Version 10.0.26100]
+(c) Microsoft Corporation. All rights reserved.
+
+C:UsersOfficeUser>`,
+      },
+      {
+        command: "ipconfig",
+        preview: "ipconfig",
+        systemResult: "The workstation's basic IP configuration is displayed.",
+        technicalOutput: `C:UsersOfficeUser>ipconfig
+
+Windows IP Configuration
+
+
+Wireless LAN adapter Wi-Fi:
+
+   Connection-specific DNS Suffix  . :
+   Link-local IPv6 Address . . . . . : fe80::2c41:7e9a:8f10:23b1%12
+   Autoconfiguration IPv4 Address. . : 169.254.23.18
+   Subnet Mask . . . . . . . . . . . : 255.255.0.0
+   Default Gateway . . . . . . . . . :
+
+
+C:UsersOfficeUser>`,
+      },
+      {
+        command: "open_it_knowledge_base",
+        preview: "open_it_knowledge_base",
+        systemResult: "IT Knowledge Base opened successfully. Available articles are displayed.",
+        technicalOutput: `IT KNOWLEDGE BASE
+
+Available Articles:
+KB-101 — Password Reset
+KB-204 — Office Wi-Fi Network Configuration
+KB-310 — Printer Troubleshooting`,
+      },
+      {
+        command: "open_kb_204",
+        preview: "open_kb_204",
+        systemResult: "Knowledge Base article KB-204 opened successfully. The organization's documented Office Wi-Fi configuration is displayed.",
+        technicalOutput: `KB-204 — OFFICE WI-FI NETWORK CONFIGURATION
+
+Network Name : Office Wi-Fi
+IPv4 Subnet  : 192.168.1.0/24
+Gateway      : 192.168.1.1
+DHCP Server  : 192.168.1.10
+Addressing   : Automatic (DHCP)`,
+      },
+      {
+        command: "ping_default_gateway",
+        preview: "ping 192.168.1.1",
+        technicianEntry: "ping 192.168.1.1",
+        systemResult: "The ping test failed. The workstation did not receive a response from the documented default gateway.",
+        technicalOutput: `C:UsersOfficeUser>ping 192.168.1.1
+
+Pinging 192.168.1.1 with 32 bytes of data:
+PING: transmit failed. General failure.
+PING: transmit failed. General failure.
+PING: transmit failed. General failure.
+PING: transmit failed. General failure.
+
+Ping statistics for 192.168.1.1:
+    Packets: Sent = 4, Received = 0, Lost = 4 (100% loss),
+
+C:UsersOfficeUser>`,
+        evidence: {
+          id: "dhcp-gateway-before-renewal",
+          text: "The ping test failed. The workstation did not receive a response from the documented default gateway.",
+        },
+      },
+      {
+        command: "ping_external_ip",
+        preview: "ping 8.8.8.8",
+        technicianEntry: "ping 8.8.8.8",
+        systemResult: "The external IP connectivity test failed. Windows could not successfully transmit the ping requests.",
+        technicalOutput: `C:UsersOfficeUser>ping 8.8.8.8
+
+Pinging 8.8.8.8 with 32 bytes of data:
+PING: transmit failed. General failure.
+PING: transmit failed. General failure.
+PING: transmit failed. General failure.
+PING: transmit failed. General failure.
+
+Ping statistics for 8.8.8.8:
+    Packets: Sent = 4, Received = 0, Lost = 4 (100% loss),
+
+C:UsersOfficeUser>`,
+        evidence: {
+          id: "dhcp-external-ip-before-renewal",
+          text: "The external IP connectivity test failed. Windows could not successfully transmit the ping requests.",
+        },
+      },
+      {
+        command: "ipconfig_all",
+        preview: "ipconfig /all",
+        technicianEntry: "ipconfig /all",
+        systemResult: "Detailed IP configuration retrieved. DHCP is enabled on the wireless adapter, but the workstation currently has an automatically assigned IPv4 link-local address rather than an address from the documented office subnet.",
+          technicalOutput: `C:UsersOfficeUser>ipconfig /all
+
+    Windows IP Configuration
+
+      Host Name . . . . . . . . . . . . : OFFICE-LT-014
+      Primary Dns Suffix  . . . . . . . : office.example
+      Node Type . . . . . . . . . . . . : Hybrid
+      IP Routing Enabled. . . . . . . . : No
+      WINS Proxy Enabled . . . . . . . : No
+
+    Wireless LAN adapter Wi-Fi:
+
+      Connection-specific DNS Suffix  . :
+      Description . . . . . . . . . . . : Intel(R) Wi-Fi 6 AX201 160MHz
+      Physical Address. . . . . . . . . : 02-1A-2B-3C-4D-5E
+      DHCP Enabled. . . . . . . . . . . : Yes
+      Autoconfiguration Enabled . . . . : Yes
+      Link-local IPv6 Address . . . . . : fe80::2c41:7e9a:8f10:23b1%12(Preferred)
+      Autoconfiguration IPv4 Address. . : 169.254.23.18(Preferred)
+      Subnet Mask . . . . . . . . . . . : 255.255.0.0
+      Default Gateway . . . . . . . . . :
+      DHCPv6 IAID . . . . . . . . . . . : 123456789
+      DHCPv6 Client DUID . . . . . . . : 00-01-00-01-2A-1B-3C-4D-02-1A-2B-3C-4D-5E
+
+    C:UsersOfficeUser>`,
+        evidence: {
+          id: "dhcp-details-before-renewal",
+          text: "Detailed IP configuration retrieved. DHCP is enabled on the wireless adapter, but the workstation currently has an automatically assigned IPv4 link-local address rather than an address from the documented office subnet.",
+        },
+      },
+      {
+        command: "ipconfig_renew",
+        preview: "ipconfig /renew",
+        technicianEntry: "ipconfig /renew",
+        systemResult: "The DHCP renewal request completed successfully. The Wi-Fi adapter received an IPv4 address, subnet mask, and default gateway matching the documented office network.",
+        technicalOutput: `C:UsersOfficeUser>ipconfig /renew
+
+Windows IP Configuration
+
+
+Wireless LAN adapter Wi-Fi:
+
+   Connection-specific DNS Suffix  . : office.example
+   IPv4 Address. . . . . . . . . . . : 192.168.1.100
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Default Gateway . . . . . . . . . : 192.168.1.1
+
+C:UsersOfficeUser>`,
+      },
+      {
+        command: "ipconfig_all",
+        preview: "ipconfig /all",
+        technicianEntry: "ipconfig /all",
+        systemResult: "Detailed network configuration retrieved. The Wi-Fi adapter now has an IPv4 address, subnet mask, and default gateway consistent with the documented office network. DHCP lease information and DNS server configuration are also available.",
+          technicalOutput: `C:UsersOfficeUser>ipconfig /all
+
+    Windows IP Configuration
+
+      Host Name . . . . . . . . . . . . : OFFICE-LT-014
+      Primary Dns Suffix  . . . . . . . : office.example
+      Node Type . . . . . . . . . . . . : Hybrid
+      IP Routing Enabled. . . . . . . . : No
+      WINS Proxy Enabled. . . . . . . . : No
+
+    Wireless LAN adapter Wi-Fi:
+
+      Connection-specific DNS Suffix  . : office.example
+      Description . . . . . . . . . . . : Intel(R) Wi-Fi 6 AX201 160MHz
+      Physical Address. . . . . . . . . : 02-1A-2B-3C-4D-5E
+      DHCP Enabled. . . . . . . . . . . : Yes
+      Autoconfiguration Enabled . . . . : Yes
+      Link-local IPv6 Address . . . . . : fe80::2c41:7e9a:8f10:23b1%12(Preferred)
+      IPv4 Address. . . . . . . . . . . : 192.168.1.100(Preferred)
+      Subnet Mask . . . . . . . . . . . : 255.255.255.0
+      Lease Obtained. . . . . . . . . . : Tuesday, November 17, 2026 1:30:00 PM
+      Lease Expires . . . . . . . . . . : Wednesday, November 18, 2026 1:30:00 PM
+      Default Gateway . . . . . . . . . : 192.168.1.1
+      DHCP Server . . . . . . . . . . . : 192.168.1.10
+      DHCPv6 IAID . . . . . . . . . . . : 123456789
+      DHCPv6 Client DUID . . . . . . . : 00-01-00-01-2A-1B-3C-4D-02-1A-2B-3C-4D-5E
+      DNS Servers . . . . . . . . . . . : 192.168.1.10
+
+    C:UsersOfficeUser>`,
+        evidence: {
+          id: "dhcp-details-after-renewal",
+          text: "Detailed network configuration retrieved. The Wi-Fi adapter now has an IPv4 address, subnet mask, and default gateway consistent with the documented office network. DHCP lease information and DNS server configuration are also available.",
+        },
+      },
+      {
+        command: "ping_default_gateway",
+        preview: "ping 192.168.1.1",
+        technicianEntry: "ping 192.168.1.1",
+        systemResult: "The default gateway responded successfully to all four ping requests. No packet loss was reported.",
+        technicalOutput: `C:UsersOfficeUser>ping 192.168.1.1
+
+Pinging 192.168.1.1 with 32 bytes of data:
+Reply from 192.168.1.1: bytes=32 time=1ms TTL=64
+Reply from 192.168.1.1: bytes=32 time=2ms TTL=64
+Reply from 192.168.1.1: bytes=32 time=1ms TTL=64
+Reply from 192.168.1.1: bytes=32 time=2ms TTL=64
+
+Ping statistics for 192.168.1.1:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 1ms, Maximum = 2ms, Average = 1ms
+
+C:UsersOfficeUser>`,
+        evidence: {
+          id: "dhcp-gateway-after-renewal",
+          text: "The default gateway responded successfully to all four ping requests. No packet loss was reported.",
+        },
+      },
+      {
+        command: "ping_external_ip",
+        preview: "ping 8.8.8.8",
+        technicianEntry: "ping 8.8.8.8",
+        systemResult: "The external IP address responded successfully to all four ping requests. No packet loss was reported.",
+        technicalOutput: `C:UsersOfficeUser>ping 8.8.8.8
+
+Pinging 8.8.8.8 with 32 bytes of data:
+Reply from 8.8.8.8: bytes=32 time=18ms TTL=117
+Reply from 8.8.8.8: bytes=32 time=20ms TTL=117
+Reply from 8.8.8.8: bytes=32 time=19ms TTL=117
+Reply from 8.8.8.8: bytes=32 time=21ms TTL=117
+
+Ping statistics for 8.8.8.8:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 18ms, Maximum = 21ms, Average = 19ms
+
+C:UsersOfficeUser>`,
+        evidence: {
+          id: "dhcp-external-ip-after-renewal",
+          text: "The external IP address responded successfully to all four ping requests. No packet loss was reported.",
+        },
+      },
+      {
+        command: "nslookup",
+        preview: "nslookup google.com",
+        technicianEntry: "nslookup google.com",
+        systemResult: "The configured DNS server responded successfully to the lookup request and returned an IP address for google.com.",
+        technicalOutput: `C:UsersOfficeUser>nslookup google.com
+Server:  dns.office.example
+Address:  192.168.1.10
+
+Non-authoritative answer:
+Name:    google.com
+Address:  142.250.190.14
+
+C:UsersOfficeUser>`,
+      },
+      {
+        command: "test_internet_connection",
+        preview: "test_internet_connection",
+        systemResult: "The workstation successfully loads the test website. The user also confirms that the websites affected by the original issue are now accessible.",
+        technicalOutput: `INTERNET CONNECTION TEST
+
+Workstation: OFFICE-LT-014
+Connection:  Office Wi-Fi
+
+Browser Test:
+  Website: https://www.google.com
+  Result:  Page loaded successfully
+
+User Verification:
+  Original issue: Websites would not load
+  Current result: User confirms websites now load
+
+Final Status:
+  Internet and website access verified successfully.`,
+      },
+    ],
+    completion: {
+      command: "test_internet_connection",
+      fact: "internet_access_restored",
+    },
+    proofLines: [
+      "User identity verified successfully. Troubleshooting may proceed.",
+      "The laptop is connected to the office Wi-Fi network.",
+      "The workstation's basic IP configuration is displayed.",
+      "The ping test failed. The workstation did not receive a response from the documented default gateway.",
+      "The external IP connectivity test failed. Windows could not successfully transmit the ping requests.",
+      "The DHCP renewal request completed successfully. The Wi-Fi adapter received an IPv4 address, subnet mask, and default gateway matching the documented office network.",
+      "The default gateway responded successfully to all four ping requests. No packet loss was reported.",
+      "The external IP address responded successfully to all four ping requests. No packet loss was reported.",
+      "The configured DNS server responded successfully to the lookup request and returned an IP address for google.com.",
+      "The workstation successfully loads the test website. The user also confirms that the websites affected by the original issue are now accessible.",
+    ],
+    successLines: [
+      `The workstation successfully loads the test website. The user also confirms that the websites affected by the original issue are now accessible.
+
+INTERNET CONNECTION TEST
+
+Workstation: OFFICE-LT-014
+Connection:  Office Wi-Fi
+
+Browser Test:
+  Website: https://www.google.com
+  Result:  Page loaded successfully
+
+User Verification:
+  Original issue: Websites would not load
+  Current result: User confirms websites now load
+
+Final Status:
+  Internet and website access verified successfully.`,
+    ],
+    defaults: {
+      kind: "dhcp_apipa_troubleshooting",
+      identity_verified: false,
+      network_status_checked: false,
+      command_prompt_opened: false,
+      ip_configuration_inspected: false,
+      knowledge_base_opened: false,
+      kb_204_opened: false,
+      initial_gateway_ping_failed: false,
+      initial_external_ping_failed: false,
+      initial_detailed_configuration_inspected: false,
+      dhcp_lease_renewed: false,
+      renewed_configuration_inspected: false,
+      renewed_gateway_ping_succeeded: false,
+      renewed_external_ping_succeeded: false,
+      dns_resolution_succeeded: false,
+      internet_access_restored: false,
+      user_confirmed_access: false,
+      ipv4_address: "169.254.23.18",
+      subnet_mask: "255.255.0.0",
+      default_gateway: null,
+      dhcp_enabled: true,
+      wifi_connected: true,
+      dhcp_server: null,
+      dns_server: null,
+    },
+    previewMetadata: {
+      level: "Intermediate",
+      estimatedTime: "8–12 min",
+      description: "Troubleshoot the DHCP configuration and verify internet and website access.",
+      skillFocus: ["DHCP", "IP Configuration", "Connectivity Verification"],
+      scenarioContext: "The laptop is connected to the office Wi-Fi network. Websites would not load.",
+      successOutcome: "The workstation successfully loads the test website. The user also confirms that the websites affected by the original issue are now accessible.",
+      selectCommand: "select dhcp apipa troubleshooting",
+    },
+  },
+
 network_drive_missing: {
   label: "Network Drive Missing",
   startPrompt: `Customer: I cannot see my team network drive anymore.
@@ -5385,6 +5765,96 @@ export function getScenarioProcedureCommands(
   return scenario?.procedure.map((step) => step.command) ?? [];
 }
 
+export function getSuccessfulScenarioProcedureCount(
+  scenarioId: string | null,
+  runLog: readonly LogEvent[]
+): number {
+  const requiredCommands = getScenarioProcedureCommands(scenarioId);
+  let nextIndex = 0;
+
+  for (const event of runLog) {
+    if (
+      nextIndex < requiredCommands.length &&
+      event.decision === "ALLOW" &&
+      event.outcome === "success" &&
+      event.plan !== null &&
+      event.command === requiredCommands[nextIndex]
+    ) {
+      nextIndex += 1;
+    }
+  }
+
+  return nextIndex;
+}
+
+export function getScenarioProcedureOutput(
+  scenarioId: string,
+  command: string,
+  procedureIndex: number
+): ProcedureResultPresentation | null {
+  const scenario =
+    SCENARIO_REGISTRY[
+      scenarioId as keyof typeof SCENARIO_REGISTRY
+    ] as ScenarioDefinition | undefined;
+  const step = scenario?.procedure[procedureIndex];
+
+  if (
+    !scenario ||
+    step?.command !== command ||
+    !step.systemResult ||
+    !step.technicalOutput
+  ) {
+    return null;
+  }
+
+  const technicalOutput =
+    scenarioId === "dhcp_apipa_troubleshooting" &&
+    (procedureIndex === 8 || procedureIndex === 10)
+      ? step.technicalOutput
+          .replace(
+            /^ {4}(?=Windows IP Configuration|Wireless LAN adapter Wi-Fi:|C:UsersOfficeUser>$)/gm,
+            ""
+          )
+          .replace(/^ {6}/gm, "   ")
+          .replace(/^ *WINS Proxy Enabled.*$/gm, "WINS Proxy Enabled. . . . . . . . . : No")
+      : step.technicalOutput;
+
+  const educationalContent =
+    scenarioId === "dhcp_apipa_troubleshooting"
+      ? DHCP_EDUCATIONAL_CONTENT[procedureIndex + 1]
+      : undefined;
+  const technicalLines: TechnicalOutputLine[] = technicalOutput
+    .split("\n")
+    .map((text, lineIndex) => ({
+      id:
+        educationalContent?.technicalLineIds[lineIndex] ??
+        `${scenarioId}.p${procedureIndex + 1}.line${lineIndex}`,
+      text,
+    }));
+
+  const commandOccurrence = scenario.procedure
+    .slice(0, procedureIndex + 1)
+    .filter((item) => item.command === command)
+    .length;
+
+  return {
+    scenarioId,
+    command,
+    procedureIndex,
+    commandOccurrence,
+    technicianEntry: step.technicianEntry ?? command,
+    systemResult: step.systemResult,
+    technicalOutput,
+    technicalLines,
+    annotations: educationalContent?.annotations ?? [],
+    learnMore: {
+      howToExecute: educationalContent?.learnMore.howToExecute ?? null,
+      whatItDoesAndHow: educationalContent?.learnMore.whatItDoesAndHow ?? null,
+      whyThisMatters: educationalContent?.learnMore.whyThisMatters ?? null,
+    },
+  };
+}
+
 export function getScenarioPreviewSteps(scenarioId: string): string[] {
   const scenario =
     SCENARIO_REGISTRY[scenarioId as keyof typeof SCENARIO_REGISTRY];
@@ -5455,7 +5925,8 @@ export function getScenarioLabel(scenarioId: string): string {
 
 export function getScenarioProcedureEvidence(
   scenarioId: string,
-  command: string
+  command: string,
+  procedureIndex?: number
 ): EvidenceItem | null {
   const scenario =
     SCENARIO_REGISTRY[
@@ -5466,11 +5937,13 @@ export function getScenarioProcedureEvidence(
     return null;
   }
 
-  const step = scenario.procedure.find(
-    (item) => item.command === command
-  );
+  const step = procedureIndex === undefined
+    ? scenario.procedure.find((item) => item.command === command)
+    : scenario.procedure[procedureIndex];
 
-  return step?.evidence ?? null;
+  return step?.command === command
+    ? step.evidence ?? null
+    : null;
 }
 
 export function getScenarioInvestigationRelatedAction(

@@ -11,7 +11,11 @@ import {
   type ProcedurePlanKind,
 } from "./procedureCatalog";
 import { scenarioDecisionRegistry } from "./scenarioDecisionRegistry";
-import { isScenarioInvestigationRelatedAction } from "./scenarioRegistry";
+import {
+  getScenarioProcedureCommands,
+  getSuccessfulScenarioProcedureCount,
+  isScenarioInvestigationRelatedAction,
+} from "./scenarioRegistry";
 import {
   procedureDecisionRegistry,
   type ProcedureDecisionDefinition,
@@ -373,6 +377,21 @@ if (command.kind === "restart") {
     }
 
     return { kind: "ALLOW", plan: { kind: "QuitAttemptToLobby" } };
+  }
+
+  if (
+    state.scenarioFacts?.kind === "dhcp_apipa_troubleshooting"
+  ) {
+    const procedureIndex = getSuccessfulScenarioProcedureCount(
+      state.scenario,
+      state.runLog
+    );
+    const expectedCommand =
+      getScenarioProcedureCommands(state.scenario)[procedureIndex];
+
+    if (command.kind !== expectedCommand) {
+      return denyProcedure(command.kind);
+    }
   }
   
   // --- SHARED COMMANDS --- //

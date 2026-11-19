@@ -1181,6 +1181,104 @@ ethernet_not_connected: {
     mayChangeResult: true,
   },
 },
+dhcp_apipa_troubleshooting: {
+  verify_identity: {
+    allowedFacts: ["identity_verified"],
+    expectedFacts: ["identity_verified"],
+  },
+
+  check_network_status: {
+    allowedFacts: ["network_status_checked"],
+    expectedFacts: ["network_status_checked"],
+  },
+
+  open_command_prompt: {
+    allowedFacts: ["command_prompt_opened"],
+    expectedFacts: ["command_prompt_opened"],
+  },
+
+  ipconfig: {
+    allowedFacts: ["ip_configuration_inspected"],
+    expectedFacts: ["ip_configuration_inspected"],
+  },
+
+  open_it_knowledge_base: {
+    allowedFacts: ["knowledge_base_opened"],
+    expectedFacts: ["knowledge_base_opened"],
+  },
+
+  open_kb_204: {
+    allowedFacts: ["kb_204_opened"],
+    expectedFacts: ["kb_204_opened"],
+  },
+
+  ping_default_gateway: [
+    {
+      allowedFacts: ["initial_gateway_ping_failed"],
+      expectedFacts: ["initial_gateway_ping_failed"],
+    },
+    {
+      allowedFacts: ["renewed_gateway_ping_succeeded"],
+      expectedFacts: ["renewed_gateway_ping_succeeded"],
+    },
+  ],
+
+  ping_external_ip: [
+    {
+      allowedFacts: ["initial_external_ping_failed"],
+      expectedFacts: ["initial_external_ping_failed"],
+    },
+    {
+      allowedFacts: ["renewed_external_ping_succeeded"],
+      expectedFacts: ["renewed_external_ping_succeeded"],
+    },
+  ],
+
+  ipconfig_all: [
+    {
+      allowedFacts: ["initial_detailed_configuration_inspected"],
+      expectedFacts: ["initial_detailed_configuration_inspected"],
+    },
+    {
+      allowedFacts: [
+        "renewed_configuration_inspected",
+        "dhcp_server",
+        "dns_server",
+      ],
+      expectedFacts: [
+        "renewed_configuration_inspected",
+        "dhcp_server",
+        "dns_server",
+      ],
+    },
+  ],
+
+  ipconfig_renew: {
+    allowedFacts: [
+      "dhcp_lease_renewed",
+      "ipv4_address",
+      "subnet_mask",
+      "default_gateway",
+    ],
+    expectedFacts: [
+      "dhcp_lease_renewed",
+      "ipv4_address",
+      "subnet_mask",
+      "default_gateway",
+    ],
+  },
+
+  nslookup: {
+    allowedFacts: ["dns_resolution_succeeded"],
+    expectedFacts: ["dns_resolution_succeeded"],
+  },
+
+  test_internet_connection: {
+    allowedFacts: ["internet_access_restored", "user_confirmed_access"],
+    expectedFacts: ["internet_access_restored", "user_confirmed_access"],
+    mayChangeResult: true,
+  },
+},
 disk_space_full: {
   verify_identity: {
     allowedFacts: ["identity_verified"],

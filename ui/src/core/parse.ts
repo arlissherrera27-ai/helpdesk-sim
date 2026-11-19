@@ -541,6 +541,11 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "dns resolution test": "test_dns_resolution",
   "test hostname resolution": "test_dns_resolution",
   "check dns resolution": "test_dns_resolution",
+  "ipconfig /all": "ipconfig_all",
+  "ipconfig /renew": "ipconfig_renew",
+  "ping 192.168.1.1": "ping_default_gateway",
+  "ping 8.8.8.8": "ping_external_ip",
+  "nslookup google.com": "nslookup",
 
   "correct dns configuration": "correct_dns_configuration",
   "fix dns configuration": "correct_dns_configuration",
@@ -1236,14 +1241,26 @@ export function parseCommand(inputRaw: string): Command {
     return { kind: "unknown", rawInput: inputRaw };
   }
 
+  const normalizedFullCommand = lower.replace(/\s+/g, "_");
+  const fullCommandMatched = Boolean(
+    COMMAND_ALIASES[lower] || lookupCommandDef(normalizedFullCommand),
+  );
+
+  if (!fullCommandMatched && /^(?:ipconfig|ping|nslookup)(?:\s|$)/.test(lower)) {
+    return { kind: "unknown", rawInput: inputRaw };
+  }
+
   const separatedParts = lower
     .split(/\s*[-/|,]\s*/)
     .map((part) => part.trim())
     .filter(Boolean);
 
-  const matchedPart = separatedParts.find(
-    (part) => COMMAND_ALIASES[part] || lookupCommandDef(part.replace(/\s+/g, "_"))
-  );
+  const matchedPart = fullCommandMatched
+    ? lower
+    : separatedParts.find(
+        (part) =>
+          COMMAND_ALIASES[part] || lookupCommandDef(part.replace(/\s+/g, "_")),
+      );
 
   const normalizedLower = matchedPart ?? lower;
   const aliasedLower = COMMAND_ALIASES[normalizedLower] ?? normalizedLower;

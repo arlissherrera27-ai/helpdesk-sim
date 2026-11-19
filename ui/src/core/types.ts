@@ -126,6 +126,15 @@ export type Command =
   | { kind: "test_dns_server_connectivity"; readOnly: false }
   | { kind: "test_dns_resolution"; readOnly: false }
   | { kind: "correct_dns_configuration"; readOnly: false }
+  | { kind: "open_command_prompt"; readOnly: false }
+  | { kind: "open_it_knowledge_base"; readOnly: false }
+  | { kind: "open_kb_204"; readOnly: false }
+  | { kind: "ipconfig"; readOnly: false }
+  | { kind: "ping_default_gateway"; readOnly: false }
+  | { kind: "ping_external_ip"; readOnly: false }
+  | { kind: "ipconfig_all"; readOnly: false }
+  | { kind: "ipconfig_renew"; readOnly: false }
+  | { kind: "nslookup"; readOnly: false }
 
   // FILES / STORAGE
   | { kind: "check_disk_space"; readOnly: false }
@@ -322,6 +331,15 @@ export type ExecutionPlan =
   | { kind: "TestDnsServerConnectivity" }
   | { kind: "TestDnsResolution" }
   | { kind: "CorrectDnsConfiguration" }
+  | { kind: "OpenCommandPrompt" }
+  | { kind: "OpenItKnowledgeBase" }
+  | { kind: "OpenKb204" }
+  | { kind: "Ipconfig" }
+  | { kind: "PingDefaultGateway" }
+  | { kind: "PingExternalIp" }
+  | { kind: "IpconfigAll" }
+  | { kind: "IpconfigRenew" }
+  | { kind: "Nslookup" }
 
   // FILES / STORAGE
   | { kind: "CheckDiskSpace" }
@@ -795,6 +813,33 @@ export type EthernetNotConnectedFacts = {
   ethernet_connection_restored: boolean;
 };
 
+export type DhcpApipaTroubleshootingFacts = {
+  kind: "dhcp_apipa_troubleshooting";
+  identity_verified: boolean;
+  network_status_checked: boolean;
+  command_prompt_opened: boolean;
+  ip_configuration_inspected: boolean;
+  knowledge_base_opened: boolean;
+  kb_204_opened: boolean;
+  initial_gateway_ping_failed: boolean;
+  initial_external_ping_failed: boolean;
+  initial_detailed_configuration_inspected: boolean;
+  dhcp_lease_renewed: boolean;
+  renewed_configuration_inspected: boolean;
+  renewed_gateway_ping_succeeded: boolean;
+  renewed_external_ping_succeeded: boolean;
+  dns_resolution_succeeded: boolean;
+  internet_access_restored: boolean;
+  user_confirmed_access: boolean;
+  ipv4_address: string;
+  subnet_mask: string;
+  default_gateway: string | null;
+  dhcp_enabled: boolean;
+  wifi_connected: boolean;
+  dhcp_server: string | null;
+  dns_server: string | null;
+};
+
 // FILES / STORAGE
 export type DiskSpaceFullFacts = {
   kind: "disk_space_full";
@@ -1062,6 +1107,7 @@ export type ScenarioFacts =
   | DnsIncorrectConfigurationFacts
   | SlowNetworkConnectionFacts
   | EthernetNotConnectedFacts
+  | DhcpApipaTroubleshootingFacts
   
   // FILES / STORAGE
   | DiskSpaceFullFacts

@@ -133,6 +133,10 @@ test_internet_connection:
       ethernet_not_connected: (facts) =>
         facts.ethernet_cable_reconnected &&
         !facts.ethernet_connection_restored,
+
+      dhcp_apipa_troubleshooting: (facts) =>
+        facts.dns_resolution_succeeded &&
+        !facts.internet_access_restored,
     },
   }),
 
@@ -1010,8 +1014,117 @@ defineProcedureDecision({
 
     dns_incorrect_configuration: (facts) =>
       !facts.network_status_checked,
+
+    dhcp_apipa_troubleshooting: (facts) =>
+      !facts.network_status_checked,
   },
 }),
+
+open_command_prompt:
+  defineProcedureDecision({
+    scenarios: {
+      dhcp_apipa_troubleshooting: (facts) =>
+        facts.network_status_checked &&
+        !facts.command_prompt_opened,
+    },
+  }),
+
+ipconfig:
+  defineProcedureDecision({
+    scenarios: {
+      dhcp_apipa_troubleshooting: (facts) =>
+        facts.command_prompt_opened &&
+        !facts.ip_configuration_inspected,
+    },
+  }),
+
+open_it_knowledge_base:
+  defineProcedureDecision({
+    scenarios: {
+      dhcp_apipa_troubleshooting: (facts) =>
+        facts.ip_configuration_inspected &&
+        !facts.knowledge_base_opened,
+    },
+  }),
+
+open_kb_204:
+  defineProcedureDecision({
+    scenarios: {
+      dhcp_apipa_troubleshooting: (facts) =>
+        facts.knowledge_base_opened &&
+        !facts.kb_204_opened,
+    },
+  }),
+
+ping_default_gateway:
+  defineProcedureDecision({
+    scenarios: {
+      dhcp_apipa_troubleshooting: (facts) =>
+        (
+          facts.ip_configuration_inspected &&
+          facts.kb_204_opened &&
+          !facts.dhcp_lease_renewed &&
+          !facts.initial_gateway_ping_failed
+        ) || (
+          facts.renewed_configuration_inspected &&
+          !facts.renewed_gateway_ping_succeeded
+        ),
+    },
+  }),
+
+ping_external_ip:
+  defineProcedureDecision({
+    scenarios: {
+      dhcp_apipa_troubleshooting: (facts) =>
+        (
+          facts.initial_gateway_ping_failed &&
+          !facts.initial_external_ping_failed
+        ) || (
+          facts.renewed_gateway_ping_succeeded &&
+          !facts.renewed_external_ping_succeeded
+        ),
+    },
+  }),
+
+ipconfig_all:
+  defineProcedureDecision({
+    scenarios: {
+      dhcp_apipa_troubleshooting: (facts) =>
+        (
+          facts.initial_external_ping_failed &&
+          !facts.initial_detailed_configuration_inspected &&
+          !facts.dhcp_lease_renewed
+        ) || (
+          facts.dhcp_lease_renewed &&
+          !facts.renewed_configuration_inspected
+        ),
+    },
+  }),
+
+ipconfig_renew:
+  defineProcedureDecision({
+    scenarios: {
+      dhcp_apipa_troubleshooting: (facts) =>
+        facts.initial_detailed_configuration_inspected &&
+        !facts.dhcp_lease_renewed &&
+        facts.ipv4_address === "169.254.23.18" &&
+        facts.subnet_mask === "255.255.0.0" &&
+        facts.default_gateway === null &&
+        facts.dhcp_enabled &&
+        facts.wifi_connected,
+    },
+  }),
+
+nslookup:
+  defineProcedureDecision({
+    scenarios: {
+      dhcp_apipa_troubleshooting: (facts) =>
+        facts.renewed_external_ping_succeeded &&
+        facts.dhcp_server === "192.168.1.10" &&
+        facts.dns_server === "192.168.1.10" &&
+        !facts.dns_resolution_succeeded,
+    },
+  }),
 
 check_proxy_settings:
   defineProcedureDecision({

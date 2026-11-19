@@ -1,5 +1,9 @@
 import type { ExecutionPlan, SimState, StatePatch } from "./types";
-import { getScenarioDefaults } from "./scenarioRegistry";
+import {
+  getScenarioDefaults,
+  getScenarioProcedureCommands,
+  getSuccessfulScenarioProcedureCount,
+} from "./scenarioRegistry";
 
 function assertNever(value: never): never {
   throw new Error(
@@ -43,6 +47,35 @@ function wrongScenarioError(
       failingCommand,
     },
   };
+}
+
+const DHCP_SCENARIO_ID = "dhcp_apipa_troubleshooting";
+
+function isExpectedDhcpProcedure(
+  state: SimState,
+  command: string
+): boolean {
+  if (
+    state.scenario !== DHCP_SCENARIO_ID ||
+    state.scenarioFacts?.kind !== DHCP_SCENARIO_ID
+  ) {
+    return false;
+  }
+
+  const procedureIndex = getSuccessfulScenarioProcedureCount(
+    state.scenario,
+    state.runLog
+  );
+
+  return getScenarioProcedureCommands(state.scenario)[procedureIndex] === command;
+}
+
+function dhcpProcedureError(command: string): StatePatch {
+  return wrongScenarioError(
+    "DHCP_PROCEDURE_PREREQUISITE_FAILED",
+    "The DHCP troubleshooting procedure is not authorized in the current state.",
+    command
+  );
 }
 
 function updateScenarioFacts<
@@ -2137,6 +2170,241 @@ case "DisableInboxFilter": {
 
 // --- NETWORK / CONNECTIVITY PLANS --- //
 
+case "OpenCommandPrompt": {
+  const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedDhcpProcedure(state, "open_command_prompt") ||
+    !facts.identity_verified ||
+    !facts.network_status_checked ||
+    facts.command_prompt_opened
+  ) {
+    return dhcpProcedureError("open_command_prompt");
+  }
+
+  return updateScenarioFacts(facts, {
+    command_prompt_opened: true,
+  });
+}
+
+case "Ipconfig": {
+  const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedDhcpProcedure(state, "ipconfig") ||
+    !facts.command_prompt_opened ||
+    facts.ip_configuration_inspected ||
+    facts.ipv4_address !== "169.254.23.18" ||
+    facts.subnet_mask !== "255.255.0.0" ||
+    facts.default_gateway !== null ||
+    !facts.dhcp_enabled ||
+    !facts.wifi_connected
+  ) {
+    return dhcpProcedureError("ipconfig");
+  }
+
+  return updateScenarioFacts(facts, {
+    ip_configuration_inspected: true,
+  });
+}
+
+case "OpenItKnowledgeBase": {
+  const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedDhcpProcedure(state, "open_it_knowledge_base") ||
+    !facts.ip_configuration_inspected ||
+    facts.knowledge_base_opened
+  ) {
+    return dhcpProcedureError("open_it_knowledge_base");
+  }
+
+  return updateScenarioFacts(facts, {
+    knowledge_base_opened: true,
+  });
+}
+
+case "OpenKb204": {
+  const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedDhcpProcedure(state, "open_kb_204") ||
+    !facts.knowledge_base_opened ||
+    facts.kb_204_opened
+  ) {
+    return dhcpProcedureError("open_kb_204");
+  }
+
+  return updateScenarioFacts(facts, {
+    kb_204_opened: true,
+  });
+}
+
+case "PingDefaultGateway": {
+  const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
+  if (!facts || !isExpectedDhcpProcedure(state, "ping_default_gateway")) {
+    return dhcpProcedureError("ping_default_gateway");
+  }
+
+  const procedureIndex = getSuccessfulScenarioProcedureCount(
+    state.scenario,
+    state.runLog
+  );
+
+  if (
+    procedureIndex === 6 &&
+    facts.kb_204_opened &&
+    facts.ip_configuration_inspected &&
+    !facts.dhcp_lease_renewed &&
+    facts.default_gateway === null &&
+    !facts.initial_gateway_ping_failed
+  ) {
+    return updateScenarioFacts(facts, {
+      initial_gateway_ping_failed: true,
+    });
+  }
+
+  if (
+    procedureIndex === 11 &&
+    facts.renewed_configuration_inspected &&
+    facts.default_gateway === "192.168.1.1" &&
+    !facts.renewed_gateway_ping_succeeded
+  ) {
+    return updateScenarioFacts(facts, {
+      renewed_gateway_ping_succeeded: true,
+    });
+  }
+
+  return dhcpProcedureError("ping_default_gateway");
+}
+
+case "PingExternalIp": {
+  const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
+  if (!facts || !isExpectedDhcpProcedure(state, "ping_external_ip")) {
+    return dhcpProcedureError("ping_external_ip");
+  }
+
+  const procedureIndex = getSuccessfulScenarioProcedureCount(
+    state.scenario,
+    state.runLog
+  );
+
+  if (
+    procedureIndex === 7 &&
+    facts.initial_gateway_ping_failed &&
+    !facts.initial_external_ping_failed &&
+    !facts.dhcp_lease_renewed &&
+    facts.default_gateway === null
+  ) {
+    return updateScenarioFacts(facts, {
+      initial_external_ping_failed: true,
+    });
+  }
+
+  if (
+    procedureIndex === 12 &&
+    facts.renewed_gateway_ping_succeeded &&
+    !facts.renewed_external_ping_succeeded &&
+    facts.default_gateway === "192.168.1.1"
+  ) {
+    return updateScenarioFacts(facts, {
+      renewed_external_ping_succeeded: true,
+    });
+  }
+
+  return dhcpProcedureError("ping_external_ip");
+}
+
+case "IpconfigAll": {
+  const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
+  if (!facts || !isExpectedDhcpProcedure(state, "ipconfig_all")) {
+    return dhcpProcedureError("ipconfig_all");
+  }
+
+  const procedureIndex = getSuccessfulScenarioProcedureCount(
+    state.scenario,
+    state.runLog
+  );
+
+  if (
+    procedureIndex === 8 &&
+    facts.initial_external_ping_failed &&
+    !facts.initial_detailed_configuration_inspected &&
+    !facts.dhcp_lease_renewed &&
+    facts.ipv4_address === "169.254.23.18" &&
+    facts.subnet_mask === "255.255.0.0" &&
+    facts.default_gateway === null &&
+    facts.dhcp_enabled
+  ) {
+    return updateScenarioFacts(facts, {
+      initial_detailed_configuration_inspected: true,
+    });
+  }
+
+  if (
+    procedureIndex === 10 &&
+    facts.dhcp_lease_renewed &&
+    !facts.renewed_configuration_inspected &&
+    facts.ipv4_address === "192.168.1.100" &&
+    facts.subnet_mask === "255.255.255.0" &&
+    facts.default_gateway === "192.168.1.1"
+  ) {
+    return updateScenarioFacts(facts, {
+      renewed_configuration_inspected: true,
+      dhcp_server: "192.168.1.10",
+      dns_server: "192.168.1.10",
+    });
+  }
+
+  return dhcpProcedureError("ipconfig_all");
+}
+
+case "IpconfigRenew": {
+  const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedDhcpProcedure(state, "ipconfig_renew") ||
+    !facts.initial_detailed_configuration_inspected ||
+    !facts.initial_gateway_ping_failed ||
+    !facts.initial_external_ping_failed ||
+    facts.dhcp_lease_renewed ||
+    facts.ipv4_address !== "169.254.23.18" ||
+    facts.subnet_mask !== "255.255.0.0" ||
+    facts.default_gateway !== null ||
+    !facts.dhcp_enabled ||
+    !facts.wifi_connected ||
+    facts.dhcp_server !== null ||
+    facts.dns_server !== null
+  ) {
+    return dhcpProcedureError("ipconfig_renew");
+  }
+
+  return updateScenarioFacts(facts, {
+    dhcp_lease_renewed: true,
+    ipv4_address: "192.168.1.100",
+    subnet_mask: "255.255.255.0",
+    default_gateway: "192.168.1.1",
+  });
+}
+
+case "Nslookup": {
+  const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedDhcpProcedure(state, "nslookup") ||
+    !facts.renewed_external_ping_succeeded ||
+    facts.dhcp_server !== "192.168.1.10" ||
+    facts.dns_server !== "192.168.1.10" ||
+    facts.dns_resolution_succeeded
+  ) {
+    return dhcpProcedureError("nslookup");
+  }
+
+  return updateScenarioFacts(facts, {
+    dns_resolution_succeeded: true,
+  });
+}
+
 // cannot_connect_wifi
 
 case "CheckWifiStatus": {
@@ -2337,7 +2605,8 @@ case "CheckNetworkStatus": {
     (
       facts.kind !== "internet_no_access" &&
       facts.kind !== "internet_no_access_proxy" &&
-      facts.kind !== "dns_incorrect_configuration"
+      facts.kind !== "dns_incorrect_configuration" &&
+      facts.kind !== DHCP_SCENARIO_ID
     )
   ) {
     return wrongScenarioError(
@@ -2345,6 +2614,20 @@ case "CheckNetworkStatus": {
       "check_network_status is only valid in internet access scenarios.",
       "check_network_status"
     );
+  }
+
+  if (facts.kind === DHCP_SCENARIO_ID) {
+    if (
+      !isExpectedDhcpProcedure(state, "check_network_status") ||
+      !facts.identity_verified ||
+      facts.network_status_checked
+    ) {
+      return dhcpProcedureError("check_network_status");
+    }
+
+    return updateScenarioFacts(facts, {
+      network_status_checked: true,
+    });
   }
 
   if (facts.kind === "dns_incorrect_configuration") {
@@ -2496,7 +2779,8 @@ case "TestInternetConnection": {
       facts.kind !== "internet_no_access_proxy" &&
       facts.kind !== "slow_network_connection" &&
       facts.kind !== "ethernet_not_connected" &&
-      facts.kind !== "dns_incorrect_configuration"
+      facts.kind !== "dns_incorrect_configuration" &&
+      facts.kind !== DHCP_SCENARIO_ID
     )
   ) {
     return wrongScenarioError(
@@ -2504,6 +2788,40 @@ case "TestInternetConnection": {
       "test_internet_connection is only valid in internet connectivity scenarios.",
       "test_internet_connection"
     );
+  }
+
+  if (facts.kind === DHCP_SCENARIO_ID) {
+    if (
+      !isExpectedDhcpProcedure(state, "test_internet_connection") ||
+      !facts.identity_verified ||
+      !facts.network_status_checked ||
+      !facts.command_prompt_opened ||
+      !facts.ip_configuration_inspected ||
+      !facts.knowledge_base_opened ||
+      !facts.kb_204_opened ||
+      !facts.initial_gateway_ping_failed ||
+      !facts.initial_external_ping_failed ||
+      !facts.initial_detailed_configuration_inspected ||
+      !facts.dhcp_lease_renewed ||
+      !facts.renewed_configuration_inspected ||
+      !facts.renewed_gateway_ping_succeeded ||
+      !facts.renewed_external_ping_succeeded ||
+      !facts.dns_resolution_succeeded ||
+      facts.internet_access_restored ||
+      facts.user_confirmed_access ||
+      facts.ipv4_address !== "192.168.1.100" ||
+      facts.subnet_mask !== "255.255.255.0" ||
+      facts.default_gateway !== "192.168.1.1" ||
+      facts.dhcp_server !== "192.168.1.10" ||
+      facts.dns_server !== "192.168.1.10"
+    ) {
+      return dhcpProcedureError("test_internet_connection");
+    }
+
+    return completeScenario(facts, {
+      internet_access_restored: true,
+      user_confirmed_access: true,
+    });
   }
 
   if (facts.kind === "internet_no_access") {

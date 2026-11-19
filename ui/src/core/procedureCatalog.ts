@@ -200,6 +200,15 @@ check_outlook_mailbox_configuration: {
   correct_dns_configuration: {
     plan: "CorrectDnsConfiguration",
   },
+  open_command_prompt: { plan: "OpenCommandPrompt" },
+  open_it_knowledge_base: { plan: "OpenItKnowledgeBase" },
+  open_kb_204: { plan: "OpenKb204" },
+  ipconfig: { plan: "Ipconfig" },
+  ping_default_gateway: { plan: "PingDefaultGateway" },
+  ping_external_ip: { plan: "PingExternalIp" },
+  ipconfig_all: { plan: "IpconfigAll" },
+  ipconfig_renew: { plan: "IpconfigRenew" },
+  nslookup: { plan: "Nslookup" },
 
   // FILES / STORAGE
   check_disk_space: { plan: "CheckDiskSpace" },

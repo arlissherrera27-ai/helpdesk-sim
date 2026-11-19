@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import ProcedureResult from "./components/ProcedureResult";
+import "./components/ProcedureResult.css";
 import { useResponsive } from "./useResponsive";
 import { handleInput } from "./core/engine";
 import {
@@ -6,6 +8,7 @@ import {
   newInvestigationTicket,
 } from "./core/state";
 import type { SimState } from "./core/types";
+import type { ProcedureResultPresentation } from "./core/procedurePresentation";
 import type { AppView } from "./appTypes";
 import ProfilePage from "./ProfilePage";
 import CreateProfilePage from "./CreateProfilePage";
@@ -133,6 +136,49 @@ const LAYOUT = {
   completedSummaryCards: "1fr 1fr 1fr",
   runningMain: "1fr 320px",
 };
+
+type ConversationProcedureResult = {
+  kind: "procedure-result";
+  presentation: ProcedureResultPresentation;
+  modeAtExecution: SimState["mode"];
+};
+
+type ConversationLogItem = string | ConversationProcedureResult;
+
+function renderConversationItem(
+  item: ConversationLogItem,
+  index: number,
+  currentMode: SimState["mode"]
+) {
+  if (typeof item === "string") {
+    return item === "" ? (
+      <div key={index} style={{ height: "10px" }} />
+    ) : (
+      <div key={index} style={{ marginBottom: "4px" }}>
+        {item}
+      </div>
+    );
+  }
+
+  const { presentation } = item;
+
+  return (
+    <div key={index} style={{ marginBottom: SPACE.md, minWidth: 0 }}>
+      <ProcedureResult
+        title={`Last completed procedure:\n${getPreviewStepLabel(presentation.command)}`}
+        technicianEntry={presentation.technicianEntry}
+        systemResult={presentation.systemResult}
+        technicalOutput={presentation.technicalOutput}
+        technicalLines={presentation.technicalLines}
+        annotations={presentation.annotations}
+        learnMore={presentation.learnMore}
+        showEducationalContainers={
+          item.modeAtExecution === "practice" && currentMode === "practice"
+        }
+      />
+    </div>
+  );
+}
 
 function getVisibleCommands(state: SimState): string[] {
   if (state.executionState === "LOBBY") {
@@ -376,7 +422,7 @@ const profileMetrics =
 const [attemptStartedAt, setAttemptStartedAt] =
   useState<string | null>(null);
 const [input, setInput] = useState("");
-const [log, setLog] = useState<string[]>([]);
+const [log, setLog] = useState<ConversationLogItem[]>([]);
 
 const [
   scenarioValidationReport,
@@ -1062,6 +1108,18 @@ if (isQuit) {
       if (isRestart) {
         return [...buildLogBlock(out.message || "")];
       }
+
+if (out.procedureResult) {
+  return [
+    ...prev,
+    {
+      kind: "procedure-result",
+      presentation: out.procedureResult,
+      modeAtExecution: state.mode,
+    },
+    "",
+  ];
+}
 
 const isScorecard = out.state.executionState === "SCORECARD";
 
@@ -4158,13 +4216,7 @@ onClick={() => {
   }}
 >
           {log.map((line, index) =>
-            line === "" ? (
-              <div key={index} style={{ height: "10px" }} />
-            ) : (
-              <div key={index} style={{ marginBottom: "4px" }}>
-                {line}
-              </div>
-            )
+            renderConversationItem(line, index, mode)
           )}
         </div>
       </div>
@@ -4472,13 +4524,7 @@ onClick={() => {
         }}
       >
         {log.map((line, index) =>
-          line === "" ? (
-            <div key={index} style={{ height: "10px" }} />
-          ) : (
-            <div key={index} style={{ marginBottom: "4px" }}>
-              {line}
-            </div>
-          )
+          renderConversationItem(line, index, mode)
         )}
       </div>
     </div>

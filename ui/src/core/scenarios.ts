@@ -45,6 +45,7 @@ export const SCENARIO_IDS = [
   "dns_incorrect_configuration",
   "slow_network_connection",
   "ethernet_not_connected",
+  "dhcp_apipa_troubleshooting",
 
   // FILES / STORAGE
   "disk_space_full",

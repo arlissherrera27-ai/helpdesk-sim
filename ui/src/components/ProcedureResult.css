@@ -1,0 +1,135 @@
+.procedure-result {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  color: #d1d5db;
+  text-align: left;
+}
+
+.procedure-result__title {
+  color: #f5f7fb;
+  font-weight: 700;
+  white-space: pre-wrap;
+}
+
+.procedure-result__section {
+  min-width: 0;
+}
+
+.procedure-result__label {
+  margin-bottom: 4px;
+  color: #9aa4b2;
+}
+
+.procedure-result__system-title {
+  margin-bottom: 4px;
+  color: #f5f7fb;
+  font-weight: 700;
+}
+
+.procedure-result__plain-output,
+.procedure-result__line-text {
+  min-width: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  font-family: ui-monospace, Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.procedure-result__technical-lines {
+  display: grid;
+  min-width: 0;
+}
+
+.procedure-result__line-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.65fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+
+.procedure-result__annotation {
+  min-width: 0;
+  color: #aeb8c5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.procedure-result__education {
+  min-width: 0;
+  padding-top: 12px;
+  border-top: 1px solid #2a2a2a;
+}
+
+.procedure-result__toggle,
+.procedure-result__lesson summary {
+  color: #d1d5db;
+  font: inherit;
+  font-family: ui-monospace, Consolas, monospace;
+  text-align: left;
+  cursor: pointer;
+}
+
+.procedure-result__toggle {
+  min-height: 36px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+}
+
+.procedure-result__toggle:hover,
+.procedure-result__lesson summary:hover {
+  color: #f5f7fb;
+}
+
+.procedure-result__toggle:focus-visible,
+.procedure-result__lesson summary:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 3px;
+}
+
+.procedure-result__empty {
+  margin: 8px 0 0;
+  color: #9aa4b2;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.procedure-result__lessons {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.procedure-result__lesson {
+  min-width: 0;
+  padding: 8px 0;
+  border-top: 1px solid #2a2a2a;
+}
+
+.procedure-result__lesson summary {
+  min-height: 32px;
+  padding: 4px 0;
+  font-weight: 700;
+}
+
+.procedure-result__lesson-content {
+  margin-top: 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .procedure-result__line-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .procedure-result__annotation {
+    padding-left: 12px;
+    border-left: 2px solid #3b4654;
+  }
+}

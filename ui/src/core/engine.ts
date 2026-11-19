@@ -4,6 +4,7 @@ import type {
   LogEvent,
   SimState,
 } from "./types";
+import type { ProcedureResultPresentation } from "./procedurePresentation";
 import { parseCommand } from "./parse";
 import { decide } from "./decide";
 import { executePlan } from "./execute";
@@ -13,6 +14,8 @@ import {
   getScenarioInvestigationRelatedAction,
   getScenarioProcedureCommands,
   getScenarioProcedureEvidence,
+  getScenarioProcedureOutput,
+  getSuccessfulScenarioProcedureCount,
 } from "./scenarioRegistry";
 import {
   canStillPassRun,
@@ -67,6 +70,7 @@ export type EngineOutput = {
   state: SimState;
   message: string;
   decision: Decision;
+  procedureResult?: ProcedureResultPresentation;
 };
 
 function assertNeverPlan(plan: never): never {
@@ -99,6 +103,10 @@ function mergeEvidence(
 // Engine: runs the pipeline (Parse → Decide → Execute → Update).
 export function handleInput(state: SimState, inputRaw: string): EngineOutput {
   const command = parseCommand(inputRaw);
+  const procedureOccurrenceIndex =
+    state.scenario === "dhcp_apipa_troubleshooting"
+      ? getSuccessfulScenarioProcedureCount(state.scenario, state.runLog)
+      : null;
   let decision = decide(state, command);
 
   if (
@@ -384,7 +392,18 @@ if (patch.result?.completion === "PASS" || patch.result?.completion === "FAIL") 
     state.scenario
       ? getScenarioProcedureEvidence(
           state.scenario,
-          command.kind
+          command.kind,
+          procedureOccurrenceIndex ?? undefined
+        )
+      : null;
+
+  const procedureOutput =
+    state.scenario === "dhcp_apipa_troubleshooting" &&
+    procedureOccurrenceIndex !== null
+      ? getScenarioProcedureOutput(
+          state.scenario,
+          command.kind,
+          procedureOccurrenceIndex
         )
       : null;
 
@@ -526,6 +545,8 @@ message =
     FINAL_NEXT_ACTIONS;
 }
   
+} else if (procedureOutput) {
+  message = `${procedureOutput.systemResult}\n\n${procedureOutput.technicalOutput}`;
 } else {
   switch (decision.plan.kind) {
     case "StartNewAttempt": {
@@ -2687,10 +2708,27 @@ case "SelectScenario":
       message = "";
       break;
 
+    case "OpenCommandPrompt":
+    case "OpenItKnowledgeBase":
+    case "OpenKb204":
+    case "Ipconfig":
+    case "PingDefaultGateway":
+    case "PingExternalIp":
+    case "IpconfigAll":
+    case "IpconfigRenew":
+    case "Nslookup":
+      message = "";
+      break;
+
     default:
       assertNeverPlan(decision.plan);
   }
 }
 
-  return { state: nextState, message, decision };
+  return {
+    state: nextState,
+    message,
+    decision,
+    procedureResult: procedureOutput ?? undefined,
+  };
 }

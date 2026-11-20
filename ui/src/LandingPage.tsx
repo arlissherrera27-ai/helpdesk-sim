@@ -15,13 +15,13 @@ const trainingModes = [
   {
     name: "Investigation Mode",
     color: COLORS.primary,
-    description: "Investigate incoming tickets without knowing the underlying issue in advance. Currently available for 2 scenarios.",
+    description: "Investigate incoming tickets without knowing the underlying issue in advance. Currently available for 3 scenarios.",
   },
 ];
 
 const exampleTickets = [
   "Password Reset & Account Lockout",
-  "Wi-Fi & Network Connectivity",
+  "Wi-Fi, DHCP & Network Connectivity",
   "Email & Outlook Troubleshooting",
   "Printer & Peripheral Issues",
   "Windows & Desktop Support",
@@ -80,11 +80,15 @@ export default function LandingPage() {
           Learn Help Desk Troubleshooting by Doing It.
         </h1>
 
+
         <p style={{ color: COLORS.body, fontSize: "16px", lineHeight: 1.8, marginBottom: SPACE.xl }}>
-          Practice realistic Level 1 IT support tickets in an interactive
-          troubleshooting simulator. Choose procedures, examine technical
-          evidence, resolve issues, and build confidence.
+          Prepare for Level 1 IT support interviews through realistic,
+          hands-on troubleshooting. Learn procedures, understand technical
+          evidence, and practice making the decisions technicians face
+          on the job. Build your skills with guidance in Practice Mode,
+          then measure your independent ability in Assessment Mode.
         </p>
+
 
         <a
           href="/simulator"
@@ -97,12 +101,69 @@ export default function LandingPage() {
           }}
         >
           Start Training →
+
         </a>
 
       </section>
 
+      <section
+        style={{
+          marginBottom: SPACE.xxl,
+          padding: SPACE.xl,
+          border: `1px solid ${COLORS.practice}`,
+          borderRadius: "12px",
+          background: COLORS.panel,
+          maxWidth: "850px",
+        }}
+      >
+        <div
+          style={{
+            color: COLORS.practice,
+            fontSize: TEXT.label,
+            fontWeight: 700,
+            marginBottom: SPACE.md,
+          }}
+        >
+          NEW IN V2 · NETWORK TROUBLESHOOTING
+        </div>
+
+        <h2 style={{ color: COLORS.text, fontFamily: "monospace", marginTop: 0 }}>
+          DHCP Address Renewal
+        </h2>
+
+        <p style={{ color: COLORS.body, lineHeight: 1.8 }}>
+          Work through 15 realistic networking procedures to investigate
+          why a computer cannot access websites. Examine Windows command
+          output, identify IP configuration problems, renew a DHCP lease,
+          and verify connectivity.
+        </p>
+
+        <p style={{ color: COLORS.body, lineHeight: 1.8 }}>
+          In Practice Mode, optional technical annotations and Learn More
+          explanations help you understand what each procedure does,
+          what the results mean, and why the procedure matters.
+        </p>
+
+        <div
+          style={{
+            padding: SPACE.md,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: "8px",
+            background: COLORS.panelSoft,
+            color: COLORS.body,
+            lineHeight: 1.8,
+          }}
+        >
+          <strong style={{ color: COLORS.text }}>Where to find it:</strong>
+          <div>
+            Enter Simulator → Practice Mode → Standard Scenarios → Network
+            → DHCP Address Renewal
+          </div>
+        </div>
+      </section>
 
       <section style={{ marginBottom: SPACE.xxl }}>
+
         <h2 style={{ color: COLORS.text, fontFamily: "monospace" }}>
           How It Works
         </h2>
@@ -243,9 +304,75 @@ export default function LandingPage() {
         </div>
       </section>
 
+
+      <section style={{ marginBottom: SPACE.xxl }}>
+        <h2 style={{ color: COLORS.text, fontFamily: "monospace" }}>
+          What's New & What's Next
+        </h2>
+
+        <p style={{ color: COLORS.muted, lineHeight: 1.7 }}>
+          MyHelpDeskSim is growing as a practical training environment
+          for aspiring Level 1 IT support technicians.
+        </p>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: SPACE.md,
+          }}
+        >
+          <div
+            style={{
+              padding: SPACE.lg,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: "12px",
+              background: COLORS.panel,
+            }}
+          >
+            <strong style={{ color: COLORS.practice }}>
+              V2 · Available & In Development
+            </strong>
+            <p style={{ color: COLORS.body, lineHeight: 1.8 }}>
+              Three ways to train, performance reports, custom playlists,
+              and a growing library of realistic support tickets.
+            </p>
+            <p style={{ color: COLORS.body, lineHeight: 1.8 }}>
+              New: DHCP Address Renewal, featuring guided technical
+              explanations. More Level 1 troubleshooting scenarios and
+              Investigation Mode coverage are in development.
+            </p>
+          </div>
+
+          <div
+            style={{
+              padding: SPACE.lg,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: "12px",
+              background: COLORS.panel,
+            }}
+          >
+            <strong style={{ color: COLORS.primary }}>
+              V3 · Planned
+            </strong>
+            <p style={{ color: COLORS.body, lineHeight: 1.8 }}>
+              Knowledge Assessment will expand the learning experience
+              with interactive questions about commands, procedures,
+              technical output, and troubleshooting decisions.
+            </p>
+            <p style={{ color: COLORS.muted, lineHeight: 1.8 }}>
+              The goal is to measure both what a technician can do
+              and what they understand. These features are planned
+              and are not currently available.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section style={{ marginBottom: SPACE.xxl }}>
         <h2 style={{ color: COLORS.text, fontFamily: "monospace" }}>
           Custom Playlists
+
         </h2>
         <p
           style={{

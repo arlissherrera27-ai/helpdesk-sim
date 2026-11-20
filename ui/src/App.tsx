@@ -40,7 +40,10 @@ import {
   getScenarioTypeDisplayLabel,
 } from "./core/scenarioTree";
 import { COMMAND_ALIASES } from "./core/parse";
-import { getScenarioProcedureCommands } from "./core/scenarioRegistry";
+import {
+  getScenarioProcedureCommands,
+  getSuccessfulScenarioProcedureCount,
+} from "./core/scenarioRegistry";
 import type { UserProfile } from "./profile/types";
 import {
   loadActiveProfile,
@@ -254,12 +257,20 @@ function getCurrentExpectedProcedureLabel(
 
   const procedureCommands = getScenarioProcedureCommands(state.scenario);
 
-  const completedProcedureCount = state.runLog.filter(
-    (event) =>
-      event.decision === "ALLOW" &&
-      event.plan !== "StartNewAttempt" &&
-      event.plan !== "ReadOnly"
-  ).length;
+
+  const completedProcedureCount =
+    state.scenario === "dhcp_apipa_troubleshooting"
+      ? getSuccessfulScenarioProcedureCount(
+          state.scenario,
+          state.runLog
+        )
+      : state.runLog.filter(
+          (event) =>
+            event.decision === "ALLOW" &&
+            event.plan !== "StartNewAttempt" &&
+            event.plan !== "ReadOnly"
+        ).length;
+
 
   const expectedCommand = procedureCommands[completedProcedureCount];
 
@@ -805,17 +816,36 @@ function abandonPlaylistRun(
         )
       : null;
 
+
   const parserAliasHelp = currentExpectedCommand
     ? [
         {
           command: currentExpectedCommand,
           label: getPreviewStepLabel(currentExpectedCommand),
-          aliases: Object.entries(COMMAND_ALIASES)
-            .filter(([, mappedCommand]) => mappedCommand === currentExpectedCommand)
-            .map(([alias]) => alias),
+          aliases: [
+            ...new Set([
+              currentExpectedCommand,
+              ...(
+                [
+                  "open_command_prompt",
+                  "open_it_knowledge_base",
+                  "open_kb_204",
+                ].includes(currentExpectedCommand)
+                  ? [currentExpectedCommand.replaceAll("_", " ")]
+                  : []
+              ),
+              ...Object.entries(COMMAND_ALIASES)
+                .filter(
+                  ([, mappedCommand]) =>
+                    mappedCommand === currentExpectedCommand
+                )
+                .map(([alias]) => alias),
+            ]),
+          ],
         },
-      ].filter((item) => item.aliases.length > 0)
+      ]
     : [];
+
 
   const showProcedureHelp =
     mode === "practice" &&

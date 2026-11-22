@@ -8,6 +8,7 @@ export const SCENARIO_IDS = [
   "password_reset_recovery_email_outdated",
   "account_lockout",
   "account_lockout_saved_credentials",
+  "active_directory_locked_employee_account",
   "vpn_access_issue",
   "vpn_mfa_dependency_missing",
   "mfa_code_not_working",
@@ -46,6 +47,7 @@ export const SCENARIO_IDS = [
   "slow_network_connection",
   "ethernet_not_connected",
   "dhcp_apipa_troubleshooting",
+  "dns_lookup_website_not_opening",
 
   // FILES / STORAGE
   "disk_space_full",
@@ -63,6 +65,8 @@ export const SCENARIO_IDS = [
 
   // HARDWARE / PERIPHERALS
   "printer_not_working",
+  "network_printer_not_printing",
+  "tcp_port_connectivity",
   "printer_wrong_default_printer",
   "mouse_keyboard_not_working",
   "microphone_not_working",

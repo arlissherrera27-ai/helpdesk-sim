@@ -45,6 +45,16 @@ export type Command =
       readOnly: false;
     }
   | { kind: "update_saved_credentials"; readOnly: false }
+  | { kind: "check_login_error"; readOnly: false }
+  | { kind: "open_active_directory"; readOnly: false }
+  | { kind: "locate_user_account"; readOnly: false }
+  | { kind: "check_account_status"; readOnly: false }
+  | { kind: "check_account_properties"; readOnly: false }
+  | { kind: "check_lockout_policy"; readOnly: false }
+  | { kind: "review_lockout_details"; readOnly: false }
+  | { kind: "unlock_user_account"; readOnly: false }
+  | { kind: "verify_account_status"; readOnly: false }
+  | { kind: "test_user_login"; readOnly: false }
   | { kind: "check_vpn_access"; readOnly: false }
   | { kind: "enable_vpn_access"; readOnly: false }
   | { kind: "confirm_connection"; readOnly: false }
@@ -135,6 +145,9 @@ export type Command =
   | { kind: "ipconfig_all"; readOnly: false }
   | { kind: "ipconfig_renew"; readOnly: false }
   | { kind: "nslookup"; readOnly: false }
+  | { kind: "test_website_access"; readOnly: false }
+  | { kind: "nslookup_alternative_dns"; readOnly: false }
+  | { kind: "escalate_dns_issue"; readOnly: false }
 
   // FILES / STORAGE
   | { kind: "check_disk_space"; readOnly: false }
@@ -172,6 +185,21 @@ export type Command =
   | { kind: "set_default_printer"; readOnly: false }
   | { kind: "restart_printer"; readOnly: false }
   | { kind: "print_test_page"; readOnly: false }
+  | { kind: "test_printing"; readOnly: false }
+  | { kind: "check_print_queue"; readOnly: false }
+  | { kind: "check_printer_port"; readOnly: false }
+  | { kind: "check_printer_physical_status"; readOnly: false }
+  | { kind: "reconnect_printer_ethernet"; readOnly: false }
+  | { kind: "confirm_user_resolution"; readOnly: false }
+  | { kind: "check_application_error"; readOnly: false }
+  | { kind: "open_powershell"; readOnly: false }
+  | { kind: "test_tcp_port"; readOnly: false }
+  | { kind: "check_firewall_change_record"; readOnly: false }
+  | { kind: "escalate_firewall_issue"; readOnly: false }
+  | { kind: "test_application_connection"; readOnly: false }
+  | { kind: "ping_application_server"; readOnly: false }
+  | { kind: "open_kb_app_connectivity"; readOnly: false }
+  | { kind: "ping_printer"; readOnly: false }
   | { kind: "check_device_connection"; readOnly: false }
   | { kind: "reconnect_device"; readOnly: false }
   | { kind: "test_input_device"; readOnly: false }
@@ -250,6 +278,16 @@ export type ExecutionPlan =
   | { kind: "ConfirmUnlock" }
   | { kind: "ReviewFailedAuthenticationAttempts" }
   | { kind: "UpdateSavedCredentials" }
+  | { kind: "CheckLoginError" }
+  | { kind: "OpenActiveDirectory" }
+  | { kind: "LocateUserAccount" }
+  | { kind: "CheckAccountStatus" }
+  | { kind: "CheckAccountProperties" }
+  | { kind: "CheckLockoutPolicy" }
+  | { kind: "ReviewLockoutDetails" }
+  | { kind: "UnlockUserAccount" }
+  | { kind: "VerifyAccountStatus" }
+  | { kind: "TestUserLogin" }
   | { kind: "CheckVpnAccess" }
   | { kind: "EnableVpnAccess" }
   | { kind: "ConfirmConnection" }
@@ -340,6 +378,9 @@ export type ExecutionPlan =
   | { kind: "IpconfigAll" }
   | { kind: "IpconfigRenew" }
   | { kind: "Nslookup" }
+  | { kind: "TestWebsiteAccess" }
+  | { kind: "NslookupAlternativeDns" }
+  | { kind: "EscalateDnsIssue" }
 
   // FILES / STORAGE
   | { kind: "CheckDiskSpace" }
@@ -375,6 +416,21 @@ export type ExecutionPlan =
   | { kind: "SetDefaultPrinter" }
   | { kind: "RestartPrinter" }
   | { kind: "PrintTestPage" }
+  | { kind: "TestPrinting" }
+  | { kind: "CheckPrintQueue" }
+  | { kind: "CheckPrinterPort" }
+  | { kind: "CheckPrinterPhysicalStatus" }
+  | { kind: "ReconnectPrinterEthernet" }
+  | { kind: "ConfirmUserResolution" }
+  | { kind: "CheckApplicationError" }
+  | { kind: "OpenPowerShell" }
+  | { kind: "TestTcpPort" }
+  | { kind: "CheckFirewallChangeRecord" }
+  | { kind: "EscalateFirewallIssue" }
+  | { kind: "TestApplicationConnection" }
+  | { kind: "PingApplicationServer" }
+  | { kind: "OpenKbAppConnectivity" }
+  | { kind: "PingPrinter" }
   | { kind: "CheckDeviceConnection" }
   | { kind: "ReconnectDevice" }
   | { kind: "TestInputDevice" }
@@ -503,6 +559,26 @@ export type AccountLockoutSavedCredentialsFacts = {
   saved_credentials_updated: boolean;
   account_unlocked_after_fix: boolean;
   can_login_now: boolean;
+};
+
+export type ActiveDirectoryLockedEmployeeFacts = {
+  kind: "active_directory_locked_employee_account";
+  identity_verified: boolean;
+  login_error_checked: boolean;
+  active_directory_opened: boolean;
+  user_account_located: boolean;
+  account_status_checked: boolean;
+  account_properties_checked: boolean;
+  lockout_policy_checked: boolean;
+  lockout_details_reviewed: boolean;
+  account_unlocked: boolean;
+  account_status_verified: boolean;
+  user_login_succeeded: boolean;
+  user_resolution_confirmed: boolean;
+  account_enabled: boolean;
+  account_locked: boolean;
+  password_expired: boolean;
+  account_expired: boolean;
 };
 
 export type VpnAccessIssueFacts = {
@@ -813,6 +889,32 @@ export type EthernetNotConnectedFacts = {
   ethernet_connection_restored: boolean;
 };
 
+export type DnsLookupWebsiteNotOpeningFacts = {
+  kind: "dns_lookup_website_not_opening";
+  identity_verified: boolean;
+  network_status_checked: boolean;
+  website_access_tested: boolean;
+  command_prompt_opened: boolean;
+  ip_configuration_inspected: boolean;
+  gateway_ping_succeeded: boolean;
+  external_ping_succeeded: boolean;
+  configured_dns_lookup_failed: boolean;
+  detailed_network_configuration_inspected: boolean;
+  alternative_dns_lookup_succeeded: boolean;
+  dns_issue_escalated: boolean;
+  dns_service_restored: boolean;
+  post_restoration_dns_lookup_succeeded: boolean;
+  internet_access_verified: boolean;
+  user_confirmed_resolution: boolean;
+  ipv4_address: string;
+  subnet_mask: string;
+  default_gateway: string;
+  dhcp_enabled: boolean;
+  dhcp_server: string;
+  configured_dns_server: string;
+  alternative_dns_server: string;
+};
+
 export type DhcpApipaTroubleshootingFacts = {
   kind: "dhcp_apipa_troubleshooting";
   identity_verified: boolean;
@@ -928,6 +1030,55 @@ export type BrowserRunningSlowExtensionFacts = {
   browser_extensions_checked: boolean;
   unnecessary_extensions_disabled: boolean;
   browser_performance_ok: boolean;
+};
+
+export type TcpPortConnectivityFacts = {
+  kind: "tcp_port_connectivity";
+  identity_verified: boolean;
+  application_error_checked: boolean;
+  network_status_checked: boolean;
+  command_prompt_opened: boolean;
+  ip_configuration_inspected: boolean;
+  gateway_ping_succeeded: boolean;
+  knowledge_base_opened: boolean;
+  app_connectivity_article_opened: boolean;
+  powershell_opened: boolean;
+  tcp_port_test_failed: boolean;
+  firewall_change_record_checked: boolean;
+  firewall_issue_escalated: boolean;
+  firewall_rule_restored: boolean;
+  tcp_port_test_succeeded: boolean;
+  application_connection_verified: boolean;
+  user_resolution_confirmed: boolean;
+  ipv4_address: string;
+  subnet_mask: string;
+  default_gateway: string;
+  application_server: string;
+  required_tcp_port: number;
+};
+
+export type NetworkPrinterNotPrintingFacts = {
+  kind: "network_printer_not_printing";
+  identity_verified: boolean;
+  printing_tested: boolean;
+  printer_status_checked: boolean;
+  print_queue_checked: boolean;
+  printer_port_checked: boolean;
+  command_prompt_opened: boolean;
+  ip_configuration_inspected: boolean;
+  gateway_ping_succeeded: boolean;
+  printer_ping_failed: boolean;
+  printer_physical_status_checked: boolean;
+  printer_ethernet_reconnected: boolean;
+  printer_ping_succeeded: boolean;
+  queued_document_printed: boolean;
+  windows_test_page_printed: boolean;
+  user_resolution_confirmed: boolean;
+  printer_offline: boolean;
+  printer_port_address: string;
+  printer_ipv4_address: string;
+  ethernet_link_down: boolean;
+  ethernet_link_up: boolean;
 };
 
 export type PrinterNotWorkingFacts = {
@@ -1070,6 +1221,7 @@ export type ScenarioFacts =
   | PasswordResetRecoveryEmailOutdatedFacts
   | AccountLockoutFacts
   | AccountLockoutSavedCredentialsFacts
+  | ActiveDirectoryLockedEmployeeFacts
   | VpnAccessIssueFacts
   | VpnMfaDependencyMissingFacts
   | MfaCodeNotWorkingFacts
@@ -1108,6 +1260,7 @@ export type ScenarioFacts =
   | SlowNetworkConnectionFacts
   | EthernetNotConnectedFacts
   | DhcpApipaTroubleshootingFacts
+  | DnsLookupWebsiteNotOpeningFacts
   
   // FILES / STORAGE
   | DiskSpaceFullFacts
@@ -1125,6 +1278,8 @@ export type ScenarioFacts =
 
   // HARDWARE / PERIPHERALS
   | PrinterNotWorkingFacts
+  | NetworkPrinterNotPrintingFacts
+  | TcpPortConnectivityFacts
   | PrinterWrongDefaultPrinterFacts
   | MouseKeyboardNotWorkingFacts
   | MicrophoneNotWorkingFacts

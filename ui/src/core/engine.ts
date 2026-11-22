@@ -102,9 +102,18 @@ function mergeEvidence(
 
 // Engine: runs the pipeline (Parse → Decide → Execute → Update).
 export function handleInput(state: SimState, inputRaw: string): EngineOutput {
-  const command = parseCommand(inputRaw);
+  const parsedCommand = parseCommand(inputRaw);
+  const command =
+    state.scenario === "network_printer_not_printing" &&
+    parsedCommand.kind === "ping_application_server"
+      ? parseCommand("ping_printer")
+      : parsedCommand;
   const procedureOccurrenceIndex =
-    state.scenario === "dhcp_apipa_troubleshooting"
+    state.scenario === "dhcp_apipa_troubleshooting" ||
+    state.scenario === "dns_lookup_website_not_opening" ||
+    state.scenario === "network_printer_not_printing" ||
+    state.scenario === "tcp_port_connectivity" ||
+    state.scenario === "active_directory_locked_employee_account"
       ? getSuccessfulScenarioProcedureCount(state.scenario, state.runLog)
       : null;
   let decision = decide(state, command);
@@ -376,16 +385,26 @@ if (
 
 if (patch.result?.completion === "PASS" || patch.result?.completion === "FAIL") {
   const requiredSteps =
-  state.scenario
-    ? getScenarioProcedureCommands(state.scenario).length
-    : 0;
+    state.scenario
+      ? getScenarioProcedureCommands(state.scenario).length
+      : 0;
 
   const score = evaluateRun(
     [...state.runLog, logEvent],
     requiredSteps
   );
 
-  finalPatch = { ...patch, result: score };
+  if (state.mode === "practice") {
+    finalPatch = {
+      ...patch,
+      result: {
+        ...score,
+        completion: "PASS",
+      },
+    };
+  } else {
+    finalPatch = { ...patch, result: score };
+  }
 }
 
   const procedureEvidence =
@@ -398,7 +417,11 @@ if (patch.result?.completion === "PASS" || patch.result?.completion === "FAIL") 
       : null;
 
   const procedureOutput =
-    state.scenario === "dhcp_apipa_troubleshooting" &&
+    (state.scenario === "dhcp_apipa_troubleshooting" ||
+      state.scenario === "network_printer_not_printing" ||
+      state.scenario === "dns_lookup_website_not_opening" ||
+      state.scenario === "tcp_port_connectivity" ||
+      state.scenario === "active_directory_locked_employee_account") &&
     procedureOccurrenceIndex !== null
       ? getScenarioProcedureOutput(
           state.scenario,
@@ -407,10 +430,13 @@ if (patch.result?.completion === "PASS" || patch.result?.completion === "FAIL") 
         )
       : null;
 
-  const nextEvidence = mergeEvidence(
-    state.evidence,
-    procedureEvidence
-  );
+  const nextEvidence =
+    finalPatch.evidence !== undefined
+      ? finalPatch.evidence
+      : mergeEvidence(
+          state.evidence,
+          procedureEvidence
+        );
 
   finalPatch = {
     ...finalPatch,
@@ -2716,7 +2742,35 @@ case "SelectScenario":
     case "PingExternalIp":
     case "IpconfigAll":
     case "IpconfigRenew":
+    case "TestPrinting":
+    case "CheckPrintQueue":
+    case "CheckPrinterPort":
+    case "CheckPrinterPhysicalStatus":
+    case "ReconnectPrinterEthernet":
+    case "PingPrinter":
+    case "ConfirmUserResolution":
     case "Nslookup":
+    case "TestWebsiteAccess":
+    case "NslookupAlternativeDns":
+    case "EscalateDnsIssue":
+    case "CheckApplicationError":
+    case "OpenPowerShell":
+    case "TestTcpPort":
+    case "CheckFirewallChangeRecord":
+    case "EscalateFirewallIssue":
+    case "TestApplicationConnection":
+    case "OpenKbAppConnectivity":
+    case "PingApplicationServer":
+    case "CheckLoginError":
+    case "OpenActiveDirectory":
+    case "LocateUserAccount":
+    case "CheckAccountStatus":
+    case "CheckAccountProperties":
+    case "CheckLockoutPolicy":
+    case "ReviewLockoutDetails":
+    case "UnlockUserAccount":
+    case "VerifyAccountStatus":
+    case "TestUserLogin":
       message = "";
       break;
 

@@ -50,6 +50,10 @@ function wrongScenarioError(
 }
 
 const DHCP_SCENARIO_ID = "dhcp_apipa_troubleshooting";
+const DNS_SCENARIO_ID = "dns_lookup_website_not_opening";
+const PRINTER_SCENARIO_ID = "network_printer_not_printing";
+const TCP_SCENARIO_ID = "tcp_port_connectivity";
+const ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID = "active_directory_locked_employee_account";
 
 function isExpectedDhcpProcedure(
   state: SimState,
@@ -74,6 +78,94 @@ function dhcpProcedureError(command: string): StatePatch {
   return wrongScenarioError(
     "DHCP_PROCEDURE_PREREQUISITE_FAILED",
     "The DHCP troubleshooting procedure is not authorized in the current state.",
+    command
+  );
+}
+
+function isExpectedDnsProcedure(
+  state: SimState,
+  command: string
+): boolean {
+  if (
+    state.scenario !== DNS_SCENARIO_ID ||
+    state.scenarioFacts?.kind !== DNS_SCENARIO_ID
+  ) {
+    return false;
+  }
+
+  const procedureIndex = getSuccessfulScenarioProcedureCount(
+    state.scenario,
+    state.runLog
+  );
+
+  return getScenarioProcedureCommands(state.scenario)[procedureIndex] === command;
+}
+
+function isExpectedPrinterProcedure(state: SimState, command: string): boolean {
+  if (
+    state.scenario !== PRINTER_SCENARIO_ID ||
+    state.scenarioFacts?.kind !== PRINTER_SCENARIO_ID
+  ) {
+    return false;
+  }
+
+  const procedureIndex = getSuccessfulScenarioProcedureCount(
+    state.scenario,
+    state.runLog
+  );
+
+  return getScenarioProcedureCommands(state.scenario)[procedureIndex] === command;
+}
+
+function printerProcedureError(command: string): StatePatch {
+  return wrongScenarioError(
+    "PRINTER_PROCEDURE_PREREQUISITE_FAILED",
+    "The network-printer troubleshooting procedure is not authorized in the current state.",
+    command
+  );
+}
+
+function isExpectedTcpProcedure(state: SimState, command: string): boolean {
+  if (state.scenario !== TCP_SCENARIO_ID || state.scenarioFacts?.kind !== TCP_SCENARIO_ID) return false;
+  const procedureIndex = getSuccessfulScenarioProcedureCount(state.scenario, state.runLog);
+  return getScenarioProcedureCommands(state.scenario)[procedureIndex] === command;
+}
+
+function tcpProcedureError(command: string): StatePatch {
+  return wrongScenarioError("TCP_PROCEDURE_PREREQUISITE_FAILED", "The TCP connectivity procedure is not authorized in the current state.", command);
+}
+
+function isExpectedActiveDirectoryLockoutProcedure(
+  state: SimState,
+  command: string
+): boolean {
+  if (
+    state.scenario !== ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID ||
+    state.scenarioFacts?.kind !== ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID
+  ) {
+    return false;
+  }
+
+  const procedureIndex = getSuccessfulScenarioProcedureCount(
+    state.scenario,
+    state.runLog
+  );
+
+  return getScenarioProcedureCommands(state.scenario)[procedureIndex] === command;
+}
+
+function activeDirectoryLockoutProcedureError(command: string): StatePatch {
+  return wrongScenarioError(
+    "ACTIVE_DIRECTORY_LOCKOUT_PROCEDURE_PREREQUISITE_FAILED",
+    "The Active Directory account-lockout procedure is not authorized in the current state.",
+    command
+  );
+}
+
+function dnsProcedureError(command: string): StatePatch {
+  return wrongScenarioError(
+    "DNS_PROCEDURE_PREREQUISITE_FAILED",
+    "The DNS troubleshooting procedure is not authorized in the current state.",
     command
   );
 }
@@ -139,6 +231,7 @@ export function executePlan(
         investigationTicket: null,
         procedureHelpOpenedCount: 0,
         procedureHelpUsedDuring: [],
+        evidence: [],
       };
     }
 
@@ -151,6 +244,7 @@ export function executePlan(
         error: null,
         result: null,
         executionState: "LOBBY",
+        evidence: [],
       };
     }
 
@@ -651,6 +745,146 @@ case "UpdateSavedCredentials": {
     account_unlocked_after_fix: false,
     can_login_now: false,
   });
+}
+
+case "CheckLoginError": {
+  const facts = getScenarioFacts(state, ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveDirectoryLockoutProcedure(state, "check_login_error") ||
+    !facts.identity_verified ||
+    facts.login_error_checked
+  ) {
+    return activeDirectoryLockoutProcedureError("check_login_error");
+  }
+  return updateScenarioFacts(facts, { login_error_checked: true });
+}
+
+case "OpenActiveDirectory": {
+  const facts = getScenarioFacts(state, ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveDirectoryLockoutProcedure(state, "open_active_directory") ||
+    !facts.login_error_checked ||
+    facts.active_directory_opened
+  ) {
+    return activeDirectoryLockoutProcedureError("open_active_directory");
+  }
+  return updateScenarioFacts(facts, { active_directory_opened: true });
+}
+
+case "LocateUserAccount": {
+  const facts = getScenarioFacts(state, ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveDirectoryLockoutProcedure(state, "locate_user_account") ||
+    !facts.active_directory_opened ||
+    facts.user_account_located
+  ) {
+    return activeDirectoryLockoutProcedureError("locate_user_account");
+  }
+  return updateScenarioFacts(facts, { user_account_located: true });
+}
+
+case "CheckAccountStatus": {
+  const facts = getScenarioFacts(state, ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveDirectoryLockoutProcedure(state, "check_account_status") ||
+    !facts.user_account_located ||
+    facts.account_status_checked
+  ) {
+    return activeDirectoryLockoutProcedureError("check_account_status");
+  }
+  return updateScenarioFacts(facts, { account_status_checked: true });
+}
+
+case "CheckAccountProperties": {
+  const facts = getScenarioFacts(state, ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveDirectoryLockoutProcedure(state, "check_account_properties") ||
+    !facts.account_status_checked ||
+    facts.account_properties_checked
+  ) {
+    return activeDirectoryLockoutProcedureError("check_account_properties");
+  }
+  return updateScenarioFacts(facts, { account_properties_checked: true });
+}
+
+case "CheckLockoutPolicy": {
+  const facts = getScenarioFacts(state, ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveDirectoryLockoutProcedure(state, "check_lockout_policy") ||
+    !facts.account_properties_checked ||
+    facts.lockout_policy_checked
+  ) {
+    return activeDirectoryLockoutProcedureError("check_lockout_policy");
+  }
+  return updateScenarioFacts(facts, { lockout_policy_checked: true });
+}
+
+case "ReviewLockoutDetails": {
+  const facts = getScenarioFacts(state, ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveDirectoryLockoutProcedure(state, "review_lockout_details") ||
+    !facts.lockout_policy_checked ||
+    facts.lockout_details_reviewed
+  ) {
+    return activeDirectoryLockoutProcedureError("review_lockout_details");
+  }
+  return updateScenarioFacts(facts, { lockout_details_reviewed: true });
+}
+
+case "UnlockUserAccount": {
+  const facts = getScenarioFacts(state, ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveDirectoryLockoutProcedure(state, "unlock_user_account") ||
+    !facts.identity_verified ||
+    !facts.lockout_details_reviewed ||
+    !facts.account_enabled ||
+    !facts.account_locked ||
+    facts.account_unlocked
+  ) {
+    return activeDirectoryLockoutProcedureError("unlock_user_account");
+  }
+  return updateScenarioFacts(facts, {
+    account_locked: false,
+    account_unlocked: true,
+  });
+}
+
+case "VerifyAccountStatus": {
+  const facts = getScenarioFacts(state, ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveDirectoryLockoutProcedure(state, "verify_account_status") ||
+    !facts.account_unlocked ||
+    facts.account_locked ||
+    !facts.account_enabled ||
+    facts.account_status_verified
+  ) {
+    return activeDirectoryLockoutProcedureError("verify_account_status");
+  }
+  return updateScenarioFacts(facts, { account_status_verified: true });
+}
+
+case "TestUserLogin": {
+  const facts = getScenarioFacts(state, ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveDirectoryLockoutProcedure(state, "test_user_login") ||
+    !facts.account_status_verified ||
+    facts.account_locked ||
+    !facts.account_enabled ||
+    facts.user_login_succeeded
+  ) {
+    return activeDirectoryLockoutProcedureError("test_user_login");
+  }
+  return updateScenarioFacts(facts, { user_login_succeeded: true });
 }
 
 // vpn_access_issue
@@ -2170,45 +2404,306 @@ case "DisableInboxFilter": {
 
 // --- NETWORK / CONNECTIVITY PLANS --- //
 
-case "OpenCommandPrompt": {
-  const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
+case "CheckApplicationError": {
+  const facts = getScenarioFacts(state, TCP_SCENARIO_ID);
+  if (!facts || !isExpectedTcpProcedure(state, "check_application_error") || !facts.identity_verified || facts.application_error_checked) return tcpProcedureError("check_application_error");
+  return updateScenarioFacts(facts, { application_error_checked: true });
+}
+
+case "PingApplicationServer": {
+  const facts = getScenarioFacts(state, TCP_SCENARIO_ID);
+  if (!facts || !isExpectedTcpProcedure(state, "ping_application_server") || !facts.ip_configuration_inspected || facts.gateway_ping_succeeded) return tcpProcedureError("ping_application_server");
+  return updateScenarioFacts(facts, { gateway_ping_succeeded: true });
+}
+
+case "OpenKbAppConnectivity": {
+  const facts = getScenarioFacts(state, TCP_SCENARIO_ID);
+  if (!facts || !isExpectedTcpProcedure(state, "open_kb_app_connectivity") || !facts.knowledge_base_opened || facts.app_connectivity_article_opened) return tcpProcedureError("open_kb_app_connectivity");
+  return updateScenarioFacts(facts, { app_connectivity_article_opened: true });
+}
+
+case "OpenPowerShell": {
+  const facts = getScenarioFacts(state, TCP_SCENARIO_ID);
+  if (!facts || !isExpectedTcpProcedure(state, "open_powershell") || !facts.app_connectivity_article_opened || facts.powershell_opened) return tcpProcedureError("open_powershell");
+  return updateScenarioFacts(facts, { powershell_opened: true });
+}
+
+case "TestTcpPort": {
+  const facts = getScenarioFacts(state, TCP_SCENARIO_ID);
+  if (!facts || !isExpectedTcpProcedure(state, "test_tcp_port")) return tcpProcedureError("test_tcp_port");
+  const procedureIndex = getSuccessfulScenarioProcedureCount(state.scenario, state.runLog);
+  if (procedureIndex === 9 && facts.powershell_opened && !facts.tcp_port_test_failed) {
+    return updateScenarioFacts(facts, { tcp_port_test_failed: true });
+  }
+  if (procedureIndex === 12 && facts.firewall_rule_restored && !facts.tcp_port_test_succeeded) {
+    return updateScenarioFacts(facts, { tcp_port_test_succeeded: true });
+  }
+  return tcpProcedureError("test_tcp_port");
+}
+
+case "CheckFirewallChangeRecord": {
+  const facts = getScenarioFacts(state, TCP_SCENARIO_ID);
+  if (!facts || !isExpectedTcpProcedure(state, "check_firewall_change_record") || !facts.tcp_port_test_failed || facts.firewall_change_record_checked) return tcpProcedureError("check_firewall_change_record");
+  return updateScenarioFacts(facts, { firewall_change_record_checked: true });
+}
+
+case "EscalateFirewallIssue": {
+  const facts = getScenarioFacts(state, TCP_SCENARIO_ID);
+  if (!facts || !isExpectedTcpProcedure(state, "escalate_firewall_issue") || !facts.firewall_change_record_checked || facts.firewall_issue_escalated) return tcpProcedureError("escalate_firewall_issue");
+  return updateScenarioFacts(facts, { firewall_issue_escalated: true, firewall_rule_restored: true });
+}
+
+case "TestApplicationConnection": {
+  const facts = getScenarioFacts(state, TCP_SCENARIO_ID);
+  if (!facts || !isExpectedTcpProcedure(state, "test_application_connection") || !facts.tcp_port_test_succeeded || facts.application_connection_verified) return tcpProcedureError("test_application_connection");
+  return updateScenarioFacts(facts, { application_connection_verified: true });
+}
+
+case "ConfirmUserResolution": {
+  const tcpFacts = getScenarioFacts(state, TCP_SCENARIO_ID);
+  if (tcpFacts) {
+    if (!isExpectedTcpProcedure(state, "confirm_user_resolution") || !tcpFacts.application_connection_verified || tcpFacts.user_resolution_confirmed) {
+      return tcpProcedureError("confirm_user_resolution");
+    }
+    return completeScenario(tcpFacts, { user_resolution_confirmed: true });
+  }
+
+  const activeDirectoryFacts = getScenarioFacts(
+    state,
+    ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID
+  );
+  if (activeDirectoryFacts) {
+    if (
+      !isExpectedActiveDirectoryLockoutProcedure(state, "confirm_user_resolution") ||
+      !activeDirectoryFacts.user_login_succeeded ||
+      activeDirectoryFacts.user_resolution_confirmed
+    ) {
+      return activeDirectoryLockoutProcedureError("confirm_user_resolution");
+    }
+    return completeScenario(activeDirectoryFacts, {
+      user_resolution_confirmed: true,
+    });
+  }
+
+  const printerFacts = getScenarioFacts(state, PRINTER_SCENARIO_ID);
   if (
-    !facts ||
+    !printerFacts ||
+    !isExpectedPrinterProcedure(state, "confirm_user_resolution") ||
+    !printerFacts.queued_document_printed ||
+    !printerFacts.windows_test_page_printed ||
+    !printerFacts.printer_ping_succeeded ||
+    printerFacts.user_resolution_confirmed
+  ) {
+    return printerProcedureError("confirm_user_resolution");
+  }
+  return completeScenario(printerFacts, { user_resolution_confirmed: true });
+}
+
+case "TestPrinting": {
+  const facts = getScenarioFacts(state, PRINTER_SCENARIO_ID);
+  if (!facts || !isExpectedPrinterProcedure(state, "test_printing") || !facts.identity_verified || facts.printing_tested) {
+    return printerProcedureError("test_printing");
+  }
+  return updateScenarioFacts(facts, { printing_tested: true });
+}
+
+case "CheckPrintQueue": {
+  const facts = getScenarioFacts(state, PRINTER_SCENARIO_ID);
+  if (!facts || !isExpectedPrinterProcedure(state, "check_print_queue")) {
+    return printerProcedureError("check_print_queue");
+  }
+
+  const procedureIndex = getSuccessfulScenarioProcedureCount(state.scenario, state.runLog);
+  if (procedureIndex === 3 && facts.print_queue_checked === false) {
+    return updateScenarioFacts(facts, { print_queue_checked: true });
+  }
+  if (
+    procedureIndex === 12 &&
+    facts.printer_ethernet_reconnected &&
+    facts.printer_ping_succeeded
+  ) {
+    return updateScenarioFacts(facts, {
+      print_queue_checked: true,
+      queued_document_printed: true,
+    });
+  }
+  return printerProcedureError("check_print_queue");
+}
+
+case "CheckPrinterPort": {
+  const facts = getScenarioFacts(state, PRINTER_SCENARIO_ID);
+  if (!facts || !isExpectedPrinterProcedure(state, "check_printer_port") || !facts.print_queue_checked || facts.printer_port_checked) {
+    return printerProcedureError("check_printer_port");
+  }
+  return updateScenarioFacts(facts, { printer_port_checked: true });
+}
+
+case "CheckPrinterPhysicalStatus": {
+  const facts = getScenarioFacts(state, PRINTER_SCENARIO_ID);
+  if (!facts || !isExpectedPrinterProcedure(state, "check_printer_physical_status") || !facts.printer_ping_failed || facts.printer_physical_status_checked) {
+    return printerProcedureError("check_printer_physical_status");
+  }
+  return updateScenarioFacts(facts, { printer_physical_status_checked: true, ethernet_link_down: true });
+}
+
+case "ReconnectPrinterEthernet": {
+  const facts = getScenarioFacts(state, PRINTER_SCENARIO_ID);
+  if (!facts || !isExpectedPrinterProcedure(state, "reconnect_printer_ethernet") || !facts.printer_physical_status_checked || facts.printer_ethernet_reconnected) {
+    return printerProcedureError("reconnect_printer_ethernet");
+  }
+  return updateScenarioFacts(facts, { printer_ethernet_reconnected: true, ethernet_link_down: false, ethernet_link_up: true });
+}
+
+case "PingPrinter": {
+  const facts = getScenarioFacts(state, PRINTER_SCENARIO_ID);
+  if (!facts || !isExpectedPrinterProcedure(state, "ping_printer")) {
+    return printerProcedureError("ping_printer");
+  }
+
+  const procedureIndex = getSuccessfulScenarioProcedureCount(state.scenario, state.runLog);
+  if (
+    procedureIndex === 8 &&
+    facts.gateway_ping_succeeded &&
+    facts.ip_configuration_inspected &&
+    !facts.printer_ping_failed
+  ) {
+    return updateScenarioFacts(facts, { printer_ping_failed: true });
+  }
+  if (
+    procedureIndex === 11 &&
+    facts.printer_ethernet_reconnected &&
+    facts.ethernet_link_up &&
+    !facts.printer_ping_succeeded
+  ) {
+    return updateScenarioFacts(facts, { printer_ping_succeeded: true });
+  }
+  return printerProcedureError("ping_printer");
+}
+
+case "OpenCommandPrompt": {
+  const tcpFacts = getScenarioFacts(state, TCP_SCENARIO_ID);
+  if (tcpFacts) {
+    if (!isExpectedTcpProcedure(state, "open_command_prompt") || !tcpFacts.identity_verified || !tcpFacts.network_status_checked || tcpFacts.command_prompt_opened) {
+      return tcpProcedureError("open_command_prompt");
+    }
+    return updateScenarioFacts(tcpFacts, { command_prompt_opened: true });
+  }
+
+  const dhcpFacts = getScenarioFacts(state, DHCP_SCENARIO_ID);
+  if (dhcpFacts) {
+  if (
     !isExpectedDhcpProcedure(state, "open_command_prompt") ||
-    !facts.identity_verified ||
-    !facts.network_status_checked ||
-    facts.command_prompt_opened
+    !dhcpFacts.identity_verified ||
+    !dhcpFacts.network_status_checked ||
+    dhcpFacts.command_prompt_opened
   ) {
     return dhcpProcedureError("open_command_prompt");
   }
 
-  return updateScenarioFacts(facts, {
+    return updateScenarioFacts(dhcpFacts, {
+      command_prompt_opened: true,
+    });
+  }
+
+  const dnsFacts = getScenarioFacts(state, DNS_SCENARIO_ID);
+  if (dnsFacts) {
+  if (
+    !isExpectedDnsProcedure(state, "open_command_prompt") ||
+    !dnsFacts.identity_verified ||
+    !dnsFacts.network_status_checked ||
+    dnsFacts.command_prompt_opened
+  ) {
+    return dnsProcedureError("open_command_prompt");
+  }
+
+  return updateScenarioFacts(dnsFacts, {
+    command_prompt_opened: true,
+  });
+  }
+
+  const printerFacts = getScenarioFacts(state, PRINTER_SCENARIO_ID);
+  if (
+    !printerFacts ||
+    !isExpectedPrinterProcedure(state, "open_command_prompt") ||
+    !printerFacts.printer_port_checked ||
+    printerFacts.command_prompt_opened
+  ) {
+    return printerProcedureError("open_command_prompt");
+  }
+
+  return updateScenarioFacts(printerFacts, {
     command_prompt_opened: true,
   });
 }
 
 case "Ipconfig": {
-  const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
-  if (
-    !facts ||
-    !isExpectedDhcpProcedure(state, "ipconfig") ||
-    !facts.command_prompt_opened ||
-    facts.ip_configuration_inspected ||
-    facts.ipv4_address !== "169.254.23.18" ||
-    facts.subnet_mask !== "255.255.0.0" ||
-    facts.default_gateway !== null ||
-    !facts.dhcp_enabled ||
-    !facts.wifi_connected
-  ) {
-    return dhcpProcedureError("ipconfig");
+  const tcpFacts = getScenarioFacts(state, TCP_SCENARIO_ID);
+  if (tcpFacts) {
+    if (!isExpectedTcpProcedure(state, "ipconfig") || !tcpFacts.command_prompt_opened || tcpFacts.ip_configuration_inspected) {
+      return tcpProcedureError("ipconfig");
+    }
+    return updateScenarioFacts(tcpFacts, { ip_configuration_inspected: true });
   }
 
-  return updateScenarioFacts(facts, {
+  const dhcpFacts = getScenarioFacts(state, DHCP_SCENARIO_ID);
+  if (dhcpFacts) {
+    if (
+      !isExpectedDhcpProcedure(state, "ipconfig") ||
+      !dhcpFacts.command_prompt_opened ||
+      dhcpFacts.ip_configuration_inspected ||
+      dhcpFacts.ipv4_address !== "169.254.23.18" ||
+      dhcpFacts.subnet_mask !== "255.255.0.0" ||
+      dhcpFacts.default_gateway !== null ||
+      !dhcpFacts.dhcp_enabled ||
+      !dhcpFacts.wifi_connected
+    ) {
+      return dhcpProcedureError("ipconfig");
+    }
+
+    return updateScenarioFacts(dhcpFacts, {
+      ip_configuration_inspected: true,
+    });
+  }
+
+  const dnsFacts = getScenarioFacts(state, DNS_SCENARIO_ID);
+  if (dnsFacts) {
+    if (
+      !isExpectedDnsProcedure(state, "ipconfig") ||
+      !dnsFacts.command_prompt_opened ||
+      dnsFacts.ip_configuration_inspected ||
+      dnsFacts.ipv4_address !== "192.168.1.100" ||
+      dnsFacts.subnet_mask !== "255.255.255.0" ||
+      dnsFacts.default_gateway !== "192.168.1.1"
+    ) {
+      return dnsProcedureError("ipconfig");
+    }
+
+    return updateScenarioFacts(dnsFacts, {
+      ip_configuration_inspected: true,
+    });
+  }
+
+  const printerFacts = getScenarioFacts(state, PRINTER_SCENARIO_ID);
+  if (
+    !printerFacts ||
+    !isExpectedPrinterProcedure(state, "ipconfig") ||
+    !printerFacts.command_prompt_opened ||
+    printerFacts.ip_configuration_inspected
+  ) {
+    return printerProcedureError("ipconfig");
+  }
+
+  return updateScenarioFacts(printerFacts, {
     ip_configuration_inspected: true,
   });
 }
 
 case "OpenItKnowledgeBase": {
+  const tcpFacts = getScenarioFacts(state, TCP_SCENARIO_ID);
+  if (tcpFacts) {
+    if (!isExpectedTcpProcedure(state, "open_it_knowledge_base") || !tcpFacts.gateway_ping_succeeded || tcpFacts.knowledge_base_opened) return tcpProcedureError("open_it_knowledge_base");
+    return updateScenarioFacts(tcpFacts, { knowledge_base_opened: true });
+  }
   const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
   if (
     !facts ||
@@ -2241,6 +2736,36 @@ case "OpenKb204": {
 }
 
 case "PingDefaultGateway": {
+  const printerFacts = getScenarioFacts(state, PRINTER_SCENARIO_ID);
+  if (printerFacts) {
+    if (
+      !isExpectedPrinterProcedure(state, "ping_default_gateway") ||
+      !printerFacts.ip_configuration_inspected ||
+      printerFacts.gateway_ping_succeeded
+    ) {
+      return printerProcedureError("ping_default_gateway");
+    }
+
+    return updateScenarioFacts(printerFacts, {
+      gateway_ping_succeeded: true,
+    });
+  }
+
+  const dnsFacts = getScenarioFacts(state, DNS_SCENARIO_ID);
+  if (dnsFacts) {
+    if (
+      !isExpectedDnsProcedure(state, "ping_default_gateway") ||
+      !dnsFacts.ip_configuration_inspected ||
+      dnsFacts.gateway_ping_succeeded
+    ) {
+      return dnsProcedureError("ping_default_gateway");
+    }
+
+    return updateScenarioFacts(dnsFacts, {
+      gateway_ping_succeeded: true,
+    });
+  }
+
   const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
   if (!facts || !isExpectedDhcpProcedure(state, "ping_default_gateway")) {
     return dhcpProcedureError("ping_default_gateway");
@@ -2279,6 +2804,21 @@ case "PingDefaultGateway": {
 }
 
 case "PingExternalIp": {
+  const dnsFacts = getScenarioFacts(state, DNS_SCENARIO_ID);
+  if (dnsFacts) {
+    if (
+      !isExpectedDnsProcedure(state, "ping_external_ip") ||
+      !dnsFacts.gateway_ping_succeeded ||
+      dnsFacts.external_ping_succeeded
+    ) {
+      return dnsProcedureError("ping_external_ip");
+    }
+
+    return updateScenarioFacts(dnsFacts, {
+      external_ping_succeeded: true,
+    });
+  }
+
   const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
   if (!facts || !isExpectedDhcpProcedure(state, "ping_external_ip")) {
     return dhcpProcedureError("ping_external_ip");
@@ -2316,6 +2856,21 @@ case "PingExternalIp": {
 }
 
 case "IpconfigAll": {
+  const dnsFacts = getScenarioFacts(state, DNS_SCENARIO_ID);
+  if (dnsFacts) {
+    if (
+      !isExpectedDnsProcedure(state, "ipconfig_all") ||
+      !dnsFacts.external_ping_succeeded ||
+      dnsFacts.detailed_network_configuration_inspected
+    ) {
+      return dnsProcedureError("ipconfig_all");
+    }
+
+    return updateScenarioFacts(dnsFacts, {
+      detailed_network_configuration_inspected: true,
+    });
+  }
+
   const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
   if (!facts || !isExpectedDhcpProcedure(state, "ipconfig_all")) {
     return dhcpProcedureError("ipconfig_all");
@@ -2388,6 +2943,41 @@ case "IpconfigRenew": {
 }
 
 case "Nslookup": {
+  const dnsFacts = getScenarioFacts(state, DNS_SCENARIO_ID);
+  if (dnsFacts) {
+    const procedureIndex = getSuccessfulScenarioProcedureCount(
+      state.scenario,
+      state.runLog
+    );
+
+    if (!isExpectedDnsProcedure(state, "nslookup")) {
+      return dnsProcedureError("nslookup");
+    }
+
+    if (
+      procedureIndex === 7 &&
+      dnsFacts.external_ping_succeeded &&
+      !dnsFacts.configured_dns_lookup_failed &&
+      !dnsFacts.dns_service_restored
+    ) {
+      return updateScenarioFacts(dnsFacts, {
+        configured_dns_lookup_failed: true,
+      });
+    }
+
+    if (
+      procedureIndex === 11 &&
+      dnsFacts.dns_service_restored &&
+      !dnsFacts.post_restoration_dns_lookup_succeeded
+    ) {
+      return updateScenarioFacts(dnsFacts, {
+        post_restoration_dns_lookup_succeeded: true,
+      });
+    }
+
+    return dnsProcedureError("nslookup");
+  }
+
   const facts = getScenarioFacts(state, DHCP_SCENARIO_ID);
   if (
     !facts ||
@@ -2402,6 +2992,56 @@ case "Nslookup": {
 
   return updateScenarioFacts(facts, {
     dns_resolution_succeeded: true,
+  });
+}
+
+case "TestWebsiteAccess": {
+  const facts = getScenarioFacts(state, DNS_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedDnsProcedure(state, "test_website_access") ||
+    !facts.identity_verified ||
+    facts.website_access_tested
+  ) {
+    return dnsProcedureError("test_website_access");
+  }
+
+  return updateScenarioFacts(facts, {
+    website_access_tested: true,
+  });
+}
+
+case "NslookupAlternativeDns": {
+  const facts = getScenarioFacts(state, DNS_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedDnsProcedure(state, "nslookup_alternative_dns") ||
+    !facts.configured_dns_lookup_failed ||
+    facts.alternative_dns_lookup_succeeded
+  ) {
+    return dnsProcedureError("nslookup_alternative_dns");
+  }
+
+  return updateScenarioFacts(facts, {
+    alternative_dns_lookup_succeeded: true,
+  });
+}
+
+case "EscalateDnsIssue": {
+  const facts = getScenarioFacts(state, DNS_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedDnsProcedure(state, "escalate_dns_issue") ||
+    !facts.alternative_dns_lookup_succeeded ||
+    facts.dns_issue_escalated ||
+    facts.dns_service_restored
+  ) {
+    return dnsProcedureError("escalate_dns_issue");
+  }
+
+  return updateScenarioFacts(facts, {
+    dns_issue_escalated: true,
+    dns_service_restored: true,
   });
 }
 
@@ -2606,7 +3246,9 @@ case "CheckNetworkStatus": {
       facts.kind !== "internet_no_access" &&
       facts.kind !== "internet_no_access_proxy" &&
       facts.kind !== "dns_incorrect_configuration" &&
-      facts.kind !== DHCP_SCENARIO_ID
+      facts.kind !== DHCP_SCENARIO_ID &&
+      facts.kind !== DNS_SCENARIO_ID &&
+      facts.kind !== TCP_SCENARIO_ID
     )
   ) {
     return wrongScenarioError(
@@ -2614,6 +3256,34 @@ case "CheckNetworkStatus": {
       "check_network_status is only valid in internet access scenarios.",
       "check_network_status"
     );
+  }
+
+  if (facts.kind === TCP_SCENARIO_ID) {
+    if (
+      !isExpectedTcpProcedure(state, "check_network_status") ||
+      !facts.identity_verified ||
+      facts.network_status_checked
+    ) {
+      return tcpProcedureError("check_network_status");
+    }
+
+    return updateScenarioFacts(facts, {
+      network_status_checked: true,
+    });
+  }
+
+  if (facts.kind === DNS_SCENARIO_ID) {
+    if (
+      !isExpectedDnsProcedure(state, "check_network_status") ||
+      !facts.identity_verified ||
+      facts.network_status_checked
+    ) {
+      return dnsProcedureError("check_network_status");
+    }
+
+    return updateScenarioFacts(facts, {
+      network_status_checked: true,
+    });
   }
 
   if (facts.kind === DHCP_SCENARIO_ID) {
@@ -2780,7 +3450,8 @@ case "TestInternetConnection": {
       facts.kind !== "slow_network_connection" &&
       facts.kind !== "ethernet_not_connected" &&
       facts.kind !== "dns_incorrect_configuration" &&
-      facts.kind !== DHCP_SCENARIO_ID
+      facts.kind !== DHCP_SCENARIO_ID &&
+      facts.kind !== DNS_SCENARIO_ID
     )
   ) {
     return wrongScenarioError(
@@ -2821,6 +3492,23 @@ case "TestInternetConnection": {
     return completeScenario(facts, {
       internet_access_restored: true,
       user_confirmed_access: true,
+    });
+  }
+
+  if (facts.kind === DNS_SCENARIO_ID) {
+    if (
+      !isExpectedDnsProcedure(state, "test_internet_connection") ||
+      !facts.post_restoration_dns_lookup_succeeded ||
+      !facts.dns_service_restored ||
+      facts.internet_access_verified ||
+      facts.user_confirmed_resolution
+    ) {
+      return dnsProcedureError("test_internet_connection");
+    }
+
+    return completeScenario(facts, {
+      internet_access_verified: true,
+      user_confirmed_resolution: true,
     });
   }
 
@@ -3059,7 +3747,8 @@ case "CheckPrinterStatus": {
     !facts ||
     (
       facts.kind !== "printer_not_working" &&
-      facts.kind !== "printer_wrong_default_printer"
+      facts.kind !== "printer_wrong_default_printer" &&
+      facts.kind !== PRINTER_SCENARIO_ID
     )
   ) {
     return wrongScenarioError(
@@ -3067,6 +3756,17 @@ case "CheckPrinterStatus": {
       "check_printer_status is only valid in printer scenarios.",
       "check_printer_status"
     );
+  }
+
+  if (facts.kind === PRINTER_SCENARIO_ID) {
+    if (
+      !isExpectedPrinterProcedure(state, "check_printer_status") ||
+      !facts.printing_tested ||
+      facts.printer_status_checked
+    ) {
+      return printerProcedureError("check_printer_status");
+    }
+    return updateScenarioFacts(facts, { printer_status_checked: true, printer_offline: true });
   }
 
   return updateScenarioFacts(facts, {
@@ -3138,7 +3838,8 @@ case "PrintTestPage": {
     !facts ||
     (
       facts.kind !== "printer_not_working" &&
-      facts.kind !== "printer_wrong_default_printer"
+      facts.kind !== "printer_wrong_default_printer" &&
+      facts.kind !== PRINTER_SCENARIO_ID
     )
   ) {
     return wrongScenarioError(
@@ -3146,6 +3847,19 @@ case "PrintTestPage": {
       "print_test_page is only valid in printer scenarios.",
       "print_test_page"
     );
+  }
+
+  if (facts.kind === PRINTER_SCENARIO_ID) {
+    if (
+      !isExpectedPrinterProcedure(state, "print_test_page") ||
+      !facts.queued_document_printed ||
+      !facts.printer_ping_succeeded
+    ) {
+      return printerProcedureError("print_test_page");
+    }
+    return updateScenarioFacts(facts, {
+      windows_test_page_printed: true,
+    });
   }
 
   return completeScenario(facts, {

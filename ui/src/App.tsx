@@ -443,8 +443,13 @@ const [
   InvestigationValidationReport |
   null
 >(null);
+const [validationReportOriginMode, setValidationReportOriginMode] =
+  useState<SimState["mode"] | null>(null);
+const [validationReportOriginScenarioId, setValidationReportOriginScenarioId] =
+  useState<string | null>(null);
 
 const [showDeveloperTools, setShowDeveloperTools] = useState(false);
+const [scenarioValidationRunKey, setScenarioValidationRunKey] = useState(0);
 
 const commandInputRef = useRef<HTMLInputElement>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
@@ -1124,6 +1129,9 @@ if (isStart || isQuit || isRestart) {
 }
 
 if (selectedScenario && out.decision.kind === "ALLOW") {
+  setScenarioValidationReport(null);
+  setValidationReportOriginMode(null);
+  setValidationReportOriginScenarioId(null);
   return buildLogBlock(buildScenarioPreview(selectedScenario, mode));
 }
 
@@ -1209,6 +1217,8 @@ function runCurrentScenarioValidation() {
     return;
   }
 
+  setScenarioValidationRunKey((current) => current + 1);
+
   if (state.mode === "investigation") {
     const report = runInvestigationValidation(
       scenarioId,
@@ -1216,6 +1226,8 @@ function runCurrentScenarioValidation() {
       ""
     );
 
+    setValidationReportOriginMode(state.mode);
+    setValidationReportOriginScenarioId(scenarioId);
     setScenarioValidationReport(report);
     return;
   }
@@ -1225,6 +1237,8 @@ function runCurrentScenarioValidation() {
     selectCommand
   );
 
+  setValidationReportOriginMode(state.mode);
+  setValidationReportOriginScenarioId(scenarioId);
   setScenarioValidationReport(report);
 }
 
@@ -2157,6 +2171,9 @@ state.previewScenario === null &&
               <button
   type="button"
   onClick={() => {
+    setScenarioValidationReport(null);
+    setValidationReportOriginMode(null);
+    setValidationReportOriginScenarioId(null);
     setState((current) => ({
       ...current,
       mode: "practice",
@@ -2264,6 +2281,9 @@ state.previewScenario === null &&
               <button
   type="button"
   onClick={() => {
+    setScenarioValidationReport(null);
+    setValidationReportOriginMode(null);
+    setValidationReportOriginScenarioId(null);
     setState((current) => ({
       ...current,
       mode: "assessment",
@@ -2370,6 +2390,9 @@ state.previewScenario === null &&
 <button
   type="button"
 onClick={() => {
+  setScenarioValidationReport(null);
+  setValidationReportOriginMode(null);
+  setValidationReportOriginScenarioId(null);
   setState((current) => ({
     ...current,
     mode: "investigation",
@@ -2711,6 +2734,9 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
               <button
                 type="button"
                 onClick={() => {
+                  setScenarioValidationReport(null);
+                  setValidationReportOriginMode(null);
+                  setValidationReportOriginScenarioId(null);
                   setState((current) => ({
                     ...current,
                     mode: "practice",
@@ -2741,6 +2767,9 @@ setOpenBranchId(defaultScenarioType?.branches[0]?.tierId ?? null);
               <button
                 type="button"
                 onClick={() => {
+                  setScenarioValidationReport(null);
+                  setValidationReportOriginMode(null);
+                  setValidationReportOriginScenarioId(null);
                   setState((current) => ({
                     ...current,
                     mode: "assessment",
@@ -3357,6 +3386,9 @@ onClick={() => {
     <button
       type="button"
       onClick={() => {
+        setScenarioValidationReport(null);
+        setValidationReportOriginMode(null);
+        setValidationReportOriginScenarioId(null);
         setState((current) => ({
           ...current,
           mode: "practice",
@@ -3387,6 +3419,9 @@ onClick={() => {
     <button
       type="button"
       onClick={() => {
+        setScenarioValidationReport(null);
+        setValidationReportOriginMode(null);
+        setValidationReportOriginScenarioId(null);
         setState((current) => ({
           ...current,
           mode: "assessment",
@@ -3889,41 +3924,106 @@ onClick={() => {
       gap: SPACE.md,
     }}
   >
-    {scenarioValidationReport.transcript.map((entry, index) => (
-      <div
-        key={`${entry.phase}-${entry.stepNumber}-${entry.input}-${index}`}
-        style={{
-          padding: SPACE.md,
-          border: `1px solid ${COLORS.border}`,
-          borderRadius: RADIUS.button,
-          background: COLORS.panel,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "monospace",
-            fontSize: TEXT.label,
-            fontWeight: 700,
-            color: COLORS.muted,
-            marginBottom: SPACE.sm,
-          }}
-        >
-          {entry.phase.toUpperCase()} · {entry.input} ·{" "}
-          {entry.decision}
-        </div>
+    {scenarioValidationReport.transcript.map((entry, index) => {
+      const currentReportScenarioId =
+        previewScenarioDetails?.id ?? activeScenarioId;
+      const reportIsPractice =
+        state.mode === "practice" &&
+        validationReportOriginMode === "practice" &&
+        validationReportOriginScenarioId === scenarioValidationReport.scenarioId &&
+        currentReportScenarioId === scenarioValidationReport.scenarioId;
+      const structuredPresentation =
+        entry.phase === "correct" &&
+        entry.procedureResult &&
+        reportIsPractice
+          ? entry.procedureResult
+          : null;
 
+      return (
         <div
+          key={`${scenarioValidationRunKey}-${entry.phase}-${entry.stepNumber}-${entry.input}-${index}`}
           style={{
-            whiteSpace: "pre-wrap",
-            fontSize: STATE3_TEXT.body,
-            lineHeight: STATE3_TEXT.lineHeight,
-            color: COLORS.body,
+            padding: SPACE.md,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: RADIUS.button,
+            background: COLORS.panel,
           }}
         >
-          {entry.message || "(No message returned)"}
+          <div
+            style={{
+              fontFamily: "monospace",
+              fontSize: TEXT.label,
+              fontWeight: 700,
+              color: COLORS.muted,
+              marginBottom: SPACE.sm,
+            }}
+          >
+            {entry.phase.toUpperCase()} · {entry.input} ·{" "}
+            {entry.decision}
+          </div>
+
+          {structuredPresentation ? (
+            <>
+              <ProcedureResult
+                title={`Validated procedure:\n${getPreviewStepLabel(structuredPresentation.command)}`}
+                technicianEntry={structuredPresentation.technicianEntry}
+                systemResult={structuredPresentation.systemResult}
+                technicalOutput={structuredPresentation.technicalOutput}
+                technicalLines={structuredPresentation.technicalLines}
+                annotations={structuredPresentation.annotations}
+                learnMore={structuredPresentation.learnMore}
+                showEducationalContainers={true}
+              />
+              <div
+                style={{
+                  marginTop: SPACE.md,
+                  paddingTop: SPACE.sm,
+                  borderTop: `1px solid ${COLORS.border}`,
+                }}
+              >
+                <div
+                  style={{
+                    color: COLORS.text,
+                    fontSize: TEXT.detail,
+                    fontWeight: 700,
+                    marginBottom: SPACE.sm,
+                  }}
+                >
+                  Evidence Gathered
+                </div>
+                {(entry.evidenceSnapshot ?? []).length === 0 ? (
+                  <div style={{ color: COLORS.muted, fontSize: TEXT.detail }}>
+                    No meaningful evidence gathered yet.
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gap: SPACE.xs }}>
+                    {(entry.evidenceSnapshot ?? []).map((item, evidenceIndex) => (
+                      <div
+                        key={`${item.id}-${evidenceIndex}`}
+                        style={{ color: COLORS.body, fontSize: TEXT.detail }}
+                      >
+                        ✓ {item.text}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div
+              style={{
+                whiteSpace: "pre-wrap",
+                fontSize: STATE3_TEXT.body,
+                lineHeight: STATE3_TEXT.lineHeight,
+                color: COLORS.body,
+              }}
+            >
+              {entry.message || "(No message returned)"}
+            </div>
+          )}
         </div>
-      </div>
-    ))}
+      );
+    })}
   </div>
 </div>
     </section>
@@ -4186,6 +4286,7 @@ onClick={() => {
 
                 setProcedureHelpPinned(false);
                 setShowMobileProcedureHelp(false);
+                setScenarioValidationReport(null);
               }}
               style={{
                 ...BUTTON.secondary,

@@ -55,6 +55,7 @@ const APPROVED_FINAL_VERIFICATION_COMMANDS = new Set<string>([
   "test_software_install",
     "test_permission_access",
   "test_shared_drive_access",
+  "confirm_user_resolution",
 ]);
 
 const APPROVED_FINAL_ESCALATION_COMMANDS = new Set<string>([

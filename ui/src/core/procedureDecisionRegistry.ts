@@ -137,6 +137,10 @@ test_internet_connection:
       dhcp_apipa_troubleshooting: (facts) =>
         facts.dns_resolution_succeeded &&
         !facts.internet_access_restored,
+
+      dns_lookup_website_not_opening: (facts) =>
+        facts.post_restoration_dns_lookup_succeeded &&
+        !facts.internet_access_verified,
     },
   }),
 
@@ -306,8 +310,34 @@ test_folder_access:
             (facts) =>
               facts.correct_default_printer_set &&
               !facts.printer_working,
+
+          network_printer_not_printing:
+            (facts) =>
+              facts.queued_document_printed &&
+              !facts.windows_test_page_printed,
         },
       }),
+
+test_printing:
+  defineProcedureDecision({ scenarios: { network_printer_not_printing: (facts) => facts.identity_verified && !facts.printing_tested } }),
+check_print_queue:
+  defineProcedureDecision({ scenarios: { network_printer_not_printing: (facts) => (facts.printer_status_checked && !facts.print_queue_checked && !facts.queued_document_printed) || (facts.printer_ethernet_reconnected && facts.printer_ping_succeeded && !facts.queued_document_printed) } }),
+check_printer_port:
+  defineProcedureDecision({ scenarios: { network_printer_not_printing: (facts) => facts.print_queue_checked && !facts.printer_port_checked } }),
+check_printer_physical_status:
+  defineProcedureDecision({ scenarios: { network_printer_not_printing: (facts) => facts.printer_ping_failed && !facts.printer_physical_status_checked } }),
+reconnect_printer_ethernet:
+  defineProcedureDecision({ scenarios: { network_printer_not_printing: (facts) => facts.printer_physical_status_checked && !facts.printer_ethernet_reconnected } }),
+confirm_user_resolution:
+  defineProcedureDecision({
+    scenarios: {
+      network_printer_not_printing: (facts) => facts.windows_test_page_printed && !facts.user_resolution_confirmed,
+      tcp_port_connectivity: (facts) => facts.application_connection_verified && !facts.user_resolution_confirmed,
+      active_directory_locked_employee_account: (facts) => facts.user_login_succeeded && !facts.user_resolution_confirmed,
+    },
+  }),
+ping_printer:
+  defineProcedureDecision({ scenarios: { network_printer_not_printing: (facts) => (!facts.printer_ping_failed && facts.ip_configuration_inspected && facts.gateway_ping_succeeded) || (facts.printer_ethernet_reconnected && !facts.printer_ping_succeeded) } }),
 
       check_browser_cache:
   defineProcedureDecision({
@@ -654,6 +684,86 @@ update_saved_credentials:
     },
   }),
 
+
+check_login_error:
+  defineProcedureDecision({
+    scenarios: {
+      active_directory_locked_employee_account: (facts) =>
+        facts.identity_verified && !facts.login_error_checked,
+    },
+  }),
+
+open_active_directory:
+  defineProcedureDecision({
+    scenarios: {
+      active_directory_locked_employee_account: (facts) =>
+        facts.login_error_checked && !facts.active_directory_opened,
+    },
+  }),
+
+locate_user_account:
+  defineProcedureDecision({
+    scenarios: {
+      active_directory_locked_employee_account: (facts) =>
+        facts.active_directory_opened && !facts.user_account_located,
+    },
+  }),
+
+check_account_status:
+  defineProcedureDecision({
+    scenarios: {
+      active_directory_locked_employee_account: (facts) =>
+        facts.user_account_located && !facts.account_status_checked,
+    },
+  }),
+
+check_account_properties:
+  defineProcedureDecision({
+    scenarios: {
+      active_directory_locked_employee_account: (facts) =>
+        facts.account_status_checked && !facts.account_properties_checked,
+    },
+  }),
+
+check_lockout_policy:
+  defineProcedureDecision({
+    scenarios: {
+      active_directory_locked_employee_account: (facts) =>
+        facts.account_properties_checked && !facts.lockout_policy_checked,
+    },
+  }),
+
+review_lockout_details:
+  defineProcedureDecision({
+    scenarios: {
+      active_directory_locked_employee_account: (facts) =>
+        facts.lockout_policy_checked && !facts.lockout_details_reviewed,
+    },
+  }),
+
+unlock_user_account:
+  defineProcedureDecision({
+    scenarios: {
+      active_directory_locked_employee_account: (facts) =>
+        facts.lockout_details_reviewed && facts.account_locked && !facts.account_unlocked,
+    },
+  }),
+
+verify_account_status:
+  defineProcedureDecision({
+    scenarios: {
+      active_directory_locked_employee_account: (facts) =>
+        facts.account_unlocked && !facts.account_status_verified,
+    },
+  }),
+
+test_user_login:
+  defineProcedureDecision({
+    scenarios: {
+      active_directory_locked_employee_account: (facts) =>
+        facts.account_status_verified && !facts.user_login_succeeded,
+    },
+  }),
     confirm_reset:
       defineProcedureDecision({
         scenarios: {
@@ -1017,6 +1127,14 @@ defineProcedureDecision({
 
     dhcp_apipa_troubleshooting: (facts) =>
       !facts.network_status_checked,
+
+    dns_lookup_website_not_opening: (facts) =>
+      facts.identity_verified &&
+      !facts.network_status_checked,
+
+    tcp_port_connectivity: (facts) =>
+      facts.application_error_checked &&
+      !facts.network_status_checked,
   },
 }),
 
@@ -1024,6 +1142,15 @@ open_command_prompt:
   defineProcedureDecision({
     scenarios: {
       dhcp_apipa_troubleshooting: (facts) =>
+        facts.network_status_checked &&
+        !facts.command_prompt_opened,
+      network_printer_not_printing: (facts) =>
+        facts.printer_port_checked &&
+        !facts.command_prompt_opened,
+      dns_lookup_website_not_opening: (facts) =>
+        facts.network_status_checked &&
+        !facts.command_prompt_opened,
+      tcp_port_connectivity: (facts) =>
         facts.network_status_checked &&
         !facts.command_prompt_opened,
     },
@@ -1035,6 +1162,60 @@ ipconfig:
       dhcp_apipa_troubleshooting: (facts) =>
         facts.command_prompt_opened &&
         !facts.ip_configuration_inspected,
+
+      dns_lookup_website_not_opening: (facts) =>
+        facts.command_prompt_opened &&
+        !facts.ip_configuration_inspected,
+      network_printer_not_printing: (facts) =>
+        facts.command_prompt_opened &&
+        !facts.ip_configuration_inspected,
+      tcp_port_connectivity: (facts) =>
+        facts.command_prompt_opened &&
+        !facts.ip_configuration_inspected,
+    },
+  }),
+
+check_application_error:
+  defineProcedureDecision({ scenarios: { tcp_port_connectivity: (facts) => facts.identity_verified && !facts.application_error_checked } }),
+test_application_connection:
+  defineProcedureDecision({ scenarios: { tcp_port_connectivity: (facts) => facts.tcp_port_test_succeeded && !facts.application_connection_verified } }),
+open_powershell:
+  defineProcedureDecision({ scenarios: { tcp_port_connectivity: (facts) => facts.app_connectivity_article_opened && !facts.powershell_opened } }),
+test_tcp_port:
+  defineProcedureDecision({ scenarios: { tcp_port_connectivity: (facts) => (!facts.tcp_port_test_failed && facts.powershell_opened) || (facts.firewall_rule_restored && !facts.tcp_port_test_succeeded) } }),
+check_firewall_change_record:
+  defineProcedureDecision({ scenarios: { tcp_port_connectivity: (facts) => facts.tcp_port_test_failed && !facts.firewall_change_record_checked } }),
+escalate_firewall_issue:
+  defineProcedureDecision({ scenarios: { tcp_port_connectivity: (facts) => facts.firewall_change_record_checked && !facts.firewall_issue_escalated } }),
+open_kb_app_connectivity:
+  defineProcedureDecision({ scenarios: { tcp_port_connectivity: (facts) => facts.knowledge_base_opened && !facts.app_connectivity_article_opened } }),
+ping_application_server:
+  defineProcedureDecision({ scenarios: { tcp_port_connectivity: (facts) => facts.ip_configuration_inspected && !facts.gateway_ping_succeeded } }),
+
+test_website_access:
+  defineProcedureDecision({
+    scenarios: {
+      dns_lookup_website_not_opening: (facts) =>
+        facts.identity_verified &&
+        !facts.website_access_tested,
+    },
+  }),
+
+escalate_dns_issue:
+  defineProcedureDecision({
+    scenarios: {
+      dns_lookup_website_not_opening: (facts) =>
+        facts.alternative_dns_lookup_succeeded &&
+        !facts.dns_issue_escalated,
+    },
+  }),
+
+nslookup_alternative_dns:
+  defineProcedureDecision({
+    scenarios: {
+      dns_lookup_website_not_opening: (facts) =>
+        facts.configured_dns_lookup_failed &&
+        !facts.alternative_dns_lookup_succeeded,
     },
   }),
 
@@ -1043,6 +1224,9 @@ open_it_knowledge_base:
     scenarios: {
       dhcp_apipa_troubleshooting: (facts) =>
         facts.ip_configuration_inspected &&
+        !facts.knowledge_base_opened,
+      tcp_port_connectivity: (facts) =>
+        facts.gateway_ping_succeeded &&
         !facts.knowledge_base_opened,
     },
   }),
@@ -1069,6 +1253,14 @@ ping_default_gateway:
           facts.renewed_configuration_inspected &&
           !facts.renewed_gateway_ping_succeeded
         ),
+
+      dns_lookup_website_not_opening: (facts) =>
+        facts.ip_configuration_inspected &&
+        !facts.gateway_ping_succeeded,
+
+      network_printer_not_printing: (facts) =>
+        facts.ip_configuration_inspected &&
+        !facts.gateway_ping_succeeded,
     },
   }),
 
@@ -1083,6 +1275,10 @@ ping_external_ip:
           facts.renewed_gateway_ping_succeeded &&
           !facts.renewed_external_ping_succeeded
         ),
+
+      dns_lookup_website_not_opening: (facts) =>
+        facts.gateway_ping_succeeded &&
+        !facts.external_ping_succeeded,
     },
   }),
 
@@ -1098,6 +1294,10 @@ ipconfig_all:
           facts.dhcp_lease_renewed &&
           !facts.renewed_configuration_inspected
         ),
+
+      dns_lookup_website_not_opening: (facts) =>
+        facts.external_ping_succeeded &&
+        !facts.detailed_network_configuration_inspected,
     },
   }),
 
@@ -1123,6 +1323,15 @@ nslookup:
         facts.dhcp_server === "192.168.1.10" &&
         facts.dns_server === "192.168.1.10" &&
         !facts.dns_resolution_succeeded,
+
+      dns_lookup_website_not_opening: (facts) =>
+        (
+          !facts.configured_dns_lookup_failed &&
+          !facts.post_restoration_dns_lookup_succeeded
+        ) || (
+          facts.dns_service_restored &&
+          !facts.post_restoration_dns_lookup_succeeded
+        ),
     },
   }),
 

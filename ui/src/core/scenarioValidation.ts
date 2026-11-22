@@ -15,7 +15,8 @@
 
 import { handleInput } from "./engine";
 import { initialState } from "./state";
-import type { Decision, SimState } from "./types";
+import type { Decision, EvidenceItem, SimState } from "./types";
+import type { ProcedureResultPresentation } from "./procedurePresentation";
 import type { ScenarioId } from "./scenarios";
 import {
   getScenarioInvestigationRelatedCommands,
@@ -39,6 +40,8 @@ export type ScenarioValidationTranscriptEntry = {
     | "takeover";
   decision: ExpectedDecision;
   message: string;
+  procedureResult?: ProcedureResultPresentation;
+  evidenceSnapshot?: EvidenceItem[];
 };
 
 export type ScenarioValidationStepResult = {
@@ -253,12 +256,18 @@ transcript
     const correctOutput = handleInput(testState, command);
 
     transcript.push({
-  stepNumber: steps.length + 1,
-  input: command,
-  phase: "correct",
-  decision: correctOutput.decision.kind,
-  message: correctOutput.message || "",
-});
+      stepNumber: steps.length + 1,
+      input: command,
+      phase: "correct",
+      decision: correctOutput.decision.kind,
+      message: correctOutput.message || "",
+      ...(correctOutput.decision.kind === "ALLOW" && correctOutput.procedureResult
+        ? {
+            procedureResult: correctOutput.procedureResult,
+            evidenceSnapshot: [...correctOutput.state.evidence],
+          }
+        : {}),
+    });
 
     const correctStep: ScenarioValidationStepResult = {
       stepNumber: steps.length + 1,

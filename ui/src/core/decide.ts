@@ -380,7 +380,9 @@ if (command.kind === "restart") {
   }
 
   if (
-    state.scenarioFacts?.kind === "dhcp_apipa_troubleshooting"
+    state.scenarioFacts?.kind === "dhcp_apipa_troubleshooting" ||
+    state.scenarioFacts?.kind === "dns_lookup_website_not_opening" ||
+    state.scenarioFacts?.kind === "network_printer_not_printing"
   ) {
     const procedureIndex = getSuccessfulScenarioProcedureCount(
       state.scenario,

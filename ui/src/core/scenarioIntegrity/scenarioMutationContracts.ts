@@ -356,6 +356,68 @@ account_lockout: {
   mayChangeResult: true,
 },
 },
+active_directory_locked_employee_account: {
+  verify_identity: {
+    allowedFacts: ["identity_verified"],
+    expectedFacts: ["identity_verified"],
+  },
+
+  check_login_error: {
+    allowedFacts: ["login_error_checked"],
+    expectedFacts: ["login_error_checked"],
+  },
+
+  open_active_directory: {
+    allowedFacts: ["active_directory_opened"],
+    expectedFacts: ["active_directory_opened"],
+  },
+
+  locate_user_account: {
+    allowedFacts: ["user_account_located"],
+    expectedFacts: ["user_account_located"],
+  },
+
+  check_account_status: {
+    allowedFacts: ["account_status_checked"],
+    expectedFacts: ["account_status_checked"],
+  },
+
+  check_account_properties: {
+    allowedFacts: ["account_properties_checked"],
+    expectedFacts: ["account_properties_checked"],
+  },
+
+  check_lockout_policy: {
+    allowedFacts: ["lockout_policy_checked"],
+    expectedFacts: ["lockout_policy_checked"],
+  },
+
+  review_lockout_details: {
+    allowedFacts: ["lockout_details_reviewed"],
+    expectedFacts: ["lockout_details_reviewed"],
+  },
+
+  unlock_user_account: {
+    allowedFacts: ["account_locked", "account_unlocked"],
+    expectedFacts: ["account_locked", "account_unlocked"],
+  },
+
+  verify_account_status: {
+    allowedFacts: ["account_status_verified"],
+    expectedFacts: ["account_status_verified"],
+  },
+
+  test_user_login: {
+    allowedFacts: ["user_login_succeeded"],
+    expectedFacts: ["user_login_succeeded"],
+  },
+
+  confirm_user_resolution: {
+    allowedFacts: ["user_resolution_confirmed"],
+    expectedFacts: ["user_resolution_confirmed"],
+    mayChangeResult: true,
+  },
+},
 account_lockout_saved_credentials: {
   verify_identity: {
     allowedFacts: ["identity_verified"],
@@ -1181,6 +1243,131 @@ ethernet_not_connected: {
     mayChangeResult: true,
   },
 },
+dns_lookup_website_not_opening: {
+  verify_identity: {
+    allowedFacts: ["identity_verified"],
+    expectedFacts: ["identity_verified"],
+  },
+  check_network_status: {
+    allowedFacts: ["network_status_checked"],
+    expectedFacts: ["network_status_checked"],
+  },
+  test_website_access: {
+    allowedFacts: ["website_access_tested"],
+    expectedFacts: ["website_access_tested"],
+  },
+  open_command_prompt: {
+    allowedFacts: ["command_prompt_opened"],
+    expectedFacts: ["command_prompt_opened"],
+  },
+  ipconfig: {
+    allowedFacts: ["ip_configuration_inspected"],
+    expectedFacts: ["ip_configuration_inspected"],
+  },
+  ping_default_gateway: {
+    allowedFacts: ["gateway_ping_succeeded"],
+    expectedFacts: ["gateway_ping_succeeded"],
+  },
+  ping_external_ip: {
+    allowedFacts: ["external_ping_succeeded"],
+    expectedFacts: ["external_ping_succeeded"],
+  },
+  nslookup: [
+    {
+      allowedFacts: ["configured_dns_lookup_failed"],
+      expectedFacts: ["configured_dns_lookup_failed"],
+    },
+    {
+      allowedFacts: ["post_restoration_dns_lookup_succeeded"],
+      expectedFacts: ["post_restoration_dns_lookup_succeeded"],
+    },
+  ],
+  ipconfig_all: {
+    allowedFacts: ["detailed_network_configuration_inspected"],
+    expectedFacts: ["detailed_network_configuration_inspected"],
+  },
+  nslookup_alternative_dns: {
+    allowedFacts: ["alternative_dns_lookup_succeeded"],
+    expectedFacts: ["alternative_dns_lookup_succeeded"],
+  },
+  escalate_dns_issue: {
+    allowedFacts: ["dns_issue_escalated", "dns_service_restored"],
+    expectedFacts: ["dns_issue_escalated", "dns_service_restored"],
+  },
+  test_internet_connection: {
+    allowedFacts: ["internet_access_verified", "user_confirmed_resolution"],
+    expectedFacts: ["internet_access_verified", "user_confirmed_resolution"],
+    mayChangeResult: true,
+  },
+},
+
+network_printer_not_printing: {
+  verify_identity: {
+    allowedFacts: ["identity_verified"],
+    expectedFacts: ["identity_verified"],
+  },
+  test_printing: {
+    allowedFacts: ["printing_tested"],
+    expectedFacts: ["printing_tested"],
+  },
+  check_printer_status: {
+    allowedFacts: ["printer_status_checked"],
+    expectedFacts: ["printer_status_checked"],
+  },
+  check_print_queue: [
+    {
+      allowedFacts: ["print_queue_checked"],
+    },
+    {
+      allowedFacts: ["print_queue_checked", "queued_document_printed"],
+      expectedFacts: ["queued_document_printed"],
+    },
+  ],
+  check_printer_port: {
+    allowedFacts: ["printer_port_checked"],
+    expectedFacts: ["printer_port_checked"],
+  },
+  open_command_prompt: {
+    allowedFacts: ["command_prompt_opened"],
+    expectedFacts: ["command_prompt_opened"],
+  },
+  ipconfig: {
+    allowedFacts: ["ip_configuration_inspected"],
+    expectedFacts: ["ip_configuration_inspected"],
+  },
+  ping_default_gateway: {
+    allowedFacts: ["gateway_ping_succeeded"],
+    expectedFacts: ["gateway_ping_succeeded"],
+  },
+  ping_printer: [
+    {
+      allowedFacts: ["printer_ping_failed"],
+      expectedFacts: ["printer_ping_failed"],
+    },
+    {
+      allowedFacts: ["printer_ping_succeeded"],
+      expectedFacts: ["printer_ping_succeeded"],
+    },
+  ],
+  check_printer_physical_status: {
+    allowedFacts: ["printer_physical_status_checked"],
+    expectedFacts: ["printer_physical_status_checked"],
+  },
+  reconnect_printer_ethernet: {
+    allowedFacts: ["printer_ethernet_reconnected", "ethernet_link_down", "ethernet_link_up"],
+    expectedFacts: ["printer_ethernet_reconnected", "ethernet_link_up"],
+  },
+  print_test_page: {
+    allowedFacts: ["windows_test_page_printed"],
+    expectedFacts: ["windows_test_page_printed"],
+  },
+  confirm_user_resolution: {
+    allowedFacts: ["user_resolution_confirmed"],
+    expectedFacts: ["user_resolution_confirmed"],
+    mayChangeResult: true,
+  },
+},
+
 dhcp_apipa_troubleshooting: {
   verify_identity: {
     allowedFacts: ["identity_verified"],

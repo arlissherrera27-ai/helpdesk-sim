@@ -320,6 +320,9 @@ test_email_login: "Test Email Login",
   ipconfig_all: "Inspect Detailed IP Configuration",
   ipconfig_renew: "Renew IP Configuration",
   nslookup: "Verify DNS Name Resolution",
+  test_website_access: "Verify Reported Website Problem",
+  nslookup_alternative_dns: "Test Alternative DNS Server",
+  escalate_dns_issue: "Escalate DNS Issue",
 
   // FILES / STORAGE
   check_disk_space: "Check Disk Space",

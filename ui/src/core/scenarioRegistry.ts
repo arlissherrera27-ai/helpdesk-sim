@@ -9,6 +9,10 @@ import type {
   TechnicalOutputLine,
 } from "./procedurePresentation";
 import { DHCP_EDUCATIONAL_CONTENT } from "./dhcpEducationalContent";
+import { DNS_LOOKUP_EDUCATIONAL_CONTENT } from "./dnsLookupEducationalContent";
+import { NETWORK_PRINTER_EDUCATIONAL_CONTENT } from "./networkPrinterEducationalContent";
+import { TCP_PORT_EDUCATIONAL_CONTENT } from "./tcpPortEducationalContent";
+import { ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT } from "./activeDirectoryLockoutEducationalContent";
 
 type ScenarioProcedureStep = {
   command: string;
@@ -343,6 +347,205 @@ previewMetadata: {
   selectCommand:
     "select account lockout",
 },
+},
+
+active_directory_locked_employee_account: {
+  label: "Active Directory — Locked Employee Account",
+  startPrompt: `Customer: I came into work this morning and tried signing in to my computer, but Windows says my account is locked. I tried my password a few times, and now I can't get in.
+
+What is your first troubleshooting step?`,
+  scenarioType: "standard",
+  category: "account_access",
+  procedure: [
+    {
+      command: "verify_identity",
+      preview: "Verify the employee's identity before troubleshooting account access.",
+      technicianEntry: "verify_identity",
+      systemResult: "Employee identity verified successfully using the organization's approved process.",
+      technicalOutput: `Identity Verification: Successful
+Employee: Jordan Lee
+User Status: Verified`,
+      evidence: { id: "ad-lockout-identity", text: "Employee identity verified; no technical cause established." },
+    },
+    {
+      command: "check_login_error",
+      preview: "Observe the Windows sign-in error.",
+      technicianEntry: "check_login_error",
+      systemResult: "The employee's Windows sign-in attempt displays an account-lockout message.",
+      technicalOutput: `Workstation: WS-014
+Sign-in Account: CORP\\jlee
+Windows Message: The referenced account is currently locked out and may not be logged on to.
+Sign-in Result: Unsuccessful`,
+      evidence: { id: "ad-lockout-login-error", text: "Windows reports that CORP\\jlee is locked out." },
+    },
+    {
+      command: "open_active_directory",
+      preview: "Open Active Directory Users and Computers.",
+      technicianEntry: "open_active_directory",
+      systemResult: "Active Directory Users and Computers opened successfully.",
+      technicalOutput: `Console: Active Directory Users and Computers
+Connected Domain: corp.example.com
+Console Status: Ready`,
+      evidence: { id: "ad-lockout-console-open", text: "Active Directory Users and Computers is ready and connected to corp.example.com." },
+    },
+    {
+      command: "locate_user_account",
+      preview: "Locate the employee's domain user account.",
+      technicianEntry: "locate_user_account",
+      systemResult: "The employee's domain user account was located.",
+      technicalOutput: `Domain: corp.example.com
+Display Name: Jordan Lee
+Logon Name: jlee
+Object Type: User
+Organizational Unit: Employees
+Search Result: 1 matching account`,
+      evidence: { id: "ad-lockout-user-located", text: "The CORP\\jlee user account was located in the Employees organizational unit." },
+    },
+    {
+      command: "check_account_status",
+      preview: "Check the account's enabled, lockout, and expiration status.",
+      technicianEntry: "check_account_status",
+      systemResult: "The account is enabled, but its lockout status is active.",
+      technicalOutput: `Account: CORP\\jlee
+Account Enabled: Yes
+Account Locked Out: Yes
+Password Expired: No
+Account Expired: No`,
+      evidence: { id: "ad-lockout-account-status", text: "CORP\\jlee is enabled and locked; the password and account are not expired." },
+    },
+    {
+      command: "check_account_properties",
+      preview: "Retrieve the account's relevant properties.",
+      technicianEntry: "check_account_properties",
+      systemResult: "Additional account properties were retrieved successfully.",
+      technicalOutput: `User: Jordan Lee
+Username: jlee
+Domain: corp.example.com
+Account Type: Domain User
+Account Enabled: Yes
+Password Last Set: 2026-11-10 09:15
+Password Expired: No`,
+      evidence: { id: "ad-lockout-account-properties", text: "jlee is an enabled domain user, and the password is not expired." },
+    },
+    {
+      command: "check_lockout_policy",
+      preview: "Retrieve the applicable account-lockout policy.",
+      technicianEntry: "check_lockout_policy",
+      systemResult: "The applicable account-lockout policy was retrieved.",
+      technicalOutput: `Policy Scope: CORP Domain Users
+Account Lockout Threshold: 5 invalid attempts
+Account Lockout Duration: 30 minutes
+Reset Lockout Counter After: 30 minutes
+Policy Status: Enabled`,
+      evidence: { id: "ad-lockout-policy", text: "The enabled CORP Domain Users policy sets a five-attempt threshold and 30-minute lockout duration and counter reset." },
+    },
+    {
+      command: "review_lockout_details",
+      preview: "Review authorized authentication and lockout event records.",
+      technicianEntry: "review_lockout_details",
+      systemResult: "Authorized security-event records show repeated unsuccessful authentication attempts preceding the account lockout.",
+      technicalOutput: `Account: CORP\\jlee
+Workstation: WS-014
+Failed Sign-in Events: 5
+Failure Category: Invalid credentials
+Account Lockout Event: Recorded
+Lockout Event ID: 4740
+Event Source: Domain Controller`,
+      evidence: { id: "ad-lockout-events", text: "Five invalid-credential events and a domain-controller lockout event (4740) were recorded; the events are consistent with the applicable policy." },
+    },
+    {
+      command: "unlock_user_account",
+      preview: "Unlock the account using delegated Help Desk permission.",
+      technicianEntry: "unlock_user_account",
+      systemResult: "The authorized account-unlock operation completed successfully.",
+      technicalOutput: `Account: CORP\\jlee
+Action: Unlock Account
+Authorization: Delegated Help Desk Permission
+Operation Result: Successful`,
+      evidence: { id: "ad-lockout-unlock-complete", text: "The account-unlock operation completed successfully using delegated Help Desk permission." },
+    },
+    {
+      command: "verify_account_status",
+      preview: "Recheck the current account status.",
+      technicianEntry: "verify_account_status",
+      systemResult: "The account no longer reports an active lockout.",
+      technicalOutput: `Account: CORP\\jlee
+Account Enabled: Yes
+Account Locked Out: No
+Password Expired: No
+Directory Status Check: Successful`,
+      evidence: { id: "ad-lockout-status-verified", text: "The lockout is cleared, the account remains enabled, and the password is not expired." },
+    },
+    {
+      command: "test_user_login",
+      preview: "Have the employee test sign-in using their own credentials.",
+      technicianEntry: "test_user_login",
+      systemResult: "The employee successfully signs in to the Windows workstation.",
+      technicalOutput: `Workstation: WS-014
+Account: CORP\\jlee
+Authentication Result: Successful
+Windows Session: Started`,
+      evidence: { id: "ad-lockout-login-success", text: "Jordan Lee signed in to WS-014 successfully and started a Windows session." },
+    },
+    {
+      command: "confirm_user_resolution",
+      preview: "Confirm the original account-access issue is resolved.",
+      technicianEntry: "confirm_user_resolution",
+      systemResult: "The employee confirms that the original account-access problem is resolved.",
+      technicalOutput: `Reported Issue: Account locked during Windows sign-in
+User Sign-in Test: Successful
+User Confirmation: Issue resolved
+Scenario Status: Resolved`,
+      evidence: { id: "ad-lockout-resolution-confirmed", text: "Jordan Lee confirmed the original account-access issue is resolved." },
+    },
+  ],
+  completion: { command: "confirm_user_resolution", fact: "user_resolution_confirmed" },
+  proofLines: [
+    "Employee identity verified before account troubleshooting",
+    "Windows lockout message observed for CORP\\jlee",
+    "Active Directory Users and Computers opened for corp.example.com",
+    "The correct jlee user account was located",
+    "Account enabled, locked, and unexpired status confirmed",
+    "Account properties show the password is not expired",
+    "Applicable account-lockout policy retrieved",
+    "Five invalid-credential events and a lockout event were reviewed",
+    "Account unlocked using delegated Help Desk permission",
+    "Directory status confirmed the lockout cleared",
+    "Employee successfully signed in to WS-014",
+    "Employee confirmed the original issue is resolved",
+  ],
+  successLines: [
+    "The employee successfully signs in to the Windows workstation.",
+    "The employee confirms that the original account-access problem is resolved.",
+  ],
+  defaults: {
+    kind: "active_directory_locked_employee_account",
+    identity_verified: false,
+    login_error_checked: false,
+    active_directory_opened: false,
+    user_account_located: false,
+    account_status_checked: false,
+    account_properties_checked: false,
+    lockout_policy_checked: false,
+    lockout_details_reviewed: false,
+    account_unlocked: false,
+    account_status_verified: false,
+    user_login_succeeded: false,
+    user_resolution_confirmed: false,
+    account_enabled: true,
+    account_locked: true,
+    password_expired: false,
+    account_expired: false,
+  },
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "8–12 min",
+    description: "Investigate a reported Windows domain account lockout and verify employee sign-in access.",
+    skillFocus: ["Active Directory", "Account Lockout", "Identity Verification"],
+    scenarioContext: "The employee cannot sign in because Windows reports that the domain account is locked.",
+    successOutcome: "The employee's account access is verified.",
+    selectCommand: "select active directory locked employee account",
+  },
 },
 
 account_lockout_saved_credentials: {
@@ -3111,6 +3314,137 @@ What is your first troubleshooting step?`,
     },
   },
 
+  dns_lookup_website_not_opening: {
+    label: "DNS Lookup / Website Not Opening",
+    startPrompt: `Customer: My computer is connected to Wi-Fi, but when I try to open Google, the browser says the website can't be reached.
+
+What is your first troubleshooting step?`,
+    scenarioType: "standard",
+    category: "network",
+    procedure: [
+      { command: "verify_identity", preview: "Verify the user's identity before troubleshooting.", technicianEntry: "verify_identity", systemResult: "User identity verified successfully.", technicalOutput: "Identity Verification: Successful\nUser Status: Verified" },
+      { command: "check_network_status", preview: "Check the workstation's wireless network status.", technicianEntry: "check_network_status", systemResult: "The computer is connected to the organization's wireless network.", technicalOutput: "Network Adapter: Wi-Fi\nNetwork Name: Office Wi-Fi\nConnection Status: Connected" },
+      { command: "test_website_access", preview: "Verify that the reported website access problem occurs.", technicianEntry: "test_website_access", systemResult: "The reported website access problem has been reproduced.", technicalOutput: "Website: https://google.com\n\nThis site can't be reached\n\nERR_NAME_NOT_RESOLVED" },
+      { command: "open_command_prompt", preview: "Open Windows Command Prompt.", technicianEntry: "open_command_prompt", systemResult: "Windows Command Prompt opened successfully.", technicalOutput: "C:\\Users\\OfficeUser>" },
+      { command: "ipconfig", preview: "Inspect the workstation's current IP configuration.", technicianEntry: "ipconfig", systemResult: "Current IP configuration retrieved successfully.", technicalOutput: "Windows IP Configuration\n\nWireless LAN adapter Wi-Fi:\n\n   IPv4 Address. . . . . . . . . : 192.168.1.100\n   Subnet Mask . . . . . . . . . : 255.255.255.0\n   Default Gateway . . . . . . . : 192.168.1.1" },
+      { command: "ping_default_gateway", preview: "Test connectivity to the default gateway.", technicianEntry: "ping 192.168.1.1", systemResult: "Replies received from the configured default gateway.", technicalOutput: "Pinging 192.168.1.1 with 32 bytes of data:\n\nReply from 192.168.1.1: bytes=32 time=2ms TTL=64\nReply from 192.168.1.1: bytes=32 time=1ms TTL=64\nReply from 192.168.1.1: bytes=32 time=2ms TTL=64\nReply from 192.168.1.1: bytes=32 time=1ms TTL=64\n\nPing statistics for 192.168.1.1:\n    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),\n\nApproximate round trip times in milli-seconds:\n    Minimum = 1ms, Maximum = 2ms, Average = 1ms" },
+      { command: "ping_external_ip", preview: "Test connectivity to an external IPv4 destination.", technicianEntry: "ping 8.8.8.8", systemResult: "Replies received from the external IPv4 destination.", technicalOutput: "Pinging 8.8.8.8 with 32 bytes of data:\n\nReply from 8.8.8.8: bytes=32 time=20ms TTL=117\nReply from 8.8.8.8: bytes=32 time=21ms TTL=117\nReply from 8.8.8.8: bytes=32 time=19ms TTL=117\nReply from 8.8.8.8: bytes=32 time=20ms TTL=117\n\nPing statistics for 8.8.8.8:\n    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),\n\nApproximate round trip times in milli-seconds:\n    Minimum = 19ms, Maximum = 21ms, Average = 20ms" },
+      { command: "nslookup", preview: "Test the configured DNS server.", technicianEntry: "nslookup google.com", systemResult: "The requested DNS lookup timed out.", technicalOutput: "DNS request timed out.\n    timeout was 2 seconds.\nServer:  UnKnown\nAddress: 192.168.1.2\n\nDNS request timed out.\n    timeout was 2 seconds.\nDNS request timed out.\n    timeout was 2 seconds.\nDNS request timed out.\n    timeout was 2 seconds.\nDNS request timed out.\n    timeout was 2 seconds.\n*** Request to UnKnown timed-out" },
+      { command: "ipconfig_all", preview: "Inspect detailed network adapter configuration.", technicianEntry: "ipconfig /all", systemResult: "Detailed network adapter configuration retrieved successfully.", technicalOutput: "Windows IP Configuration\n\nWireless LAN adapter Wi-Fi:\n\n   Description . . . . . . . . . : Intel(R) Wi-Fi 6 AX201 160MHz\n   Physical Address. . . . . . . : 02-00-00-00-01-64\n   DHCP Enabled. . . . . . . . . : Yes\n   Autoconfiguration Enabled . . : Yes\n   IPv4 Address. . . . . . . . . : 192.168.1.100(Preferred)\n   Subnet Mask . . . . . . . . . : 255.255.255.0\n   Default Gateway . . . . . . . : 192.168.1.1\n   DHCP Server . . . . . . . . . : 192.168.1.2\n   DNS Servers . . . . . . . . . : 192.168.1.2" },
+      { command: "nslookup_alternative_dns", preview: "Compare name resolution through 8.8.8.8.", technicianEntry: "nslookup google.com 8.8.8.8", systemResult: "The requested DNS lookup succeeded through the specified alternative DNS server.", technicalOutput: "Server:  dns.google\nAddress: 8.8.8.8\n\nNon-authoritative answer:\nName:    google.com\nAddress: 142.250.190.14" },
+      { command: "escalate_dns_issue", preview: "Escalate the DNS service issue to Network Administration.", technicianEntry: "escalate_dns_issue", systemResult: "Diagnostic evidence submitted to Network Administration.\n\nNetwork Administration reviewed the reported issue and confirmed that the organization's DNS service was not responding.\n\nNetwork Administration reports that the DNS service has been restored.", technicalOutput: "Escalation Destination: Network Administration\nAffected Service: Organizational DNS\nDNS Server: 192.168.1.2\n\nEvidence Submitted:\n  Gateway ICMP test: Successful\n  External IPv4 ICMP test: Successful\n  Configured DNS lookup: Timed out\n  Alternative DNS lookup: Successful\n\nEscalation Status: Submitted\n\nAdministrator Response:\n  Confirmed Condition: DNS service not responding\n  Corrective Action: DNS service restored\n  Administrator Status: Restoration reported" },
+      { command: "nslookup", preview: "Verify configured DNS name resolution after restoration.", technicianEntry: "nslookup google.com", systemResult: "The requested DNS lookup succeeded through the configured organizational DNS server.", technicalOutput: "Server:  dns.office.local\nAddress: 192.168.1.2\n\nNon-authoritative answer:\nName:    google.com\nAddress: 142.250.190.14" },
+      { command: "test_internet_connection", preview: "Verify website access and confirm resolution with the user.", technicianEntry: "test_internet_connection", systemResult: "The originally affected website loaded successfully.", technicalOutput: "Website: https://google.com\nBrowser Result: Loaded successfully\nOriginal Browser Error: Not reproduced\nUser Confirmation: Original issue resolved", evidence: { id: "dns-website-restored", text: "The originally affected website loaded successfully. The user confirms that the reported problem is resolved." } },
+    ],
+    completion: { command: "test_internet_connection", fact: "internet_access_verified" },
+    proofLines: [
+      "User identity verified",
+      "Wireless connection confirmed",
+      "Original website access failure reproduced",
+      "IP configuration and gateway connectivity verified",
+      "External IPv4 connectivity verified",
+      "Configured DNS lookup failed",
+      "Alternative DNS lookup succeeded",
+      "DNS service issue escalated to Network Administration",
+      "DNS service restoration reported",
+      "Configured DNS lookup succeeded after restoration",
+      "Original website accessed successfully",
+      "User confirmed resolution",
+    ],
+    successLines: [
+      "The originally affected website loaded successfully.",
+      "Customer: \"Google is opening now. It's working again. Thank you.\"",
+    ],
+    defaults: {
+      kind: "dns_lookup_website_not_opening",
+      identity_verified: false,
+      network_status_checked: false,
+      website_access_tested: false,
+      command_prompt_opened: false,
+      ip_configuration_inspected: false,
+      gateway_ping_succeeded: false,
+      external_ping_succeeded: false,
+      configured_dns_lookup_failed: false,
+      detailed_network_configuration_inspected: false,
+      alternative_dns_lookup_succeeded: false,
+      dns_issue_escalated: false,
+      dns_service_restored: false,
+      post_restoration_dns_lookup_succeeded: false,
+      internet_access_verified: false,
+      user_confirmed_resolution: false,
+      ipv4_address: "192.168.1.100",
+      subnet_mask: "255.255.255.0",
+      default_gateway: "192.168.1.1",
+      dhcp_enabled: true,
+      dhcp_server: "192.168.1.2",
+      configured_dns_server: "192.168.1.2",
+      alternative_dns_server: "8.8.8.8",
+    },
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "5–8 min",
+      description: "Troubleshoot website access by distinguishing network connectivity from DNS name resolution.",
+      skillFocus: ["Network Troubleshooting", "DNS Resolution", "Escalation"],
+      scenarioContext: "My computer is connected to Wi-Fi, but when I try to open Google, the browser says the website can't be reached.",
+      successOutcome: "The DNS service is restored and the original website access problem is verified.",
+      selectCommand: "select dns lookup website not opening",
+    },
+  },
+
+  tcp_port_connectivity: {
+    label: "TCP Port Connectivity — Company Application Cannot Connect",
+    startPrompt: `Customer: I've been trying to open our company application this morning, but it keeps telling me it can't connect to the server. My internet is working, and I was able to use the application yesterday.
+
+What is your first troubleshooting step?`,
+    scenarioType: "standard",
+    category: "network",
+    procedure: [
+      { command: "verify_identity", preview: "Verify the employee identity.", technicianEntry: "verify_identity", systemResult: "Employee identity successfully verified using the organization's approved identity verification process.", technicalOutput: "Identity Verification: Successful\nUser Status: Verified" },
+      { command: "check_application_error", preview: "Reproduce and inspect the Company Portal connection error.", technicianEntry: "check_application_error", systemResult: "Company Portal opens but cannot establish a connection to its application server.", technicalOutput: "Company Portal\n\nConnection Error\n\nUnable to connect to the application server.\n\nPlease check your connection or contact IT support.\n\n[Retry]  [Close]", evidence: { id: "tcp-app-connection-error", text: "Company Portal displayed a connection error and could not reach its application server." } },
+      { command: "check_network_status", preview: "Check general workstation network connectivity.", technicianEntry: "check_network_status", systemResult: "The workstation is connected to the organization's network. General network connectivity appears available.", technicalOutput: "Network Status\n\nConnection: Ethernet\nStatus: Connected\nNetwork: Corporate LAN\nInternet access: Available", evidence: { id: "tcp-network-status", text: "Workstation network status is connected on Ethernet with internet access available." } },
+      { command: "open_command_prompt", preview: "Open Windows Command Prompt.", technicianEntry: "open_command_prompt", systemResult: "Command Prompt opened successfully.", technicalOutput: "Microsoft Windows [Version 10.0.xxxxx.xxxx]\n(c) Microsoft Corporation. All rights reserved.\n\nC:\\Users\\Employee>" },
+      { command: "ipconfig", preview: "Inspect the workstation IP configuration.", technicianEntry: "ipconfig", systemResult: "The workstation has a valid IPv4 configuration for the corporate network.", technicalOutput: "Windows IP Configuration\n\nEthernet adapter Ethernet:\n\n   Connection-specific DNS Suffix  . : corp.example\n   IPv4 Address. . . . . . . . . . . : 192.168.1.100\n   Subnet Mask . . . . . . . . . . . : 255.255.255.0\n   Default Gateway . . . . . . . . . : 192.168.1.1", evidence: { id: "tcp-workstation-ip", text: "Workstation IPv4 192.168.1.100/24; default gateway 192.168.1.1." } },
+      { command: "ping_application_server", preview: "Test connectivity to the application server.", technicianEntry: "ping 192.168.1.50", systemResult: "The application server responds to ICMP echo requests. Basic IP connectivity to the server is available.", technicalOutput: "Pinging 192.168.1.50 with 32 bytes of data:\nReply from 192.168.1.50: bytes=32 time=2ms TTL=128\nReply from 192.168.1.50: bytes=32 time=1ms TTL=128\nReply from 192.168.1.50: bytes=32 time=2ms TTL=128\nReply from 192.168.1.50: bytes=32 time=1ms TTL=128\n\nPing statistics for 192.168.1.50:\n    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),\nApproximate round trip times in milli-seconds:\n    Minimum = 1ms, Maximum = 2ms, Average = 1ms", evidence: { id: "tcp-server-ping", text: "Application server 192.168.1.50 responded to 4 ICMP echo requests; 0 lost." } },
+      { command: "open_it_knowledge_base", preview: "Open the organization's IT Knowledge Base.", technicianEntry: "open_it_knowledge_base", systemResult: "The organization's IT Knowledge Base is available.", technicalOutput: "IT Knowledge Base\n\nAvailable Articles:\n\nKB-101  Network Connectivity Basics\nKB-205  Company Portal Connectivity\nKB-310  Windows Account Troubleshooting\nKB-402  Workstation Display Support" },
+      { command: "open_kb_app_connectivity", preview: "Open the Company Portal connectivity article.", technicianEntry: "open_kb_app_connectivity", systemResult: "The Company Portal connectivity article has been opened.", technicalOutput: "KB-205 — Company Portal Connectivity\n\nApplication: Company Portal\nApplication Server: 192.168.1.50\nConnection Protocol: HTTPS\nRequired TCP Port: 8443\n\nStandard Connection:\nhttps://192.168.1.50:8443\n\nSupport Notes:\n- Confirm workstation network connectivity.\n- Verify server reachability.\n- Test the documented application TCP port.\n- Escalate confirmed connectivity restrictions\n  to the Network Administration team." , evidence: { id: "tcp-kb8443", text: "KB-205 documents Company Portal at 192.168.1.50:8443 and directs TCP port testing and escalation." } },
+      { command: "open_powershell", preview: "Open Windows PowerShell.", technicianEntry: "open_powershell", systemResult: "Windows PowerShell opened successfully.", technicalOutput: "Windows PowerShell\nCopyright (C) Microsoft Corporation.\n\nPS C:\\Users\\Employee>" },
+      { command: "test_tcp_port", preview: "Test TCP 8443 before firewall remediation.", technicianEntry: "Test-NetConnection 192.168.1.50 -Port 8443", systemResult: "The server responds to ICMP traffic, but the TCP connection attempt to port 8443 fails.", technicalOutput: "WARNING: TCP connect to (192.168.1.50 : 8443) failed\n\nComputerName           : 192.168.1.50\nRemoteAddress          : 192.168.1.50\nRemotePort             : 8443\nInterfaceAlias         : Ethernet\nSourceAddress          : 192.168.1.100\nPingSucceeded          : True\nPingReplyDetails (RTT) : 2 ms\nTcpTestSucceeded       : False", evidence: { id: "tcp8443-before-remediation", text: "TCP 8443 test failed: ping succeeded, TcpTestSucceeded False." } },
+      { command: "check_firewall_change_record", preview: "Check the approved network change record.", technicianEntry: "check_firewall_change_record", systemResult: "An approved read-only network change notice identifies a recent firewall rule modification affecting Company Portal connectivity.", technicalOutput: "IT Change Advisory Portal\n\nChange ID: CHG-2048\nService: Company Portal\nStatus: Implemented\nChange Type: Network Firewall Policy Update\n\nAffected Traffic:\nSource Network: 192.168.1.0/24\nDestination: 192.168.1.50\nProtocol: TCP\nDestination Port: 8443\n\nAdvisory:\nA connectivity restriction affecting this traffic\nwas identified following the policy update.\n\nAssigned Team: Network Administration\nL1 Action: Escalate with diagnostic evidence.", evidence: { id: "tcp-firewall-change-record", text: "CHG-2048 identifies an implemented TCP 8443 firewall restriction affecting 192.168.1.0/24 to 192.168.1.50." } },
+      { command: "escalate_firewall_issue", preview: "Escalate the firewall issue to Network Administration.", technicianEntry: "escalate_firewall_issue", systemResult: "The issue has been escalated to Network Administration with the collected diagnostic information.\n\nThe network administrator reviews the affected firewall policy and restores the approved application connectivity rule.", technicalOutput: "Escalation Reference: NET-2048\n\nAssigned Team: Network Administration\nAffected Application: Company Portal\nServer: 192.168.1.50\nRequired Protocol: TCP\nRequired Port: 8443\n\nDiagnostic Summary:\n- Workstation network configuration valid\n- Application server responds to ICMP\n- TCP connection to port 8443 unsuccessful\n- Relevant firewall change advisory identified\n\nAdministrator Action:\nApproved firewall policy corrected.\n\nResolution Status:\nNetwork rule restoration completed.\nPending technician verification.", evidence: { id: "tcp-firewall-restored", text: "Network Administration reported the approved firewall policy corrected and network rule restoration completed." } },
+      { command: "test_tcp_port", preview: "Retest TCP 8443 after firewall remediation.", technicianEntry: "Test-NetConnection 192.168.1.50 -Port 8443", systemResult: "The TCP connection to the application server on port 8443 now succeeds.", technicalOutput: "ComputerName           : 192.168.1.50\nRemoteAddress          : 192.168.1.50\nRemotePort             : 8443\nInterfaceAlias         : Ethernet\nSourceAddress          : 192.168.1.100\nPingSucceeded          : True\nPingReplyDetails (RTT) : 1 ms\nTcpTestSucceeded       : True", evidence: { id: "tcp8443-after-remediation", text: "TCP 8443 test succeeded after network rule restoration; TcpTestSucceeded True." } },
+      { command: "test_application_connection", preview: "Verify the Company Portal application connection.", technicianEntry: "test_application_connection", systemResult: "Company Portal connects successfully and loads its main dashboard.", technicalOutput: "Company Portal\n\nConnection Status: Connected\nServer: 192.168.1.50\nPort: 8443\nSecure Connection: Established\n\nApplication Status: Ready\n\nDashboard loaded successfully.", evidence: { id: "tcp-app-connection-restored", text: "Company Portal connected successfully on port 8443 and loaded its dashboard." } },
+      { command: "confirm_user_resolution", preview: "Confirm user resolution.", technicianEntry: "confirm_user_resolution", systemResult: "The employee confirms that Company Portal is functioning normally and that the original connection error no longer occurs.", technicalOutput: "User Confirmation\n\nApplication: Company Portal\nReported Issue: Unable to connect to server\n\nCurrent Status:\nApplication opens successfully.\nDashboard accessible.\nOriginal connection error no longer present.\n\nUser Confirmation: Successful\n\nResolution Verification: Complete", evidence: { id: "tcp-user-resolution-confirmed", text: "Employee confirmed Company Portal works and the original connection error no longer occurs." } },
+    ],
+    completion: { command: "confirm_user_resolution", fact: "user_resolution_confirmed" },
+    proofLines: ["Employee identity verified", "Application connection failure reproduced", "Workstation network configuration validated", "Application server ICMP connectivity confirmed", "Required TCP 8443 port restriction discovered", "Firewall restoration escalated and completed", "TCP 8443 connectivity verified", "Company Portal application and user resolution verified"],
+    successLines: ["Company Portal connects successfully and the employee confirms resolution.", "User Confirmation: Successful"],
+    defaults: {
+      kind: "tcp_port_connectivity",
+      identity_verified: false,
+      application_error_checked: false,
+      network_status_checked: false,
+      command_prompt_opened: false,
+      ip_configuration_inspected: false,
+      gateway_ping_succeeded: false,
+      knowledge_base_opened: false,
+      app_connectivity_article_opened: false,
+      powershell_opened: false,
+      tcp_port_test_failed: false,
+      firewall_change_record_checked: false,
+      firewall_issue_escalated: false,
+      firewall_rule_restored: false,
+      tcp_port_test_succeeded: false,
+      application_connection_verified: false,
+      user_resolution_confirmed: false,
+      ipv4_address: "192.168.1.100",
+      subnet_mask: "255.255.255.0",
+      default_gateway: "192.168.1.1",
+      application_server: "192.168.1.50",
+      required_tcp_port: 8443,
+    },
+    previewMetadata: { level: "Beginner", estimatedTime: "5–8 min", description: "Troubleshoot a Company Portal connection by distinguishing general network connectivity from application TCP port accessibility.", skillFocus: ["TCP Connectivity", "PowerShell Diagnostics", "Firewall Escalation"], scenarioContext: "A company application cannot connect to its server while general internet connectivity remains available.", successOutcome: "TCP 8443 connectivity is restored and Company Portal application access is verified.", selectCommand: "select tcp port connectivity" },
+  },
+
   dhcp_apipa_troubleshooting: {
     label: "DHCP Address Renewal",
     startPrompt: "Customer: Websites would not load.",
@@ -4591,6 +4925,81 @@ defaults: {
   },
 },
 
+network_printer_not_printing: {
+  label: "Network Printer Not Printing",
+  startPrompt: `Customer: My computer is connected to the office network, but when I try to print a document to the office printer, nothing comes out.
+
+What is your first troubleshooting step?`,
+  scenarioType: "standard",
+  category: "hardware_peripherals",
+  procedure: [
+    { command: "verify_identity", preview: "Verify the user's identity before troubleshooting the printer.", technicianEntry: "verify_identity", systemResult: "User identity verified successfully.", technicalOutput: "Identity Verification: Successful\nUser Status: Verified" },
+    { command: "test_printing", preview: "Reproduce the user's printing problem.", technicianEntry: "test_printing", systemResult: "The reported printing problem has been reproduced.\n\nA print request was submitted, but the document did not print.", technicalOutput: "Selected Printer: Office Printer\nDocument: Sample Document\nPrint Request: Submitted\nPhysical Print Output: Not produced", evidence: { id: "printer-test-request-no-output", text: "Print request submitted; no physical output produced." } },
+    { command: "check_printer_status", preview: "Inspect the selected printer's status.", technicianEntry: "check_printer_status", systemResult: "Windows reports that the selected printer is offline.", technicalOutput: "Printer Name: Office Printer\nPrinter Installed: Yes\nPrinter Status: Offline", evidence: { id: "printer-status-offline", text: "Windows reports Office Printer as offline." } },
+    { command: "check_print_queue", preview: "Inspect the Office Printer print queue.", technicianEntry: "check_print_queue", systemResult: "An incomplete print job is present in the selected printer's queue.", technicalOutput: "Printer: Office Printer\nDocuments in Queue: 1\n\nDocument Name: Sample Document\nJob Status: Error - Printing", evidence: { id: "printer-incomplete-job-before-repair", text: "One incomplete print job with Error - Printing status." } },
+    { command: "check_printer_port", preview: "Inspect the printer's network port configuration.", technicianEntry: "check_printer_port", systemResult: "The selected printer is configured to communicate through a Standard TCP/IP Port.", technicalOutput: "Printer Name: Office Printer\nPort Name: IP_192.168.1.50\nPort Type: Standard TCP/IP Port\nPrinter IP Address: 192.168.1.50", evidence: { id: "printer-standard-tcpip-port", text: "Standard TCP/IP Port configured for 192.168.1.50." } },
+    { command: "open_command_prompt", preview: "Open Windows Command Prompt.", technicianEntry: "open_command_prompt", systemResult: "Windows Command Prompt opened successfully.", technicalOutput: "C:\\Users\\OfficeUser>" },
+    { command: "ipconfig", preview: "Inspect the workstation's IP configuration.", technicianEntry: "ipconfig", systemResult: "Current IP configuration retrieved successfully.", technicalOutput: "Windows IP Configuration\n\nWireless LAN adapter Wi-Fi:\n\n   IPv4 Address. . . . . . . . . : 192.168.1.100\n   Subnet Mask . . . . . . . . . : 255.255.255.0\n   Default Gateway . . . . . . . : 192.168.1.1", evidence: { id: "printer-workstation-ip-gateway", text: "Workstation IPv4: 192.168.1.100/24; gateway: 192.168.1.1." } },
+    { command: "ping_default_gateway", preview: "Test the configured default gateway.", technicianEntry: "ping 192.168.1.1", systemResult: "Replies received from the configured default gateway.", technicalOutput: "Pinging 192.168.1.1 with 32 bytes of data:\n\nReply from 192.168.1.1: bytes=32 time=2ms TTL=64\nReply from 192.168.1.1: bytes=32 time=1ms TTL=64\nReply from 192.168.1.1: bytes=32 time=2ms TTL=64\nReply from 192.168.1.1: bytes=32 time=1ms TTL=64\n\nPing statistics for 192.168.1.1:\n    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),\n\nApproximate round trip times in milli-seconds:\n    Minimum = 1ms, Maximum = 2ms, Average = 1ms", evidence: { id: "printer-gateway-four-replies", text: "Four successful ICMP Echo Replies from the default gateway." } },
+    { command: "ping_printer", preview: "Test the configured printer destination.", technicianEntry: "ping 192.168.1.50", systemResult: "No ICMP Echo Replies were received from the configured printer destination.", technicalOutput: "Pinging 192.168.1.50 with 32 bytes of data:\n\nReply from 192.168.1.100: Destination host unreachable.\nReply from 192.168.1.100: Destination host unreachable.\nReply from 192.168.1.100: Destination host unreachable.\nReply from 192.168.1.100: Destination host unreachable.\n\nPing statistics for 192.168.1.50:\n    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),", evidence: { id: "printer-destination-unreachable-before-repair", text: "Destination host unreachable; no successful Echo Replies from the printer destination." } },
+    { command: "check_printer_physical_status", preview: "Inspect the printer's physical network status.", technicianEntry: "check_printer_physical_status", systemResult: "The printer is powered on.\n\nThe printer's Ethernet cable is disconnected from its network port.", technicalOutput: "Device: Office Printer\nPower Status: On\nPrinter Connection Type: Ethernet\nEthernet Cable: Disconnected at printer\nEthernet Link Status: Down", evidence: { id: "printer-cable-disconnected-link-down", text: "Printer powered on; Ethernet cable disconnected; link down." } },
+    { command: "reconnect_printer_ethernet", preview: "Reconnect the printer's existing Ethernet cable.", technicianEntry: "reconnect_printer_ethernet", systemResult: "The printer's existing Ethernet cable has been reconnected.\n\nAn active Ethernet link has been established.", technicalOutput: "Device: Office Printer\nEthernet Cable: Connected\nEthernet Link Status: Up\nPrinter Network IPv4: 192.168.1.50", evidence: { id: "printer-link-restored-ip", text: "Ethernet link established; printer displays IPv4 address 192.168.1.50." } },
+    { command: "ping_printer", preview: "Retest the printer destination after reconnecting Ethernet.", technicianEntry: "ping 192.168.1.50", systemResult: "Replies received from the configured printer destination.", technicalOutput: "Pinging 192.168.1.50 with 32 bytes of data:\n\nReply from 192.168.1.50: bytes=32 time=2ms TTL=64\nReply from 192.168.1.50: bytes=32 time=1ms TTL=64\nReply from 192.168.1.50: bytes=32 time=2ms TTL=64\nReply from 192.168.1.50: bytes=32 time=1ms TTL=64\n\nPing statistics for 192.168.1.50:\n    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),\n\nApproximate round trip times in milli-seconds:\n    Minimum = 1ms, Maximum = 2ms, Average = 1ms", evidence: { id: "printer-destination-four-replies-after-repair", text: "Four successful ICMP Echo Replies from the printer destination." } },
+    { command: "check_print_queue", preview: "Verify the queued print job after connectivity is restored.", technicianEntry: "check_print_queue", systemResult: "The previously queued document has printed successfully.\n\nNo pending print jobs remain.", technicalOutput: "Printer: Office Printer\nPrinter Status: Ready\nDocuments in Queue: 0\nPreviously Queued Document: Sample Document\nPhysical Print Output: Confirmed", evidence: { id: "printer-queued-document-printed-no-jobs", text: "Previously queued document printed; no pending jobs." } },
+    { command: "print_test_page", preview: "Print a Windows test page.", technicianEntry: "print_test_page", systemResult: "A Windows printer test page was submitted and printed successfully.", technicalOutput: "Printer: Office Printer\nPrint Job: Windows Printer Test Page\nPrint Request: Submitted\nPhysical Print Output: Confirmed\nTest Page Result: Successful", evidence: { id: "printer-windows-test-page-success", text: "Windows test page printed successfully." } },
+    { command: "confirm_user_resolution", preview: "Confirm the user resolution.", technicianEntry: "confirm_user_resolution", systemResult: "The user confirms that the original printing problem has been resolved.", technicalOutput: "Reported Issue: Unable to print\nUser Printing Test: Successful\nPhysical Print Output: Confirmed\nUser Confirmation: Original issue resolved", evidence: { id: "printer-user-resolution-confirmed", text: "User successfully repeated the original printing operation and confirmed resolution." } },
+  ],
+  completion: { command: "confirm_user_resolution", fact: "user_resolution_confirmed" },
+  proofLines: [
+    "Verified the user",
+    "Reproduced the printing problem",
+    "Confirmed the printer was offline and the print queue contained an error",
+    "Inspected the printer port and workstation IP configuration",
+    "Confirmed gateway connectivity",
+    "Identified the printer destination as unreachable before repair",
+    "Confirmed the disconnected Ethernet cable and restored the link",
+    "Verified printer connectivity after repair",
+    "Confirmed the queued document and test page printed",
+    "Confirmed the original problem with the user",
+  ],
+  successLines: [
+    "The previously queued document and a Windows test page printed successfully.",
+    "Customer: \"It printed now. The problem is resolved.\"",
+  ],
+  defaults: {
+    kind: "network_printer_not_printing",
+    identity_verified: false,
+    printing_tested: false,
+    printer_status_checked: false,
+    print_queue_checked: false,
+    printer_port_checked: false,
+    command_prompt_opened: false,
+    ip_configuration_inspected: false,
+    gateway_ping_succeeded: false,
+    printer_ping_failed: false,
+    printer_physical_status_checked: false,
+    printer_ethernet_reconnected: false,
+    printer_ping_succeeded: false,
+    queued_document_printed: false,
+    windows_test_page_printed: false,
+    user_resolution_confirmed: false,
+    printer_offline: true,
+    printer_port_address: "192.168.1.50",
+    printer_ipv4_address: "192.168.1.50",
+    ethernet_link_down: true,
+    ethernet_link_up: false,
+  },
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "5–8 min",
+    description: "Diagnose a network printer issue by checking printer, queue, port, IP, cable, and post-repair printing evidence.",
+    skillFocus: ["Printer Troubleshooting", "Network Connectivity", "Physical Inspection"],
+    scenarioContext: "A computer is connected to the office network, but an office printer is not producing printed documents.",
+    successOutcome: "The printer Ethernet link is restored, queued and test print jobs complete, and the user confirms resolution.",
+    selectCommand: "select network printer not printing",
+  },
+},
+
 printer_not_working: {
   label: "Printer Not Working",
   startPrompt: `Customer: I’m trying to print something, but the printer isn’t working.
@@ -5822,7 +6231,15 @@ export function getScenarioProcedureOutput(
   const educationalContent =
     scenarioId === "dhcp_apipa_troubleshooting"
       ? DHCP_EDUCATIONAL_CONTENT[procedureIndex + 1]
-      : undefined;
+      : scenarioId === "dns_lookup_website_not_opening"
+        ? DNS_LOOKUP_EDUCATIONAL_CONTENT[procedureIndex + 1]
+        : scenarioId === "network_printer_not_printing"
+          ? NETWORK_PRINTER_EDUCATIONAL_CONTENT[procedureIndex + 1]
+          : scenarioId === "tcp_port_connectivity"
+            ? TCP_PORT_EDUCATIONAL_CONTENT[procedureIndex + 1]
+            : scenarioId === "active_directory_locked_employee_account"
+              ? ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT[procedureIndex + 1]
+        : undefined;
   const technicalLines: TechnicalOutputLine[] = technicalOutput
     .split("\n")
     .map((text, lineIndex) => ({

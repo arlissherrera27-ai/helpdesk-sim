@@ -651,6 +651,7 @@ browser_running_slow_extension:
       defineScenarioProcedureRules("network_printer_not_printing", {
         check_printer_status: (facts) =>
           facts.printing_tested &&
+          facts.printer_physical_status_checked &&
           !facts.printer_status_checked,
       }),
 

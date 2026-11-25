@@ -103,11 +103,17 @@ function mergeEvidence(
 // Engine: runs the pipeline (Parse → Decide → Execute → Update).
 export function handleInput(state: SimState, inputRaw: string): EngineOutput {
   const parsedCommand = parseCommand(inputRaw);
+  const normalizedInput = inputRaw.trim().toLowerCase();
   const command =
     state.scenario === "network_printer_not_printing" &&
-    parsedCommand.kind === "ping_application_server"
+    normalizedInput === "ping 192.168.1.60"
       ? parseCommand("ping_printer")
-      : parsedCommand;
+      : state.scenario === "tcp_port_connectivity" &&
+          (normalizedInput === "ping 192.168.1.50" ||
+            normalizedInput === "test-netconnection 192.168.1.50 -port 443" ||
+            normalizedInput === "test-netconnection 192.168.1.50 -port 8443")
+        ? parsedCommand
+        : parsedCommand;
   const procedureOccurrenceIndex =
     state.scenario === "dhcp_apipa_troubleshooting" ||
     state.scenario === "dns_lookup_website_not_opening" ||
@@ -2742,22 +2748,26 @@ case "SelectScenario":
     case "PingExternalIp":
     case "IpconfigAll":
     case "IpconfigRenew":
+    case "IpconfigDisplayDns":
+    case "IpconfigFlushDns":
+    case "PingPortalHostname":
     case "TestPrinting":
     case "CheckPrintQueue":
     case "CheckPrinterPort":
     case "CheckPrinterPhysicalStatus":
-    case "ReconnectPrinterEthernet":
+    case "CheckPrinterNetworkConfiguration":
+    case "CorrectPrinterPortConfiguration":
     case "PingPrinter":
     case "ConfirmUserResolution":
     case "Nslookup":
     case "TestWebsiteAccess":
-    case "NslookupAlternativeDns":
-    case "EscalateDnsIssue":
     case "CheckApplicationError":
     case "OpenPowerShell":
-    case "TestTcpPort":
-    case "CheckFirewallChangeRecord":
-    case "EscalateFirewallIssue":
+    case "TestTcpPort443":
+    case "TestTcpPort8443":
+    case "CheckPhysicalNetworkConnection":
+    case "CheckApplicationConnectionSettings":
+    case "CorrectApplicationPortConfiguration":
     case "TestApplicationConnection":
     case "OpenKbAppConnectivity":
     case "PingApplicationServer":
@@ -2765,11 +2775,11 @@ case "SelectScenario":
     case "OpenActiveDirectory":
     case "LocateUserAccount":
     case "CheckAccountStatus":
-    case "CheckAccountProperties":
-    case "CheckLockoutPolicy":
-    case "ReviewLockoutDetails":
+    case "ReviewAccountLockoutEvents":
+    case "CheckWindowsCredentialManager":
+    case "RemoveOutdatedCredential":
+    case "TestAffectedNetworkResource":
     case "UnlockUserAccount":
-    case "VerifyAccountStatus":
     case "TestUserLogin":
       message = "";
       break;

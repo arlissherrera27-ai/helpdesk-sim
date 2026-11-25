@@ -3965,7 +3965,11 @@ onClick={() => {
           {structuredPresentation ? (
             <>
               <ProcedureResult
-                title={`Validated procedure:\n${getPreviewStepLabel(structuredPresentation.command)}`}
+                title={`Validated procedure:\n${structuredPresentation.scenarioId === "dns_lookup_website_not_opening" && structuredPresentation.command === "nslookup"
+                  ? "nslookup portal.office.example"
+                  : structuredPresentation.scenarioId === "dns_lookup_website_not_opening" && structuredPresentation.command === "test_internet_connection"
+                    ? "Test Website Access and Confirm Resolution"
+                    : getPreviewStepLabel(structuredPresentation.command)}`}
                 technicianEntry={structuredPresentation.technicianEntry}
                 systemResult={structuredPresentation.systemResult}
                 technicalOutput={structuredPresentation.technicalOutput}
@@ -3973,6 +3977,7 @@ onClick={() => {
                 annotations={structuredPresentation.annotations}
                 learnMore={structuredPresentation.learnMore}
                 showEducationalContainers={true}
+                defaultExpanded={true}
               />
               <div
                 style={{

@@ -79,6 +79,13 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "signin test": "test_sign_in",
   "test login": "test_sign_in",
   "login test": "test_sign_in",
+  "check_account_status": "check_account_status",
+  "unlock_user_account": "unlock_user_account",
+  "test_user_login": "test_user_login",
+  "review_account_lockout_events": "review_account_lockout_events",
+  "check_windows_credential_manager": "check_windows_credential_manager",
+  "remove_outdated_credential": "remove_outdated_credential",
+  "test_affected_network_resource": "test_affected_network_resource",
   "verify login": "test_sign_in",
   "login verify": "test_sign_in",
   "confirm login": "test_sign_in",
@@ -545,10 +552,13 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "ipconfig /renew": "ipconfig_renew",
   "ping 192.168.1.1": "ping_default_gateway",
   "ping 8.8.8.8": "ping_external_ip",
+  "nslookup": "nslookup",
   "nslookup google.com": "nslookup",
-  "nslookup google.com 8.8.8.8": "nslookup_alternative_dns",
+  "nslookup portal.office.example": "nslookup",
+  "ipconfig /displaydns": "ipconfig_displaydns",
+  "ipconfig /flushdns": "ipconfig_flushdns",
+  "ping portal.office.example": "ping_portal_hostname",
   "test_website_access": "test_website_access",
-  "escalate_dns_issue": "escalate_dns_issue",
 
   "correct dns configuration": "correct_dns_configuration",
   "fix dns configuration": "correct_dns_configuration",
@@ -748,15 +758,12 @@ export const COMMAND_ALIASES: Record<string, ProcedureCommandKind> = {
   "check_print_queue": "check_print_queue",
   "check_printer_port": "check_printer_port",
   "check_printer_physical_status": "check_printer_physical_status",
-  "reconnect_printer_ethernet": "reconnect_printer_ethernet",
   "confirm_user_resolution": "confirm_user_resolution",
   "check_application_error": "check_application_error",
   "open_powershell": "open_powershell",
-  "test_tcp_port": "test_tcp_port",
-  "Test-NetConnection 192.168.1.50 -Port 8443": "test_tcp_port",
+  "test-netconnection 192.168.1.50 -port 443": "test_tcp_port_443",
+  "test-netconnection 192.168.1.50 -port 8443": "test_tcp_port_8443",
   "ping 192.168.1.50": "ping_application_server",
-  "check_firewall_change_record": "check_firewall_change_record",
-  "escalate_firewall_issue": "escalate_firewall_issue",
   "test_application_connection": "test_application_connection",
   "open_kb_app_connectivity": "open_kb_app_connectivity",
 
@@ -1264,7 +1271,10 @@ export function parseCommand(inputRaw: string): Command {
     COMMAND_ALIASES[lower] || lookupCommandDef(normalizedFullCommand),
   );
 
-  if (!fullCommandMatched && /^(?:ipconfig|ping|nslookup)(?:\s|$)/.test(lower)) {
+  if (
+    !fullCommandMatched &&
+    /^(?:ipconfig|ping|nslookup)(?:\s|$)/.test(lower)
+  ) {
     return { kind: "unknown", rawInput: inputRaw };
   }
 

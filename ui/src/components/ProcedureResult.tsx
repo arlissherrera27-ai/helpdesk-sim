@@ -16,6 +16,7 @@ export type ProcedureResultProps = {
   annotations?: readonly ProcedureSideAnnotation[];
   learnMore?: Partial<ProcedureLearnMoreContent>;
   showEducationalContainers?: boolean;
+  defaultExpanded?: boolean;
 };
 
 export default function ProcedureResult({
@@ -27,9 +28,10 @@ export default function ProcedureResult({
   annotations = [],
   learnMore,
   showEducationalContainers = false,
+  defaultExpanded = false,
 }: ProcedureResultProps) {
-  const [annotationsOpen, setAnnotationsOpen] = useState(false);
-  const [learnMoreOpen, setLearnMoreOpen] = useState(false);
+  const [annotationsOpen, setAnnotationsOpen] = useState(defaultExpanded);
+  const [learnMoreOpen, setLearnMoreOpen] = useState(defaultExpanded);
   const annotationsId = useId();
   const learnMoreId = useId();
   const attachedAnnotationCount = technicalLines
@@ -110,9 +112,9 @@ export default function ProcedureResult({
             </button>
             {learnMoreOpen && (
               <div className="procedure-result__lessons" id={learnMoreId}>
-                <ProcedureLearnMoreSection title="How to Execute" content={learnMore?.howToExecute} />
-                <ProcedureLearnMoreSection title="What It Does and How" content={learnMore?.whatItDoesAndHow} />
-                <ProcedureLearnMoreSection title="Why This Matters" content={learnMore?.whyThisMatters} />
+                <ProcedureLearnMoreSection title="How to Execute" content={learnMore?.howToExecute} defaultExpanded={defaultExpanded} />
+                <ProcedureLearnMoreSection title="What It Does and How" content={learnMore?.whatItDoesAndHow} defaultExpanded={defaultExpanded} />
+                <ProcedureLearnMoreSection title="Why This Matters" content={learnMore?.whyThisMatters} defaultExpanded={defaultExpanded} />
               </div>
             )}
           </section>
@@ -154,12 +156,14 @@ export function TechnicalOutputLineResult({
 export function ProcedureLearnMoreSection({
   title,
   content,
+  defaultExpanded = false,
 }: {
   title: string;
   content?: string | null;
+  defaultExpanded?: boolean;
 }) {
   return (
-    <details className="procedure-result__lesson">
+    <details className="procedure-result__lesson" open={defaultExpanded}>
       <summary>{title}</summary>
       <div className="procedure-result__lesson-content">
         {content?.trim() || (

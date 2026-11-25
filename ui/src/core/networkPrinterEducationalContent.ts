@@ -7,81 +7,169 @@ export type NetworkPrinterEducation = {
 };
 
 export const NETWORK_PRINTER_EDUCATIONAL_CONTENT: Readonly<Record<number, NetworkPrinterEducation>> = {
-1:{technicalLineIds:{0:"printer-p01-verification",1:"printer-p01-status"},annotations:[
-{id:"printer-p01-verification",targetLineId:"printer-p01-verification",content:"Identity Verification: Successful — The required identity verification process has been completed."},
-{id:"printer-p01-status",targetLineId:"printer-p01-status",content:"User Status: Verified — The user's identity has been confirmed according to the organization's verification process."}],learnMore:{howToExecute:"1. Request the required user identification information.\n2. Follow the organization's approved identity verification process.\n3. Confirm successful verification.",whatItDoesAndHow:"Identity verification establishes that the person requesting assistance has been identified according to organizational requirements.\n\nThe exact verification process depends on organizational policy.",whyThisMatters:"Successful verification establishes that the required identity verification process has been completed.\n\nIt does not establish the cause of the reported printing problem."}},
-2:{technicalLineIds:{0:"printer-p02-printer",1:"printer-p02-document",2:"printer-p02-request",3:"printer-p02-output"},annotations:[
-{id:"printer-p02-printer",targetLineId:"printer-p02-printer",content:"Selected Printer — Identifies the printer selected for the print request."},
-{id:"printer-p02-document",targetLineId:"printer-p02-document",content:"Document — Identifies the example document used to reproduce the reported problem."},
-{id:"printer-p02-request",targetLineId:"printer-p02-request",content:"Print Request: Submitted — The application submitted a printing request."},
-{id:"printer-p02-output",targetLineId:"printer-p02-output",content:"Physical Print Output: Not produced — No printed document was produced during the test."}],learnMore:{howToExecute:"1. Open an approved sample document.\n2. Press Ctrl + P.\n3. Select Office Printer.\n4. Submit the print request.\n5. Observe whether the document prints.",whatItDoesAndHow:"Submitting a print request sends document information to the operating system's printing subsystem.\n\nThe operating system manages the request and attempts to deliver the appropriate print data to the selected printer.\n\nSubmitting a request does not guarantee that physical printing occurred.",whyThisMatters:"The technician has independently reproduced the user's reported symptom.\n\nThe request was submitted, but physical printing was unsuccessful.\n\nThis result confirms the symptom without identifying its exact cause."}},
-3:{technicalLineIds:{0:"printer-p03-name",1:"printer-p03-installed",2:"printer-p03-status"},annotations:[
-{id:"printer-p03-name",targetLineId:"printer-p03-name",content:"Printer Name — Identifies the installed printer being inspected."},
-{id:"printer-p03-installed",targetLineId:"printer-p03-installed",content:"Printer Installed: Yes — A printer configuration exists on this computer."},
-{id:"printer-p03-status",targetLineId:"printer-p03-status",content:"Printer Status: Offline — Windows currently reports that the printer is unavailable for normal printing."}],learnMore:{howToExecute:"1. Open Windows Settings.\n2. Select Bluetooth & devices.\n3. Select Printers & scanners.\n4. Select Office Printer.\n5. Review the displayed printer status.",whatItDoesAndHow:"Windows maintains installed printer configurations and reports information about their availability.\n\nAn installed printer configuration allows Windows to identify and manage printing requests for that printer.\n\nAn offline status indicates that Windows currently considers the printer unavailable.",whyThisMatters:"The selected printer is installed, but Windows reports it as offline.\n\nThis establishes that printer availability is affected.\n\nAn offline status alone does not identify whether the underlying problem involves connectivity, printer configuration, hardware or another condition."}},
-4:{technicalLineIds:{0:"printer-p04-printer",1:"printer-p04-count",3:"printer-p04-document",4:"printer-p04-status"},annotations:[
-{id:"printer-p04-printer",targetLineId:"printer-p04-printer",content:"Printer — Identifies the printer associated with the displayed queue."},
-{id:"printer-p04-count",targetLineId:"printer-p04-count",content:"Documents in Queue: 1 — One print job remains in the queue."},
-{id:"printer-p04-document",targetLineId:"printer-p04-document",content:"Document Name — Identifies the submitted print job."},
-{id:"printer-p04-status",targetLineId:"printer-p04-status",content:"Job Status: Error - Printing — Windows reports that the queued printing operation encountered an error."}],learnMore:{howToExecute:"1. Open Printers & scanners in Windows Settings.\n2. Select Office Printer.\n3. Open the print queue.\n4. Review the queued documents.\n5. Observe the status of the existing print job.",whatItDoesAndHow:"A print queue holds printing requests that are waiting to be processed or have not yet completed.\n\nThe Windows Print Spooler manages queued print jobs and coordinates their delivery to printers.\n\nThe queue displays information about submitted documents and their processing status.",whyThisMatters:"The submitted document is still present in the print queue.\n\nWindows reports an error associated with the printing operation.\n\nThis provides additional evidence that the printing request has not completed.\n\nThe presence of an incomplete print job does not independently establish a Print Spooler failure."}},
-5:{technicalLineIds:{0:"printer-p05-name",1:"printer-p05-port",2:"printer-p05-type",3:"printer-p05-address"},annotations:[
-{id:"printer-p05-name",targetLineId:"printer-p05-name",content:"Printer Name — Identifies the printer configuration being inspected."},
-{id:"printer-p05-port",targetLineId:"printer-p05-port",content:"Port Name — Identifies the configured Windows printer port."},
-{id:"printer-p05-type",targetLineId:"printer-p05-type",content:"Standard TCP/IP Port — A Windows printer port type used to send printing data to a network destination."},
-{id:"printer-p05-address",targetLineId:"printer-p05-address",content:"Printer IP Address: 192.168.1.50 — The destination address stored in the printer port configuration for this scenario."}],learnMore:{howToExecute:"1. Open Printers & scanners.\n2. Select Office Printer.\n3. Open Printer properties.\n4. Select the Ports tab.\n5. Identify the selected printer port.\n6. Review its configuration without changing the settings.",whatItDoesAndHow:"Windows printer ports define how printing data is directed toward a printer.\n\nA Standard TCP/IP Port allows Windows to communicate with a configured network destination using supported printing protocols.\n\nThe configured destination address identifies where Windows attempts to send printing data.",whyThisMatters:"The selected printer is configured as a network printer.\n\nThe configured destination address has been identified.\n\nThis establishes the destination associated with the workstation's printer configuration.\n\nIt does not independently prove that the address is currently reachable or correctly assigned to the physical printer."}},
-6:{technicalLineIds:{0:"printer-p06-prompt"},annotations:[
-{id:"printer-p06-prompt",targetLineId:"printer-p06-prompt",content:"C:\\Users\\OfficeUser — The current working directory displayed by Command Prompt.\n\n> — Indicates that Command Prompt is ready to receive text commands."}],learnMore:{howToExecute:"1. Press Windows + R.\n2. Type cmd.\n3. Press Enter.\n4. Confirm that Command Prompt opens.",whatItDoesAndHow:"Command Prompt is a Windows command-line interface.\n\nIt allows users and technicians to execute available commands by entering text.\n\nThe displayed prompt identifies the current working directory and indicates readiness for input.",whyThisMatters:"Command Prompt provides access to Windows diagnostic utilities.\n\nOpening the utility establishes that the diagnostic environment is available.\n\nIt does not independently establish the condition of the network or printer."}},
-7:{technicalLineIds:{2:"printer-p07-adapter",4:"printer-p07-ipv4",5:"printer-p07-subnet",6:"printer-p07-gateway"},annotations:[
-{id:"printer-p07-adapter",targetLineId:"printer-p07-adapter",content:"Wireless LAN adapter Wi-Fi — Identifies the wireless network adapter whose configuration is displayed."},
-{id:"printer-p07-ipv4",targetLineId:"printer-p07-ipv4",content:"IPv4 Address: 192.168.1.100 — The IPv4 address currently assigned to the computer."},
-{id:"printer-p07-subnet",targetLineId:"printer-p07-subnet",content:"Subnet Mask: 255.255.255.0 — Identifies the network portion of the IPv4 address."},
-{id:"printer-p07-gateway",targetLineId:"printer-p07-gateway",content:"Default Gateway: 192.168.1.1 — The configured device used to forward traffic toward destinations outside the local subnet."}],learnMore:{howToExecute:"1. Open Command Prompt.\n2. Type ipconfig.\n3. Press Enter.\n4. Locate the active Wi-Fi adapter.\n5. Review its displayed IP configuration.",whatItDoesAndHow:"The ipconfig command displays the current IP configuration of Windows network adapters.\n\nThe standard command displays information including IPv4 addresses, subnet masks and default gateways.\n\nIt retrieves configuration information without changing the settings.\n\nAn IPv4 address identifies a network interface for IPv4 communication.\n\nA subnet mask identifies which portion of an IPv4 address represents the network.",whyThisMatters:"The displayed workstation IPv4 address and configured printer destination are within the same IPv4 subnet according to the workstation's subnet mask.\n\nThe workstation has an assigned IPv4 address and default gateway.\n\nNo obvious workstation IPv4 addressing defect is visible in this output.\n\nThe presence of this configuration does not independently prove successful communication with other devices."}},
-8:{technicalLineIds:{0:"printer-p08-target",2:"printer-p08-reply",8:"printer-p08-stats",11:"printer-p08-summary"},annotations:[
-{id:"printer-p08-target",targetLineId:"printer-p08-target",content:"Pinging 192.168.1.1 — Identifies the destination being tested."},
-{id:"printer-p08-reply",targetLineId:"printer-p08-reply",content:"- Reply from 192.168.1.1 — A response was received from the specified destination.\n- bytes=32 — The amount of data in the returned ICMP Echo Reply payload.\n- time=2ms — Example round-trip response time measured in milliseconds.\n- TTL=64 — The remaining Time to Live value in the received IP packet."},
-{id:"printer-p08-sent",targetLineId:"printer-p08-stats",content:"Sent = 4 — Four requests were transmitted."},
-{id:"printer-p08-received",targetLineId:"printer-p08-stats",content:"Received = 4 — Four replies were received."},
-{id:"printer-p08-lost",targetLineId:"printer-p08-stats",content:"Lost = 0 — No requests went unanswered during this test."},
-{id:"printer-p08-summary",targetLineId:"printer-p08-summary",content:"Minimum, Maximum, Average — Summarize the measured round-trip response times."}],learnMore:{howToExecute:"1. Identify the default gateway address displayed in the computer's IP configuration.\n2. Open Command Prompt.\n3. Type ping followed by that address.\n4. Press Enter.\n5. Observe the replies and statistics.\nScenario example:\n\nping 192.168.1.1",whatItDoesAndHow:"The ping command sends ICMP Echo Requests to a destination and checks whether ICMP Echo Replies are received.\n\nICMP stands for Internet Control Message Protocol.\n\nWindows sends four requests by default.\n\nThe results include reply information, response times and packet-loss statistics.",whyThisMatters:"All four requests received replies from the configured default gateway.\n\nThis demonstrates successful ICMP communication between the computer and that destination.\n\nThe local communication path used for this test is functioning.\n\nSuccessful communication with the gateway does not independently establish connectivity to every device on the local network."}},
-9:{technicalLineIds:{0:"printer-p09-target",2:"printer-p09-reply",8:"printer-p09-stats"},annotations:[
-{id:"printer-p09-target",targetLineId:"printer-p09-target",content:"Pinging 192.168.1.50 — Identifies the configured printer destination being tested."},
-{id:"printer-p09-reply",targetLineId:"printer-p09-reply",content:"- Reply from 192.168.1.100 — The displayed error response originates from the workstation's own IPv4 address.\n- Destination host unreachable — The workstation reports that it could not reach the requested destination."},
-{id:"printer-p09-sent",targetLineId:"printer-p09-stats",content:"Sent = 4 — Four requests were attempted."},
-{id:"printer-p09-received",targetLineId:"printer-p09-stats",content:"Received = 4 — Windows counted four received error responses in the displayed statistics."},
-{id:"printer-p09-lost",targetLineId:"printer-p09-stats",content:"Lost = 0 — The displayed packet-loss statistic does not indicate successful printer connectivity in this result."}],learnMore:{howToExecute:"1. Identify the configured printer destination address.\n2. Open Command Prompt.\n3. Type ping followed by that address.\n4. Press Enter.\n5. Review the response text and the responding address.\n6. Review the displayed statistics.\nScenario example:\n\nping 192.168.1.50",whatItDoesAndHow:"The ping command attempts to obtain ICMP Echo Replies from the specified destination.\n\nWhen communication cannot be established, Windows may display an unreachable error instead of a successful Echo Reply.\n\nThe responding address helps identify where the displayed response originated.\n\nWindows can count received unreachable responses in its packet statistics.",whyThisMatters:"The workstation previously communicated successfully with its default gateway.\n\nThis test did not receive successful Echo Replies from the configured printer destination.\n\nThe results establish that the tested destinations have different observed connectivity outcomes.\n\nThe displayed 0% packet loss must not be interpreted as successful communication with the printer because the responses contain unreachable errors.\n\nThe evidence does not independently establish the exact cause of the printer's unavailability."}},
-10:{technicalLineIds:{0:"printer-p10-device",1:"printer-p10-power",2:"printer-p10-type",3:"printer-p10-cable",4:"printer-p10-link"},annotations:[
-{id:"printer-p10-device",targetLineId:"printer-p10-device",content:"Device — Identifies the physical printer being inspected."},
-{id:"printer-p10-power",targetLineId:"printer-p10-power",content:"Power Status: On — The printer is receiving power and is switched on."},
-{id:"printer-p10-type",targetLineId:"printer-p10-type",content:"Ethernet — The printer uses a wired network connection."},
-{id:"printer-p10-cable",targetLineId:"printer-p10-cable",content:"Ethernet Cable: Disconnected at printer — Physical inspection confirms that the network cable is not connected to the printer's Ethernet port."},
-{id:"printer-p10-link",targetLineId:"printer-p10-link",content:"Ethernet Link Status: Down — An active Ethernet link is not currently established."}],learnMore:{howToExecute:"1. Locate the physical printer.\n2. Observe its power status.\n3. Identify its network connection type.\n4. Inspect the printer's existing Ethernet connection.\n5. Review the available Ethernet link indicators or device network status.\n6. Record the observed condition.",whatItDoesAndHow:"Physical inspection allows technicians to observe the condition of equipment and its connections.\n\nAn Ethernet cable provides a wired communication path between network devices.\n\nAn Ethernet link must be established for normal communication through that connection.\n\nLink indicators and network status displays vary by printer model.",whyThisMatters:"The printer is powered on, but its Ethernet connection is physically disconnected.\n\nThis directly observed condition explains why the printer cannot communicate through its intended wired connection.\n\nThe finding is consistent with the previously observed printer unavailability and unsuccessful connectivity test.\n\nOther aspects of printer functionality have not yet been verified.\n\n"}},
-11:{technicalLineIds:{0:"printer-p11-device",1:"printer-p11-cable",2:"printer-p11-link",3:"printer-p11-ipv4"},annotations:[
-{id:"printer-p11-device",targetLineId:"printer-p11-device",content:"Device — Identifies the printer receiving the corrective action."},
-{id:"printer-p11-cable",targetLineId:"printer-p11-cable",content:"Ethernet Cable: Connected — The existing network cable is connected to the printer's Ethernet port."},
-{id:"printer-p11-link",targetLineId:"printer-p11-link",content:"Ethernet Link Status: Up — An active Ethernet link is established."},
-{id:"printer-p11-ipv4",targetLineId:"printer-p11-ipv4",content:"Printer Network IPv4: 192.168.1.50 — The printer's displayed IPv4 address after its network connection is established."}],learnMore:{howToExecute:"1. Identify the existing authorized Ethernet cable for the printer.\n2. Locate the printer's Ethernet port.\n3. Reconnect the cable securely.\n4. Allow the Ethernet link to establish.\n5. Review the printer's available network status information.\n6. Observe the displayed network address.",whatItDoesAndHow:"Reconnecting an Ethernet cable restores the physical wired connection when the cable and connected equipment are functioning.\n\nAn established Ethernet link allows the connected equipment to exchange network data.\n\nThe printer's displayed network address provides information about its current IPv4 configuration.",whyThisMatters:"The previously observed physical connection defect has been corrected.\n\nThe printer reports an active Ethernet link.\n\nIts displayed IPv4 address matches the destination configured in Windows.\n\nThese observations establish that the physical connection has been restored.\n\nThey do not independently prove successful workstation-to-printer communication or successful printing."}},
-12:{technicalLineIds:{0:"printer-p12-target",2:"printer-p12-reply",8:"printer-p12-stats",11:"printer-p12-summary"},annotations:[
-{id:"printer-p12-target",targetLineId:"printer-p12-target",content:"Pinging 192.168.1.50 — Identifies the printer destination being tested."},
-{id:"printer-p12-reply",targetLineId:"printer-p12-reply",content:"- Reply from 192.168.1.50 — A successful reply was received from the specified destination.\n- bytes=32 — The amount of data in the returned ICMP Echo Reply payload.\n- time=2ms — Example round-trip response time measured in milliseconds.\n- TTL=64 — The remaining Time to Live value in the received IP packet."},
-{id:"printer-p12-sent",targetLineId:"printer-p12-stats",content:"Sent = 4 — Four requests were transmitted."},
-{id:"printer-p12-received",targetLineId:"printer-p12-stats",content:"Received = 4 — Four successful replies were received."},
-{id:"printer-p12-lost",targetLineId:"printer-p12-stats",content:"Lost = 0 — No requests went unanswered during this test."},
-{id:"printer-p12-summary",targetLineId:"printer-p12-summary",content:"Minimum, Maximum, Average — Summarize the measured round-trip response times."}],learnMore:{howToExecute:"1. Open Command Prompt.\n2. Enter the ping command using the configured printer destination.\n3. Press Enter.\n4. Review the responding address.\n5. Observe the replies and statistics.\nScenario example:\n\nping 192.168.1.50",whatItDoesAndHow:"Repeating the same connectivity test allows the technician to compare communication results before and after a corrective action.\n\nSuccessful ICMP Echo Replies indicate that the tested destination responded to the requests.",whyThisMatters:"The destination that previously produced unreachable errors now returns successful Echo Replies.\n\nThis provides independent evidence that communication with the configured printer destination has been restored for this test.\n\nSuccessful ICMP communication does not independently establish that the printer can receive and process printing data."}},
-13:{technicalLineIds:{0:"printer-p13-printer",1:"printer-p13-status",2:"printer-p13-count",3:"printer-p13-document",4:"printer-p13-output"},annotations:[
-{id:"printer-p13-printer",targetLineId:"printer-p13-printer",content:"Printer — Identifies the printer associated with the inspected queue."},
-{id:"printer-p13-status",targetLineId:"printer-p13-status",content:"Printer Status: Ready — Windows currently reports the printer as ready."},
-{id:"printer-p13-count",targetLineId:"printer-p13-count",content:"Documents in Queue: 0 — No pending print jobs are displayed in the queue."},
-{id:"printer-p13-document",targetLineId:"printer-p13-document",content:"Previously Queued Document — Identifies the document associated with the earlier unsuccessful printing operation."},
-{id:"printer-p13-output",targetLineId:"printer-p13-output",content:"Physical Print Output: Confirmed — The technician observed the previously queued document print successfully."}],learnMore:{howToExecute:"1. Open the selected printer's print queue.\n2. Review the remaining print jobs.\n3. Observe the displayed printer status.\n4. Inspect the physical printed output.\n5. Confirm whether the previously queued document was produced.",whatItDoesAndHow:"Pending print jobs may resume processing after communication with an available printer is restored.\n\nA print queue displays requests that have not yet completed or otherwise left the queue.\n\nPhysical output inspection establishes whether the expected document was actually printed.",whyThisMatters:"The previously incomplete printing request has produced its expected physical output.\n\nNo pending print jobs remain in the displayed queue.\n\nThis provides evidence that the earlier printing operation has completed.\n\nAn empty queue alone would not have been sufficient to prove that the document printed successfully."}},
-14:{technicalLineIds:{0:"printer-p14-printer",1:"printer-p14-job",2:"printer-p14-request",3:"printer-p14-output",4:"printer-p14-result"},annotations:[
-{id:"printer-p14-printer",targetLineId:"printer-p14-printer",content:"Printer — Identifies the printer selected for the verification test."},
-{id:"printer-p14-job",targetLineId:"printer-p14-job",content:"Windows Printer Test Page — A standard Windows printing test used to verify printer functionality."},
-{id:"printer-p14-request",targetLineId:"printer-p14-request",content:"Print Request: Submitted — A new printing request was sent through the operating system."},
-{id:"printer-p14-output",targetLineId:"printer-p14-output",content:"Physical Print Output: Confirmed — The technician verified that the requested test page physically printed."},
-{id:"printer-p14-result",targetLineId:"printer-p14-result",content:"Test Page Result: Successful — The selected printer successfully produced the requested test page."}],learnMore:{howToExecute:"1. Open Windows Printers & scanners.\n2. Select Office Printer.\n3. Open Printer properties.\n4. Select Print Test Page.\n5. Observe whether the physical test page prints successfully.",whatItDoesAndHow:"A Windows printer test page submits a new printing request through the selected printer configuration.\n\nThe test exercises the printing subsystem, associated printer configuration, communication path and printer's ability to produce physical output.\n\nUnlike a connectivity test, this checks actual printing functionality.",whyThisMatters:"A newly submitted print job completed successfully.\n\nThe technician has independently confirmed that the printer produced physical output.\n\nThis provides stronger evidence of restored printing functionality than connectivity results or printer status alone.\n\nThe result confirms the tested printing operation, not every possible printer feature or application."}},
-15:{technicalLineIds:{0:"printer-p15-issue",1:"printer-p15-test",2:"printer-p15-output",3:"printer-p15-user"},annotations:[
-{id:"printer-p15-issue",targetLineId:"printer-p15-issue",content:"Reported Issue — Identifies the original symptom described by the user."},
-{id:"printer-p15-test",targetLineId:"printer-p15-test",content:"User Printing Test: Successful — The user successfully repeated the originally affected printing operation."},
-{id:"printer-p15-output",targetLineId:"printer-p15-output",content:"Physical Print Output: Confirmed — The expected printed document was physically produced."},
-{id:"printer-p15-user",targetLineId:"printer-p15-user",content:"User Confirmation — The user confirms that the reported printing problem is resolved."}],learnMore:{howToExecute:"1. Ask the user to repeat the originally affected printing operation.\n2. Confirm that the intended printer is selected.\n3. Observe whether the requested document prints.\n4. Ask the user whether the original problem is resolved.",whatItDoesAndHow:"User verification establishes whether the originally reported functionality has been restored from the user's perspective.\n\nRepeating the original operation provides evidence that the reported symptom is no longer present.",whyThisMatters:"The user successfully repeated the printing operation that originally failed.\n\nThe expected physical output was produced.\n\nThe previously established connectivity and test-page results, together with user confirmation, provide evidence that the reported issue has been resolved.\n\nThe scenario is complete.\n\n"}}
+  1: {
+    technicalLineIds: { 0: "printer-p01-verification", 1: "printer-p01-status" },
+    annotations: [
+      { id: "printer-p01-verification", targetLineId: "printer-p01-verification", content: "Identity Verification: Successful — The approved identity verification process has been completed." },
+      { id: "printer-p01-status", targetLineId: "printer-p01-status", content: "User Status: Verified — The user's identity has been confirmed according to organizational policy." },
+    ],
+    learnMore: {
+      howToExecute: "Follow the organization's approved identity verification process.",
+      whatItDoesAndHow: "Confirms that the person requesting support is the authorized employee.",
+      whyThisMatters: "Protects organizational resources and ensures support is provided to the appropriate user.",
+    },
+  },
+  2: {
+    technicalLineIds: { 0: "printer-p02-printer", 1: "printer-p02-document", 2: "printer-p02-request", 3: "printer-p02-output" },
+    annotations: [
+      { id: "printer-p02-printer", targetLineId: "printer-p02-printer", content: "Printer — Identifies the selected printer." },
+      { id: "printer-p02-document", targetLineId: "printer-p02-document", content: "Document — Identifies the example document submitted for testing." },
+      { id: "printer-p02-request", targetLineId: "printer-p02-request", content: "Print Request: Submitted — Windows received the print request." },
+      { id: "printer-p02-output", targetLineId: "printer-p02-output", content: "Physical Print Output: Not produced — The requested document did not print." },
+    ],
+    learnMore: {
+      howToExecute: "Open a document, select Print, choose the Office Printer, and submit the print job.",
+      whatItDoesAndHow: "Reproduces the reported printing problem under controlled conditions.",
+      whyThisMatters: "Confirms that the reported issue exists before troubleshooting begins.",
+    },
+  },
+  3: {
+    technicalLineIds: { 0: "printer-p03-power", 1: "printer-p03-ethernet", 2: "printer-p03-link" },
+    annotations: [
+      { id: "printer-p03-power", targetLineId: "printer-p03-power", content: "Power: On — Confirms the printer has electrical power." },
+      { id: "printer-p03-ethernet", targetLineId: "printer-p03-ethernet", content: "Ethernet: Connected — Confirms the physical network cable is connected." },
+      { id: "printer-p03-link", targetLineId: "printer-p03-link", content: "Network Link: Active — Indicates an established physical network link, but does not guarantee IP connectivity." },
+    ],
+    learnMore: {
+      howToExecute: "Inspect the printer's power indicator, Ethernet cable, and network link indicator.",
+      whatItDoesAndHow: "Checks the printer's basic physical operating conditions.",
+      whyThisMatters: "Physical connectivity problems should be investigated before more advanced network diagnostics.",
+    },
+  },
+  4: {
+    technicalLineIds: { 0: "printer-p04-printer", 1: "printer-p04-status" },
+    annotations: [
+      { id: "printer-p04-offline", targetLineId: "printer-p04-status", content: "Offline — Windows currently considers the printer unavailable." },
+    ],
+    learnMore: {
+      howToExecute: "Press Windows + I to open Windows Settings. Select Bluetooth & devices, then Printers & scanners. Locate and select the Office Printer. Inspect the printer's reported status and determine whether Windows identifies it as available or offline.",
+      whatItDoesAndHow: "Displays the printer's current availability as reported by Windows.",
+      whyThisMatters: "A powered-on printer can still appear offline when Windows cannot communicate with it.",
+    },
+  },
+  5: {
+    technicalLineIds: { 0: "printer-p05-printer", 1: "printer-p05-document", 2: "printer-p05-status", 3: "printer-p05-pending" },
+    annotations: [
+      { id: "printer-p05-error", targetLineId: "printer-p05-status", content: "Error - Printing — Windows encountered a problem processing the print job." },
+      { id: "printer-p05-pending", targetLineId: "printer-p05-pending", content: "Pending Jobs: 1 — One document remains queued for printing." },
+    ],
+    learnMore: {
+      howToExecute: "Press Windows + I to open Settings. Navigate to Bluetooth & devices > Printers & scanners. Select the Office Printer and choose Open print queue. Inspect the submitted document, its current status, and the number of pending print jobs.",
+      whatItDoesAndHow: "Displays documents waiting to be processed by the printer.",
+      whyThisMatters: "Helps determine whether print jobs are reaching the Windows printing system and whether they are being completed.",
+    },
+  },
+  6: {
+    technicalLineIds: { 0: "printer-p06-connection", 1: "printer-p06-ipv4", 2: "printer-p06-subnet", 3: "printer-p06-gateway" },
+    annotations: [
+      { id: "printer-p06-ethernet", targetLineId: "printer-p06-connection", content: "Ethernet — The printer uses a wired network connection." },
+      { id: "printer-p06-ip", targetLineId: "printer-p06-ipv4", content: "IPv4 Address — The printer's current network address." },
+      { id: "printer-p06-mask", targetLineId: "printer-p06-subnet", content: "Subnet Mask — Identifies the network and host portions of the IPv4 address." },
+      { id: "printer-p06-gw", targetLineId: "printer-p06-gateway", content: "Default Gateway — Provides access to destinations outside the local subnet." },
+    ],
+    learnMore: {
+      howToExecute: "Open the printer's network settings using its control panel, or print its network configuration report.",
+      whatItDoesAndHow: "Retrieves the network settings currently assigned to the printer.",
+      whyThisMatters: "Establishes the printer's actual network address using information obtained directly from the device. These IP addresses are scenario-specific examples, not universal printer or network settings.",
+    },
+  },
+  7: {
+    technicalLineIds: { 0: "printer-p07-printer", 1: "printer-p07-type", 2: "printer-p07-configured-ip", 3: "printer-p07-actual-ip", 4: "printer-p07-match" },
+    annotations: [
+      { id: "printer-p07-standard-port", targetLineId: "printer-p07-type", content: "Standard TCP/IP Port — Allows Windows to communicate with a network printer using its configured network address." },
+      { id: "printer-p07-configured", targetLineId: "printer-p07-configured-ip", content: "Configured IP Address — The destination Windows is attempting to communicate with." },
+      { id: "printer-p07-actual", targetLineId: "printer-p07-actual-ip", content: "Actual Printer IP Address — The address discovered directly from the printer." },
+      { id: "printer-p07-mismatch", targetLineId: "printer-p07-match", content: "Configuration Match: No — The configured destination does not match the printer's actual address." },
+    ],
+    learnMore: {
+      howToExecute: "Open Windows Settings and navigate to Bluetooth & devices > Printers & scanners. Select the Office Printer and open Printer properties. Select the Ports tab and identify the currently selected Standard TCP/IP Port. Select Configure Port to inspect the configured Printer Name or IP Address field. Do not change the configuration during this inspection.",
+      whatItDoesAndHow: "Identifies the network destination Windows uses when communicating with the printer.",
+      whyThisMatters: "An incorrect destination address can prevent Windows from communicating with an otherwise operational printer.",
+    },
+  },
+  8: {
+    technicalLineIds: { 0: "printer-p08-version", 1: "printer-p08-copyright", 3: "printer-p08-prompt" },
+    annotations: [
+      { id: "printer-p08-ready", targetLineId: "printer-p08-prompt", content: "C:\\Users\\Technician> — The command prompt is ready to accept input." },
+    ],
+    learnMore: {
+      howToExecute: "Press Windows + R, type cmd, and press Enter.",
+      whatItDoesAndHow: "Opens the Windows command-line interface.",
+      whyThisMatters: "Provides access to diagnostic commands that can test network communication.",
+    },
+  },
+  9: {
+    technicalLineIds: { 0: "printer-p09-command", 2: "printer-p09-target", 3: "printer-p09-reply1", 4: "printer-p09-reply2", 5: "printer-p09-reply3", 6: "printer-p09-reply4", 8: "printer-p09-stats", 10: "printer-p09-loss", 12: "printer-p09-summary", 13: "printer-p09-times" },
+    annotations: [
+      { id: "printer-p09-target-note", targetLineId: "printer-p09-target", content: "Pinging 192.168.1.60 — Identifies the destination being tested." },
+      { id: "printer-p09-reply-note", targetLineId: "printer-p09-reply1", content: "Reply from — Indicates that an ICMP Echo Reply was received." },
+      { id: "printer-p09-bytes", targetLineId: "printer-p09-reply1", content: "bytes=32 — The size of the ICMP data payload." },
+      { id: "printer-p09-time", targetLineId: "printer-p09-reply1", content: "time — The round-trip response time." },
+      { id: "printer-p09-ttl", targetLineId: "printer-p09-reply1", content: "TTL — The remaining Time to Live value in the received packet." },
+      { id: "printer-p09-loss-note", targetLineId: "printer-p09-loss", content: "0% loss — All four requests received replies." },
+      { id: "printer-p09-roundtrip", targetLineId: "printer-p09-summary", content: "Round trip times — Summarizes the measured response times." },
+    ],
+    learnMore: {
+      howToExecute: "Enter ping 192.168.1.60 in Command Prompt and press Enter.",
+      whatItDoesAndHow: "Ping sends ICMP Echo Requests to the specified IP address and measures the responses.",
+      whyThisMatters: "Confirms that the printer's actual IP address is reachable from the workstation. A successful ping does not independently prove that printing services are functioning.",
+    },
+  },
+  10: {
+    technicalLineIds: { 0: "printer-p10-previous-ip", 1: "printer-p10-updated-ip", 2: "printer-p10-match" },
+    annotations: [
+      { id: "printer-p10-previous", targetLineId: "printer-p10-previous-ip", content: "Previous IP Address — The incorrect destination previously configured in Windows." },
+      { id: "printer-p10-updated", targetLineId: "printer-p10-updated-ip", content: "Updated IP Address — The corrected destination matching the printer." },
+      { id: "printer-p10-match-note", targetLineId: "printer-p10-match", content: "Configuration Match: Yes — Windows is now configured to use the printer's actual address." },
+    ],
+    learnMore: {
+      howToExecute: "Open Windows Settings and navigate to Bluetooth & devices > Printers & scanners. Select the Office Printer and open Printer properties. Select the Ports tab, highlight the existing Standard TCP/IP Port, and select Configure Port. Change the Printer Name or IP Address field to 192.168.1.60. Select OK to save the port configuration and Apply or OK to save the printer properties using authorized permissions.",
+      whatItDoesAndHow: "Corrects the network destination used by Windows to communicate with the printer.",
+      whyThisMatters: "Resolves the identified configuration mismatch without unnecessarily modifying the printer's network settings.",
+    },
+  },
+  11: {
+    technicalLineIds: { 0: "printer-p11-printer", 1: "printer-p11-pending", 2: "printer-p11-document", 3: "printer-p11-output" },
+    annotations: [
+      { id: "printer-p11-pending-note", targetLineId: "printer-p11-pending", content: "Pending Jobs: 0 — No documents remain waiting in the print queue." },
+      { id: "printer-p11-output-note", targetLineId: "printer-p11-output", content: "Physical Print Output: Confirmed — The technician observed the previously queued document print successfully." },
+    ],
+    learnMore: {
+      howToExecute: "Open Windows Settings and navigate to Bluetooth & devices > Printers & scanners. Select the Office Printer and choose Open print queue. Verify that the previously submitted document has completed and inspect the remaining number of pending jobs. Confirm that the original document was physically printed.",
+      whatItDoesAndHow: "Checks whether the previously unsuccessful print job has completed after the configuration correction.",
+      whyThisMatters: "Provides evidence that the original printing problem has been resolved. An empty queue alone does not guarantee successful physical printing.",
+    },
+  },
+  12: {
+    technicalLineIds: { 0: "printer-p12-printer", 1: "printer-p12-output" },
+    annotations: [
+      { id: "printer-p12-output-note", targetLineId: "printer-p12-output", content: "Printed Successfully — The test page was physically produced by the printer." },
+    ],
+    learnMore: {
+      howToExecute: "Open Windows Settings and navigate to Bluetooth & devices > Printers & scanners. Select the Office Printer and open Printer properties. On the General tab, select Print Test Page. Confirm that the printer physically produces the Windows test page.",
+      whatItDoesAndHow: "Submits a standardized Windows test print job.",
+      whyThisMatters: "Verifies that the workstation can successfully submit and complete a new print job.",
+    },
+  },
+  13: {
+    technicalLineIds: { 0: "printer-p13-user-response" },
+    annotations: [
+      { id: "printer-p13-user-response-note", targetLineId: "printer-p13-user-response", content: "User Response — The user confirms that documents print successfully and the original issue is resolved." },
+    ],
+    learnMore: {
+      howToExecute: "Ask the user to print a document using their normal workflow and confirm that it prints successfully.",
+      whatItDoesAndHow: "Verifies that the user's original printing functionality has been restored.",
+      whyThisMatters: "Technical verification and user confirmation establish that the reported issue has been resolved.",
+    },
+  },
 };

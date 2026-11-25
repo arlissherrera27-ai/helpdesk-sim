@@ -6,12 +6,11 @@ export type ActiveDirectoryLockoutProcedureEducation = {
   learnMore: ProcedureLearnMoreContent;
 };
 
-export const ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<number, ActiveDirectoryLockoutProcedureEducation>> = {
+const LEGACY_ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<number, ActiveDirectoryLockoutProcedureEducation>> = {
   1: {
     technicalLineIds: {
       0: "adlock-p01-identity",
-      1: "adlock-p01-employee",
-      2: "adlock-p01-user-status",
+      1: "adlock-p01-user-status",
     },
     annotations: [
       { id: "adlock-p01-a1", targetLineId: "adlock-p01-identity", content: "Identity Verification: Successful — The approved verification process has been completed." },
@@ -26,10 +25,9 @@ export const ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<numbe
   },
   2: {
     technicalLineIds: {
-      0: "adlock-p02-workstation",
-      1: "adlock-p02-account",
-      2: "adlock-p02-message",
-      3: "adlock-p02-result",
+      0: "adlock-p02-app",
+      2: "adlock-p02-error",
+      4: "adlock-p02-unable",
     },
     annotations: [
       { id: "adlock-p02-a1", targetLineId: "adlock-p02-workstation", content: "Workstation — Identifies the computer where the issue occurs." },
@@ -47,7 +45,7 @@ export const ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<numbe
     technicalLineIds: {
       0: "adlock-p03-console",
       1: "adlock-p03-domain",
-      2: "adlock-p03-status",
+      3: "adlock-p03-established",
     },
     annotations: [
       { id: "adlock-p03-a1", targetLineId: "adlock-p03-console", content: "Console — Identifies the management interface." },
@@ -62,12 +60,11 @@ export const ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<numbe
   },
   4: {
     technicalLineIds: {
-      0: "adlock-p04-domain",
-      1: "adlock-p04-display-name",
-      2: "adlock-p04-logon-name",
-      3: "adlock-p04-object-type",
-      4: "adlock-p04-ou",
-      5: "adlock-p04-search-result",
+      0: "adlock-p04-title",
+      2: "adlock-p04-name",
+      3: "adlock-p04-logon",
+      4: "adlock-p04-domain",
+      6: "adlock-p04-matches",
     },
     annotations: [
       { id: "adlock-p04-a1", targetLineId: "adlock-p04-domain", content: "Domain — The directory domain being searched." },
@@ -85,11 +82,11 @@ export const ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<numbe
   },
   5: {
     technicalLineIds: {
-      0: "adlock-p05-account",
-      1: "adlock-p05-enabled",
-      2: "adlock-p05-locked",
-      3: "adlock-p05-password-expired",
-      4: "adlock-p05-account-expired",
+      0: "adlock-p05-title",
+      2: "adlock-p05-user",
+      4: "adlock-p05-enabled",
+      5: "adlock-p05-locked",
+      6: "adlock-p05-password",
     },
     annotations: [
       { id: "adlock-p05-a1", targetLineId: "adlock-p05-enabled", content: "Account Enabled: Yes — The account has not been administratively disabled." },
@@ -105,13 +102,12 @@ export const ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<numbe
   },
   6: {
     technicalLineIds: {
-      0: "adlock-p06-user",
-      1: "adlock-p06-username",
-      2: "adlock-p06-domain",
-      3: "adlock-p06-account-type",
-      4: "adlock-p06-enabled",
-      5: "adlock-p06-password-set",
-      6: "adlock-p06-password-expired",
+      0: "adlock-p06-title",
+      2: "adlock-p06-user",
+      4: "adlock-p06-previous",
+      5: "adlock-p06-current",
+      7: "adlock-p06-password",
+      8: "adlock-p06-operation",
     },
     annotations: [
       { id: "adlock-p06-a1", targetLineId: "adlock-p06-account-type", content: "Account Type — Identifies the account as a domain user account." },
@@ -126,11 +122,10 @@ export const ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<numbe
   },
   7: {
     technicalLineIds: {
-      0: "adlock-p07-scope",
-      1: "adlock-p07-threshold",
-      2: "adlock-p07-duration",
-      3: "adlock-p07-reset-counter",
-      4: "adlock-p07-status",
+      0: "adlock-p07-title",
+      2: "adlock-p07-user",
+      4: "adlock-p07-interactive",
+      5: "adlock-p07-desktop",
     },
     annotations: [
       { id: "adlock-p07-a1", targetLineId: "adlock-p07-scope", content: "Policy Scope — Identifies the accounts covered by this example policy." },
@@ -147,13 +142,13 @@ export const ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<numbe
   },
   8: {
     technicalLineIds: {
-      0: "adlock-p08-account",
-      1: "adlock-p08-workstation",
-      2: "adlock-p08-failed-count",
-      3: "adlock-p08-failure-category",
-      4: "adlock-p08-lockout-event",
-      5: "adlock-p08-event-id",
-      6: "adlock-p08-source",
+      0: "adlock-p08-title",
+      2: "adlock-p08-user",
+      4: "adlock-p08-enabled",
+      5: "adlock-p08-locked",
+      6: "adlock-p08-password",
+      8: "adlock-p08-previous",
+      9: "adlock-p08-current",
     },
     annotations: [
       { id: "adlock-p08-a1", targetLineId: "adlock-p08-failed-count", content: "Failed Sign-in Events — Five unsuccessful authentication events were identified in the relevant records." },
@@ -170,10 +165,13 @@ export const ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<numbe
   },
   9: {
     technicalLineIds: {
-      0: "adlock-p09-account",
-      1: "adlock-p09-action",
-      2: "adlock-p09-authorization",
-      3: "adlock-p09-result",
+      0: "adlock-p09-title",
+      2: "adlock-p09-computer",
+      3: "adlock-p09-log",
+      4: "adlock-p09-source",
+      5: "adlock-p09-event",
+      9: "adlock-p09-name",
+      12: "adlock-p09-caller",
     },
     annotations: [
       { id: "adlock-p09-a1", targetLineId: "adlock-p09-action", content: "Action — Identifies the account-management operation." },
@@ -188,11 +186,15 @@ export const ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<numbe
   },
   10: {
     technicalLineIds: {
-      0: "adlock-p10-account",
-      1: "adlock-p10-enabled",
-      2: "adlock-p10-locked",
-      3: "adlock-p10-password-expired",
-      4: "adlock-p10-status-check",
+      0: "adlock-p10-title",
+      2: "adlock-p10-section",
+      4: "adlock-p10-address",
+      5: "adlock-p10-user",
+      6: "adlock-p10-type",
+      7: "adlock-p10-persistence",
+      11: "adlock-p10-drive",
+      12: "adlock-p10-path",
+      13: "adlock-p10-reconnect",
     },
     annotations: [
       { id: "adlock-p10-a1", targetLineId: "adlock-p10-enabled", content: "Account Enabled — The account remains enabled." },
@@ -208,10 +210,13 @@ export const ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<numbe
   },
   11: {
     technicalLineIds: {
-      0: "adlock-p11-workstation",
-      1: "adlock-p11-account",
-      2: "adlock-p11-authentication",
-      3: "adlock-p11-session",
+      0: "adlock-p11-title",
+      2: "adlock-p11-target",
+      3: "adlock-p11-user",
+      5: "adlock-p11-removal",
+      6: "adlock-p11-present",
+      8: "adlock-p11-drive",
+      9: "adlock-p11-config",
     },
     annotations: [
       { id: "adlock-p11-a1", targetLineId: "adlock-p11-workstation", content: "Workstation — Identifies the computer used for verification." },
@@ -244,4 +249,41 @@ export const ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<numbe
       whyThisMatters: "The directory reports the lockout cleared, the employee successfully signs in, and the employee confirms the original problem is resolved. Together, these observations support successful incident resolution.",
     },
   },
+};
+
+export const FINAL_ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<number, ActiveDirectoryLockoutProcedureEducation>> = {
+  ...LEGACY_ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT,
+  1: { technicalLineIds: { 0: "adlock-p01-identity", 1: "adlock-p01-user-status" }, annotations: [{ id: "adlock-p01-a1", targetLineId: "adlock-p01-identity", content: "Identity Verification: Successful — The authorized employee has been verified." }], learnMore: { howToExecute: "Follow the organization's approved identity verification process before account actions.", whatItDoesAndHow: "Confirms the person requesting support is the authorized account holder.", whyThisMatters: "Protects organizational accounts against unauthorized access and social engineering." } },
+  2: { technicalLineIds: { 0: "adlock-p02-app", 2: "adlock-p02-error", 4: "adlock-p02-unable" }, annotations: [{ id: "adlock-p02-a1", targetLineId: "adlock-p02-error", content: "Account is currently locked out — Windows reports the account lockout condition." }], learnMore: { howToExecute: "Observe the user's Windows sign-in error and record the exact message.", whatItDoesAndHow: "Identifies the authentication error preventing sign-in. Account lockout is distinct from incorrect password, disabled account, or expired password.", whyThisMatters: "The exact authentication error determines which account condition requires investigation." } },
+  3: { technicalLineIds: { 0: "adlock-p03-console", 2: "adlock-p03-domain", 4: "adlock-p03-established" }, annotations: [{ id: "adlock-p03-a1", targetLineId: "adlock-p03-console", content: "Active Directory Users and Computers — The management console used to administer directory objects." }], learnMore: { howToExecute: "Open Active Directory Users and Computers on an authorized administrative workstation, or run dsa.msc.", whatItDoesAndHow: "Provides access to Active Directory users, computers, groups, and other directory objects.", whyThisMatters: "Allows authorized technicians to investigate and manage domain user accounts." } },
+  4: { technicalLineIds: { 0: "adlock-p04-title", 2: "adlock-p04-name", 3: "adlock-p04-logon", 4: "adlock-p04-domain", 6: "adlock-p04-matches" }, annotations: [{ id: "adlock-p04-a1", targetLineId: "adlock-p04-name", content: "Name — Identifies Alex Morgan as the located directory object." }], learnMore: { howToExecute: "Use Find or search in Active Directory Users and Computers to locate the verified user's account.", whatItDoesAndHow: "Retrieves the directory object associated with the affected user.", whyThisMatters: "Prevents administrative changes from being performed against the wrong account." } },
+  5: { technicalLineIds: { 0: "adlock-p05-title", 2: "adlock-p05-user", 4: "adlock-p05-enabled", 5: "adlock-p05-locked", 6: "adlock-p05-password" }, annotations: [{ id: "adlock-p05-a1", targetLineId: "adlock-p05-locked", content: "Account Locked: Yes — The account is currently restricted by account lockout." }], learnMore: { howToExecute: "Open the user's account properties and inspect account status and lockout information.", whatItDoesAndHow: "Establishes enabled, locked, and password-expiration conditions. Enabled and locked are separate conditions.", whyThisMatters: "Identifies the appropriate account action without unnecessarily resetting or modifying unrelated settings." } },
+  6: { technicalLineIds: { 0: "adlock-p06-title", 2: "adlock-p06-user", 4: "adlock-p06-previous", 5: "adlock-p06-current", 7: "adlock-p06-password", 8: "adlock-p06-operation" }, annotations: [{ id: "adlock-p06-a1", targetLineId: "adlock-p06-current", content: "Current Account State: Unlocked — The account lockout has been cleared." }], learnMore: { howToExecute: "Open account properties on the Account tab and select Unlock account.", whatItDoesAndHow: "Clears account lockout without changing the user's password.", whyThisMatters: "Unlock restores access when the existing password is valid, but does not prove the original lockout cause is resolved." } },
+  7: { technicalLineIds: { 0: "adlock-p07-title", 2: "adlock-p07-user", 4: "adlock-p07-interactive", 5: "adlock-p07-desktop" }, annotations: [{ id: "adlock-p07-a1", targetLineId: "adlock-p07-interactive", content: "Interactive Sign-in: Successful — The current password authenticated." }], learnMore: { howToExecute: "Ask the user to sign in using their current password without exposing it.", whatItDoesAndHow: "Tests whether the account can authenticate following the unlock.", whyThisMatters: "A successful sign-in confirms authentication at that moment but not continued account stability." } },
+  8: { technicalLineIds: { 0: "adlock-p08-title", 2: "adlock-p08-user", 4: "adlock-p08-enabled", 5: "adlock-p08-locked", 6: "adlock-p08-password", 8: "adlock-p08-previous", 9: "adlock-p08-current" }, annotations: [{ id: "adlock-p08-a1", targetLineId: "adlock-p08-locked", content: "Account Locked: Yes — Confirms the recurring lockout." }], learnMore: { howToExecute: "Refresh the affected account properties and inspect current lockout status.", whatItDoesAndHow: "Compares current account state with the earlier unlocked state.", whyThisMatters: "A recurring lockout indicates the original unlock did not eliminate the underlying source of failures." } },
+  9: { technicalLineIds: { 0: "adlock-p09-title", 2: "adlock-p09-computer", 5: "adlock-p09-event", 9: "adlock-p09-name", 12: "adlock-p09-caller" }, annotations: [{ id: "adlock-p09-a1", targetLineId: "adlock-p09-caller", content: "Caller Computer Name: WS-104 — The event identifies the relevant workstation." }], learnMore: { howToExecute: "In the authorized domain-controller Security log, filter Event Viewer for Event ID 4740 and locate the affected account.", whatItDoesAndHow: "Retrieves evidence of the account lockout and caller workstation.", whyThisMatters: "Caller information narrows the investigation but does not identify the credential or process responsible." } },
+  10: { technicalLineIds: { 0: "adlock-p10-title", 2: "adlock-p10-section", 4: "adlock-p10-address", 5: "adlock-p10-user", 6: "adlock-p10-type", 11: "adlock-p10-drive", 12: "adlock-p10-path", 13: "adlock-p10-reconnect" }, annotations: [{ id: "adlock-p10-a1", targetLineId: "adlock-p10-address", content: "Network Address — Associates the saved credential with fs-01.corp.example." }], learnMore: { howToExecute: "Open Credential Manager > Windows Credentials, inspect the file server entry, and inspect the S: mapped drive separately.", whatItDoesAndHow: "Stored credentials can become outdated after a password change and be reused by reconnection processes.", whyThisMatters: "Identifies a plausible source of repeated authentication failures using workstation evidence." } },
+  11: { technicalLineIds: { 0: "adlock-p11-title", 2: "adlock-p11-target", 3: "adlock-p11-user", 5: "adlock-p11-removal", 6: "adlock-p11-present", 8: "adlock-p11-drive", 9: "adlock-p11-config" }, annotations: [{ id: "adlock-p11-a1", targetLineId: "adlock-p11-removal", content: "Credential Removal: Successful — The outdated credential was removed." }], learnMore: { howToExecute: "Remove only the identified fs-01.corp.example credential in Credential Manager.", whatItDoesAndHow: "Removes outdated stored authentication information without changing the password or mapped drive.", whyThisMatters: "Stops the identified source of repeated authentication failures rather than repeatedly clearing the lockout." } },
+  12: { technicalLineIds: { 0: "adlock-p12-title", 2: "adlock-p12-user", 4: "adlock-p12-previous", 5: "adlock-p12-current", 7: "adlock-p12-password", 8: "adlock-p12-operation" }, annotations: [{ id: "adlock-p12-a1", targetLineId: "adlock-p12-current", content: "Current Account State: Unlocked — The recurring lockout is cleared after root-cause correction." }], learnMore: { howToExecute: "Return to the affected account and select Unlock account after credential removal.", whatItDoesAndHow: "Clears the resulting account lockout after the repeated-authentication source has been removed.", whyThisMatters: "Credential correction and account unlock are separate required actions." } },
+  13: { technicalLineIds: { 0: "adlock-p13-title", 2: "adlock-p13-user", 4: "adlock-p13-interactive", 5: "adlock-p13-desktop", 7: "adlock-p13-status", 8: "adlock-p13-observed" }, annotations: [{ id: "adlock-p13-a1", targetLineId: "adlock-p13-interactive", content: "Interactive Sign-in: Successful — The current password authenticated." }], learnMore: { howToExecute: "Ask the user to sign out and back in with the current domain password, then inspect account status.", whatItDoesAndHow: "Verifies authentication after credential correction and the second unlock.", whyThisMatters: "Confirms that the recurring lockout has not immediately returned during verification." } },
+  14: { technicalLineIds: { 0: "adlock-p14-title", 2: "adlock-p14-drive", 3: "adlock-p14-path", 5: "adlock-p14-auth", 6: "adlock-p14-drive-access", 7: "adlock-p14-folder", 9: "adlock-p14-status" }, annotations: [{ id: "adlock-p14-a1", targetLineId: "adlock-p14-path", content: "Network Path — Identifies the affected shared folder." }], learnMore: { howToExecute: "Ask the user to open S: in File Explorer and access the shared folder.", whatItDoesAndHow: "Tests authentication and access to the originally affected network resource.", whyThisMatters: "Successful sign-in alone does not prove the shared folder is restored." } },
+  15: { technicalLineIds: { 0: "adlock-p15-response" }, annotations: [{ id: "adlock-p15-a1", targetLineId: "adlock-p15-response", content: "User Response — The user confirms sign-in and shared-file access are restored." }], learnMore: { howToExecute: "Ask the user to confirm sign-in and shared network drive access using their normal workflow.", whatItDoesAndHow: "Verifies that both the reported lockout and affected network resource are functioning.", whyThisMatters: "User confirmation and successful technical verification establish incident resolution." } },
+};
+
+export const ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT: Readonly<Record<number, ActiveDirectoryLockoutProcedureEducation>> = {
+  1: { technicalLineIds: { 0: "adlock-p01-identity", 1: "adlock-p01-user-status" }, annotations: [{ id: "adlock-p01-a1", targetLineId: "adlock-p01-identity", content: "Identity Verification: Successful — The authorized employee has been verified." }], learnMore: { howToExecute: "Follow the organization's approved identity verification process before account actions.", whatItDoesAndHow: "Confirms the person requesting support is the authorized account holder.", whyThisMatters: "Protects organizational accounts against unauthorized access and social engineering." } },
+  2: { technicalLineIds: { 0: "adlock-p02-app", 2: "adlock-p02-error", 4: "adlock-p02-unable" }, annotations: [{ id: "adlock-p02-a1", targetLineId: "adlock-p02-unable", content: "Account is currently locked out — Windows reports the account lockout condition." }], learnMore: { howToExecute: "Observe the user's Windows sign-in error and record the exact message.", whatItDoesAndHow: "Identifies the authentication error preventing sign-in. Account lockout is distinct from incorrect password, disabled account, or expired password.", whyThisMatters: "The exact authentication error determines which account condition requires investigation." } },
+  3: { technicalLineIds: { 0: "adlock-p03-console", 2: "adlock-p03-domain", 4: "adlock-p03-established" }, annotations: [{ id: "adlock-p03-a1", targetLineId: "adlock-p03-console", content: "Active Directory Users and Computers — The administrative console used to manage directory objects." },{ id: "adlock-p03-a2", targetLineId: "adlock-p03-domain", content: "Domain: corp.example — Identifies the organizational Active Directory domain." },{ id: "adlock-p03-a3", targetLineId: "adlock-p03-established", content: "Administrative connection established — Confirms that the technician has connected using authorized administrative access." }], learnMore: { howToExecute: "On an authorized administrative workstation with Active Directory administrative tools installed, press Windows + R to open the Run dialog. Type dsa.msc and press Enter. Confirm that Active Directory Users and Computers opens and that the correct organizational domain is available.", whatItDoesAndHow: "Provides access to Active Directory users, computers, groups, and other directory objects.", whyThisMatters: "Allows authorized technicians to investigate and manage domain user accounts." } },
+  4: { technicalLineIds: { 0: "adlock-p04-title", 2: "adlock-p04-name", 3: "adlock-p04-logon", 4: "adlock-p04-domain", 6: "adlock-p04-matches" }, annotations: [{ id: "adlock-p04-a1", targetLineId: "adlock-p04-name", content: "Name — Identifies Alex Morgan as the located directory object." }], learnMore: { howToExecute: "In Active Directory Users and Computers, right-click the organizational domain in the left navigation pane and select Find. Select Users, Contacts, and Groups as the search category if necessary. Enter the verified user's name or username and select Find Now. Confirm that the matching account belongs to the affected user.", whatItDoesAndHow: "Retrieves the directory object associated with the affected user.", whyThisMatters: "Prevents administrative changes from being performed against the wrong account." } },
+  5: { technicalLineIds: { 0: "adlock-p05-title", 2: "adlock-p05-user", 4: "adlock-p05-enabled", 5: "adlock-p05-locked", 6: "adlock-p05-password" }, annotations: [{ id: "adlock-p05-a1", targetLineId: "adlock-p05-enabled", content: "Account Enabled: Yes — The account is enabled and has not been administratively disabled." },{ id: "adlock-p05-a2", targetLineId: "adlock-p05-locked", content: "Account Locked: Yes — Account lockout currently restricts authentication." },{ id: "adlock-p05-a3", targetLineId: "adlock-p05-password", content: "Password Expired: No — Password expiration is not the reported authentication condition." }], learnMore: { howToExecute: "Right-click the affected user's account in Active Directory Users and Computers and select Properties. Open the Account tab and inspect the account lockout status and relevant account options. Review the available account status information without changing any settings.", whatItDoesAndHow: "Establishes enabled, locked, and password-expiration conditions. Enabled and locked are separate conditions.", whyThisMatters: "Identifies the appropriate account action without unnecessarily resetting or modifying unrelated settings." } },
+  6: { technicalLineIds: { 0: "adlock-p06-title", 2: "adlock-p06-user", 4: "adlock-p06-previous", 5: "adlock-p06-current", 7: "adlock-p06-password", 8: "adlock-p06-operation" }, annotations: [{ id: "adlock-p06-a1", targetLineId: "adlock-p06-current", content: "Current Account State: Unlocked — The account lockout has been cleared." }], learnMore: { howToExecute: "Right-click the affected user's account and select Properties. Open the Account tab, select the Unlock account checkbox, and select Apply or OK to save the change. Perform this action using an authorized administrative account. Do not reset or change the user's password.", whatItDoesAndHow: "Clears account lockout without changing the user's password.", whyThisMatters: "Unlock restores access when the existing password is valid, but does not prove the original lockout cause is resolved." } },
+  7: { technicalLineIds: { 0: "adlock-p07-title", 2: "adlock-p07-user", 4: "adlock-p07-interactive", 5: "adlock-p07-desktop" }, annotations: [{ id: "adlock-p07-a1", targetLineId: "adlock-p07-interactive", content: "Interactive Sign-in: Successful — The current password authenticated." }], learnMore: { howToExecute: "Ask the user to sign in using their current password without exposing it.", whatItDoesAndHow: "Tests whether the account can authenticate following the unlock.", whyThisMatters: "A successful sign-in confirms authentication at that moment but not continued account stability." } },
+  8: { technicalLineIds: { 0: "adlock-p08-title", 2: "adlock-p08-user", 4: "adlock-p08-enabled", 5: "adlock-p08-locked", 6: "adlock-p08-password", 8: "adlock-p08-previous", 9: "adlock-p08-current" }, annotations: [{ id: "adlock-p08-a1", targetLineId: "adlock-p08-enabled", content: "Account Enabled: Yes — The account is enabled and has not been administratively disabled." },{ id: "adlock-p08-a2", targetLineId: "adlock-p08-locked", content: "Account Locked: Yes — Account lockout currently restricts authentication. The account became locked again after a successful unlock." },{ id: "adlock-p08-a3", targetLineId: "adlock-p08-password", content: "Password Expired: No — Password expiration is not the reported authentication condition." }], learnMore: { howToExecute: "Return to Active Directory Users and Computers and refresh the account information. Reopen the affected user's Properties window and select the Account tab. Inspect the current lockout status to determine whether the account has become locked again.", whatItDoesAndHow: "Compares current account state with the earlier unlocked state.", whyThisMatters: "A recurring lockout indicates the original unlock did not eliminate the underlying source of failures." } },
+  9: { technicalLineIds: { 0: "adlock-p09-title", 2: "adlock-p09-computer", 3: "adlock-p09-log", 4: "adlock-p09-source", 5: "adlock-p09-event", 10: "adlock-p09-name", 13: "adlock-p09-caller" }, annotations: [{ id: "adlock-p09-a1", targetLineId: "adlock-p09-computer", content: "Computer — Identifies DC-01.corp.example, the domain controller whose Security log is being inspected." },{ id: "adlock-p09-a2", targetLineId: "adlock-p09-log", content: "Log Name: Security — Identifies the Windows Security event log." },{ id: "adlock-p09-a3", targetLineId: "adlock-p09-source", content: "Source: Microsoft-Windows-Security-Auditing — Identifies the event provider." },{ id: "adlock-p09-a4", targetLineId: "adlock-p09-event", content: "Event ID: 4740 — Records that a user account was locked out." },{ id: "adlock-p09-a5", targetLineId: "adlock-p09-name", content: "Account Name: amorgan — Identifies the affected account." },{ id: "adlock-p09-a6", targetLineId: "adlock-p09-caller", content: "Caller Computer Name: WS-104 — Identifies the caller computer associated with the recorded lockout." }], learnMore: { howToExecute: "Using authorized access to the appropriate domain controller, press Windows + R, type eventvwr.msc, and press Enter. In Event Viewer, expand Windows Logs and select Security. Select Filter Current Log in the Actions pane, enter 4740 in the Event IDs field, and select OK. Locate the event associated with the affected user's account and inspect its event details, including the Caller Computer Name.", whatItDoesAndHow: "Retrieves evidence of the account lockout and caller workstation.", whyThisMatters: "Caller information narrows the investigation but does not identify the credential or process responsible." } },
+  10: { technicalLineIds: { 0: "adlock-p10-title", 2: "adlock-p10-section", 4: "adlock-p10-address", 5: "adlock-p10-user", 6: "adlock-p10-type", 7: "adlock-p10-persistence", 11: "adlock-p10-drive", 12: "adlock-p10-path", 13: "adlock-p10-reconnect" }, annotations: [{ id: "adlock-p10-a1", targetLineId: "adlock-p10-address", content: "Network Address — The file server associated with the saved credential." },{ id: "adlock-p10-a2", targetLineId: "adlock-p10-user", content: "User Name — The account associated with the credential: CORP\\amorgan." },{ id: "adlock-p10-a3", targetLineId: "adlock-p10-type", content: "Credential Type — Identifies the stored Windows credential category." },{ id: "adlock-p10-a4", targetLineId: "adlock-p10-persistence", content: "Persistence: Enterprise — Describes the credential's persistence classification." },{ id: "adlock-p10-a5", targetLineId: "adlock-p10-drive", content: "Drive: S: — The assigned mapped network drive letter." },{ id: "adlock-p10-a6", targetLineId: "adlock-p10-path", content: "Network Path — The UNC path to the shared network resource:\\\\fs-01.corp.example\\Shared." },{ id: "adlock-p10-a7", targetLineId: "adlock-p10-reconnect", content: "Reconnect at Sign-in: Enabled — Windows is configured to reconnect the mapped drive when the user signs in." }], learnMore: { howToExecute: "On the affected user's workstation, open the Windows Start menu, search for Credential Manager, and select it. Select Windows Credentials and expand the entry associated with the internal file server. Inspect the saved credential information without exposing any password. Separately, press Windows + E to open File Explorer, select This PC, and locate the mapped S: network drive. Inspect its associated network location and obtain the relevant configuration and credential history from the user or authorized configuration information.", whatItDoesAndHow: "Stored credentials can become outdated after a password change and be reused by reconnection processes.", whyThisMatters: "Identifies a plausible source of repeated authentication failures using workstation evidence." } },
+  11: { technicalLineIds: { 0: "adlock-p11-title", 2: "adlock-p11-target", 3: "adlock-p11-user", 5: "adlock-p11-removal", 6: "adlock-p11-present", 8: "adlock-p11-drive", 9: "adlock-p11-config" }, annotations: [{ id: "adlock-p11-a1", targetLineId: "adlock-p11-removal", content: "Credential Removal: Successful — The outdated credential was removed." }], learnMore: { howToExecute: "Open Credential Manager from the Windows Start menu and select Windows Credentials. Expand the previously identified fs-01.corp.example credential and select Remove. Confirm the removal when prompted. Verify that the identified credential is no longer listed. Do not remove unrelated credentials or disconnect the mapped network drive.", whatItDoesAndHow: "Removes outdated stored authentication information without changing the password or mapped drive.", whyThisMatters: "Stopping the source of repeated authentication failures is separate from clearing the resulting account lockout." } },
+  12: { technicalLineIds: { 0: "adlock-p12-title", 2: "adlock-p12-user", 4: "adlock-p12-previous", 5: "adlock-p12-current", 7: "adlock-p12-password", 8: "adlock-p12-operation" }, annotations: [{ id: "adlock-p12-a1", targetLineId: "adlock-p12-current", content: "Current Account State: Unlocked — The recurring lockout is cleared after root-cause correction." }], learnMore: { howToExecute: "Return to Active Directory Users and Computers. Right-click the affected user's account, select Properties, and open the Account tab. Select the Unlock account checkbox and select Apply or OK to save the change. Verify that the account is unlocked without changing the user's password.", whatItDoesAndHow: "Clears the resulting account lockout after the repeated-authentication source has been removed.", whyThisMatters: "Credential correction and account unlock are separate required actions." } },
+  13: { technicalLineIds: { 0: "adlock-p13-title", 2: "adlock-p13-user", 4: "adlock-p13-interactive", 5: "adlock-p13-desktop", 7: "adlock-p13-status", 8: "adlock-p13-observed" }, annotations: [{ id: "adlock-p13-a1", targetLineId: "adlock-p13-interactive", content: "Interactive Sign-in: Successful — The current domain password authenticated successfully." },{ id: "adlock-p13-a2", targetLineId: "adlock-p13-desktop", content: "Desktop Access: Available — The user can access the Windows desktop." },{ id: "adlock-p13-a3", targetLineId: "adlock-p13-status", content: "Active Directory Account Status: Unlocked — The account remains unlocked during verification." },{ id: "adlock-p13-a4", targetLineId: "adlock-p13-observed", content: "Additional Lockout Observed: No — No further lockout was observed during the simulated verification period." }], learnMore: { howToExecute: "Ask the user to sign out and back in with the current domain password, then inspect account status.", whatItDoesAndHow: "Verifies authentication after credential correction and the second unlock.", whyThisMatters: "Confirms that the recurring lockout has not immediately returned during verification. A limited verification period does not guarantee it can never recur." } },
+  14: { technicalLineIds: { 0: "adlock-p14-title", 2: "adlock-p14-drive", 3: "adlock-p14-path", 5: "adlock-p14-auth", 6: "adlock-p14-drive-access", 7: "adlock-p14-folder", 9: "adlock-p14-status" }, annotations: [{ id: "adlock-p14-a1", targetLineId: "adlock-p14-drive", content: "Mapped Drive: S: — Identifies the affected network drive." },{ id: "adlock-p14-a2", targetLineId: "adlock-p14-path", content: "Network Path — The affected UNC share is\\\\fs-01.corp.example\\Shared." },{ id: "adlock-p14-a3", targetLineId: "adlock-p14-auth", content: "Authentication: Successful — Authentication to the network resource succeeded." },{ id: "adlock-p14-a4", targetLineId: "adlock-p14-folder", content: "Shared Folder Access: Successful — The user successfully accessed the intended shared folder." },{ id: "adlock-p14-a5", targetLineId: "adlock-p14-status", content: "Active Directory Account Status: Unlocked — The account remains unlocked during resource verification." }], learnMore: { howToExecute: "On the affected user's workstation, press Windows + E to open File Explorer. Select This PC and locate the mapped S: network drive under Network locations. Open the drive and verify that the shared folder is accessible using the user's current domain credentials. Confirm that the account remains unlocked during verification.", whatItDoesAndHow: "Tests authentication and access to the originally affected network resource.", whyThisMatters: "Successful sign-in alone does not prove the shared folder is restored." } },
+  15: { technicalLineIds: { 0: "adlock-p15-response" }, annotations: [{ id: "adlock-p15-a1", targetLineId: "adlock-p15-response", content: "User Response — The user confirms sign-in and shared-file access are restored." }], learnMore: { howToExecute: "Ask the user to confirm sign-in and shared network drive access using their normal workflow.", whatItDoesAndHow: "Verifies that both the reported lockout and affected network resource are functioning.", whyThisMatters: "User confirmation and successful technical verification establish incident resolution." } },
 };

@@ -49,11 +49,11 @@ export type Command =
   | { kind: "open_active_directory"; readOnly: false }
   | { kind: "locate_user_account"; readOnly: false }
   | { kind: "check_account_status"; readOnly: false }
-  | { kind: "check_account_properties"; readOnly: false }
-  | { kind: "check_lockout_policy"; readOnly: false }
-  | { kind: "review_lockout_details"; readOnly: false }
+  | { kind: "review_account_lockout_events"; readOnly: false }
+  | { kind: "check_windows_credential_manager"; readOnly: false }
+  | { kind: "remove_outdated_credential"; readOnly: false }
+  | { kind: "test_affected_network_resource"; readOnly: false }
   | { kind: "unlock_user_account"; readOnly: false }
-  | { kind: "verify_account_status"; readOnly: false }
   | { kind: "test_user_login"; readOnly: false }
   | { kind: "check_vpn_access"; readOnly: false }
   | { kind: "enable_vpn_access"; readOnly: false }
@@ -144,10 +144,11 @@ export type Command =
   | { kind: "ping_external_ip"; readOnly: false }
   | { kind: "ipconfig_all"; readOnly: false }
   | { kind: "ipconfig_renew"; readOnly: false }
+  | { kind: "ipconfig_displaydns"; readOnly: false }
+  | { kind: "ipconfig_flushdns"; readOnly: false }
+  | { kind: "ping_portal_hostname"; readOnly: false }
   | { kind: "nslookup"; readOnly: false }
   | { kind: "test_website_access"; readOnly: false }
-  | { kind: "nslookup_alternative_dns"; readOnly: false }
-  | { kind: "escalate_dns_issue"; readOnly: false }
 
   // FILES / STORAGE
   | { kind: "check_disk_space"; readOnly: false }
@@ -189,13 +190,16 @@ export type Command =
   | { kind: "check_print_queue"; readOnly: false }
   | { kind: "check_printer_port"; readOnly: false }
   | { kind: "check_printer_physical_status"; readOnly: false }
-  | { kind: "reconnect_printer_ethernet"; readOnly: false }
+  | { kind: "check_printer_network_configuration"; readOnly: false }
+  | { kind: "correct_printer_port_configuration"; readOnly: false }
   | { kind: "confirm_user_resolution"; readOnly: false }
   | { kind: "check_application_error"; readOnly: false }
+  | { kind: "check_physical_network_connection"; readOnly: false }
+  | { kind: "check_application_connection_settings"; readOnly: false }
+  | { kind: "correct_application_port_configuration"; readOnly: false }
   | { kind: "open_powershell"; readOnly: false }
-  | { kind: "test_tcp_port"; readOnly: false }
-  | { kind: "check_firewall_change_record"; readOnly: false }
-  | { kind: "escalate_firewall_issue"; readOnly: false }
+  | { kind: "test_tcp_port_443"; readOnly: false }
+  | { kind: "test_tcp_port_8443"; readOnly: false }
   | { kind: "test_application_connection"; readOnly: false }
   | { kind: "ping_application_server"; readOnly: false }
   | { kind: "open_kb_app_connectivity"; readOnly: false }
@@ -282,11 +286,11 @@ export type ExecutionPlan =
   | { kind: "OpenActiveDirectory" }
   | { kind: "LocateUserAccount" }
   | { kind: "CheckAccountStatus" }
-  | { kind: "CheckAccountProperties" }
-  | { kind: "CheckLockoutPolicy" }
-  | { kind: "ReviewLockoutDetails" }
+  | { kind: "ReviewAccountLockoutEvents" }
+  | { kind: "CheckWindowsCredentialManager" }
+  | { kind: "RemoveOutdatedCredential" }
+  | { kind: "TestAffectedNetworkResource" }
   | { kind: "UnlockUserAccount" }
-  | { kind: "VerifyAccountStatus" }
   | { kind: "TestUserLogin" }
   | { kind: "CheckVpnAccess" }
   | { kind: "EnableVpnAccess" }
@@ -377,10 +381,11 @@ export type ExecutionPlan =
   | { kind: "PingExternalIp" }
   | { kind: "IpconfigAll" }
   | { kind: "IpconfigRenew" }
+  | { kind: "IpconfigDisplayDns" }
+  | { kind: "IpconfigFlushDns" }
+  | { kind: "PingPortalHostname" }
   | { kind: "Nslookup" }
   | { kind: "TestWebsiteAccess" }
-  | { kind: "NslookupAlternativeDns" }
-  | { kind: "EscalateDnsIssue" }
 
   // FILES / STORAGE
   | { kind: "CheckDiskSpace" }
@@ -420,13 +425,16 @@ export type ExecutionPlan =
   | { kind: "CheckPrintQueue" }
   | { kind: "CheckPrinterPort" }
   | { kind: "CheckPrinterPhysicalStatus" }
-  | { kind: "ReconnectPrinterEthernet" }
+  | { kind: "CheckPrinterNetworkConfiguration" }
+  | { kind: "CorrectPrinterPortConfiguration" }
   | { kind: "ConfirmUserResolution" }
   | { kind: "CheckApplicationError" }
+  | { kind: "CheckPhysicalNetworkConnection" }
+  | { kind: "CheckApplicationConnectionSettings" }
+  | { kind: "CorrectApplicationPortConfiguration" }
   | { kind: "OpenPowerShell" }
-  | { kind: "TestTcpPort" }
-  | { kind: "CheckFirewallChangeRecord" }
-  | { kind: "EscalateFirewallIssue" }
+  | { kind: "TestTcpPort443" }
+  | { kind: "TestTcpPort8443" }
   | { kind: "TestApplicationConnection" }
   | { kind: "PingApplicationServer" }
   | { kind: "OpenKbAppConnectivity" }
@@ -568,17 +576,24 @@ export type ActiveDirectoryLockedEmployeeFacts = {
   active_directory_opened: boolean;
   user_account_located: boolean;
   account_status_checked: boolean;
-  account_properties_checked: boolean;
-  lockout_policy_checked: boolean;
-  lockout_details_reviewed: boolean;
   account_unlocked: boolean;
-  account_status_verified: boolean;
   user_login_succeeded: boolean;
+  recurring_lockout_triggered: boolean;
+  recurring_lockout_confirmed: boolean;
+  lockout_event_reviewed: boolean;
+  caller_workstation_identified: boolean;
+  outdated_credential_identified: boolean;
+  outdated_credential_removed: boolean;
+  recurring_authentication_stopped: boolean;
+  second_account_unlock_completed: boolean;
+  final_login_succeeded: boolean;
+  affected_network_resource_verified: boolean;
   user_resolution_confirmed: boolean;
   account_enabled: boolean;
   account_locked: boolean;
+  password_valid: boolean;
   password_expired: boolean;
-  account_expired: boolean;
+  outdated_credential_present: boolean;
 };
 
 export type VpnAccessIssueFacts = {
@@ -895,24 +910,25 @@ export type DnsLookupWebsiteNotOpeningFacts = {
   network_status_checked: boolean;
   website_access_tested: boolean;
   command_prompt_opened: boolean;
-  ip_configuration_inspected: boolean;
-  gateway_ping_succeeded: boolean;
-  external_ping_succeeded: boolean;
-  configured_dns_lookup_failed: boolean;
-  detailed_network_configuration_inspected: boolean;
-  alternative_dns_lookup_succeeded: boolean;
-  dns_issue_escalated: boolean;
-  dns_service_restored: boolean;
-  post_restoration_dns_lookup_succeeded: boolean;
+  configured_dns_lookup_succeeded: boolean;
+  initial_dns_cache_inspected: boolean;
+  dns_cache_flushed: boolean;
+  portal_hostname_ping_succeeded: boolean;
+  updated_dns_cache_inspected: boolean;
   internet_access_verified: boolean;
   user_confirmed_resolution: boolean;
+  wifi_enabled: boolean;
+  airplane_mode_off: boolean;
+  signal_strength: string;
   ipv4_address: string;
   subnet_mask: string;
   default_gateway: string;
-  dhcp_enabled: boolean;
-  dhcp_server: string;
   configured_dns_server: string;
-  alternative_dns_server: string;
+  portal_hostname: string;
+  outdated_cached_address: string;
+  current_portal_address: string;
+  initial_cache_ttl: number;
+  updated_cache_ttl: number;
 };
 
 export type DhcpApipaTroubleshootingFacts = {
@@ -1036,24 +1052,23 @@ export type TcpPortConnectivityFacts = {
   kind: "tcp_port_connectivity";
   identity_verified: boolean;
   application_error_checked: boolean;
+  physical_network_connection_checked: boolean;
   network_status_checked: boolean;
-  command_prompt_opened: boolean;
-  ip_configuration_inspected: boolean;
-  gateway_ping_succeeded: boolean;
+  application_connection_settings_checked: boolean;
   knowledge_base_opened: boolean;
   app_connectivity_article_opened: boolean;
   powershell_opened: boolean;
-  tcp_port_test_failed: boolean;
-  firewall_change_record_checked: boolean;
-  firewall_issue_escalated: boolean;
-  firewall_rule_restored: boolean;
-  tcp_port_test_succeeded: boolean;
+  application_server_ping_succeeded: boolean;
+  tcp_port_443_test_failed: boolean;
+  tcp_port_8443_test_succeeded: boolean;
+  application_port_configuration_corrected: boolean;
   application_connection_verified: boolean;
   user_resolution_confirmed: boolean;
   ipv4_address: string;
   subnet_mask: string;
   default_gateway: string;
   application_server: string;
+  incorrect_tcp_port: number;
   required_tcp_port: number;
 };
 
@@ -1065,20 +1080,18 @@ export type NetworkPrinterNotPrintingFacts = {
   print_queue_checked: boolean;
   printer_port_checked: boolean;
   command_prompt_opened: boolean;
-  ip_configuration_inspected: boolean;
-  gateway_ping_succeeded: boolean;
-  printer_ping_failed: boolean;
   printer_physical_status_checked: boolean;
-  printer_ethernet_reconnected: boolean;
+  printer_network_configuration_checked: boolean;
   printer_ping_succeeded: boolean;
+  printer_port_configuration_corrected: boolean;
   queued_document_printed: boolean;
   windows_test_page_printed: boolean;
   user_resolution_confirmed: boolean;
   printer_offline: boolean;
+  printer_ethernet_connected: boolean;
+  printer_network_link_active: boolean;
   printer_port_address: string;
   printer_ipv4_address: string;
-  ethernet_link_down: boolean;
-  ethernet_link_up: boolean;
 };
 
 export type PrinterNotWorkingFacts = {

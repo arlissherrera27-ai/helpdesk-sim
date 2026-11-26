@@ -119,7 +119,9 @@ export function handleInput(state: SimState, inputRaw: string): EngineOutput {
     state.scenario === "dns_lookup_website_not_opening" ||
     state.scenario === "network_printer_not_printing" ||
     state.scenario === "tcp_port_connectivity" ||
-    state.scenario === "active_directory_locked_employee_account"
+    state.scenario === "active_directory_locked_employee_account" ||
+    state.scenario === "active_network_connections_application_port_conflict" ||
+    state.scenario === "computer_running_slowly_memory_leak"
       ? getSuccessfulScenarioProcedureCount(state.scenario, state.runLog)
       : null;
   let decision = decide(state, command);
@@ -427,7 +429,9 @@ if (patch.result?.completion === "PASS" || patch.result?.completion === "FAIL") 
       state.scenario === "network_printer_not_printing" ||
       state.scenario === "dns_lookup_website_not_opening" ||
       state.scenario === "tcp_port_connectivity" ||
-      state.scenario === "active_directory_locked_employee_account") &&
+      state.scenario === "active_directory_locked_employee_account" ||
+      state.scenario === "active_network_connections_application_port_conflict" ||
+      state.scenario === "computer_running_slowly_memory_leak") &&
     procedureOccurrenceIndex !== null
       ? getScenarioProcedureOutput(
           state.scenario,
@@ -2761,7 +2765,20 @@ case "SelectScenario":
     case "ConfirmUserResolution":
     case "Nslookup":
     case "TestWebsiteAccess":
+    case "InspectTaskManager":
+    case "InspectResourceMonitor":
+    case "ReviewApplicationSupportInformation":
+    case "SafelyCloseApplication":
+    case "VerifySystemResourceUtilization":
     case "CheckApplicationError":
+    case "OpenCompanyReportingTool":
+    case "OpenReportingConfigIni":
+    case "InspectTcp8080Listener":
+    case "IdentifyReportPreviewProcess":
+    case "CheckReportPreviewTool":
+    case "CloseReportPreviewTool":
+    case "IdentifyCompanyReportingProcess":
+    case "TestCompanyReportingTool":
     case "OpenPowerShell":
     case "TestTcpPort443":
     case "TestTcpPort8443":

@@ -48,6 +48,7 @@ export const SCENARIO_IDS = [
   "ethernet_not_connected",
   "dhcp_apipa_troubleshooting",
   "dns_lookup_website_not_opening",
+  "active_network_connections_application_port_conflict",
 
   // FILES / STORAGE
   "disk_space_full",
@@ -60,6 +61,7 @@ export const SCENARIO_IDS = [
   // DEVICE / PERFORMANCE
   "too_many_apps_running",
   "low_memory",
+  "computer_running_slowly_memory_leak",
   "browser_running_slow",
   "browser_running_slow_extension",
 

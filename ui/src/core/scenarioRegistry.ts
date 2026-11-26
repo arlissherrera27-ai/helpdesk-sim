@@ -13,6 +13,8 @@ import { DNS_LOOKUP_EDUCATIONAL_CONTENT } from "./dnsLookupEducationalContent";
 import { NETWORK_PRINTER_EDUCATIONAL_CONTENT } from "./networkPrinterEducationalContent";
 import { TCP_PORT_EDUCATIONAL_CONTENT } from "./tcpPortEducationalContent";
 import { ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT } from "./activeDirectoryLockoutEducationalContent";
+import { ACTIVE_NETWORK_CONNECTIONS_EDUCATIONAL_CONTENT } from "./activeNetworkConnectionsEducationalContent";
+import { COMPUTER_RUNNING_SLOWLY_EDUCATIONAL_CONTENT } from "./computerRunningSlowlyEducationalContent";
 
 type ScenarioProcedureStep = {
   command: string;
@@ -3309,6 +3311,175 @@ What is your first troubleshooting step?`,
     previewMetadata: { level: "Beginner", estimatedTime: "5–8 min", description: "Troubleshoot a Company Portal connection by distinguishing IP reachability from TCP port connectivity.", skillFocus: ["TCP Connectivity", "PowerShell Diagnostics", "Application Configuration"], scenarioContext: "A company application cannot connect to its server while general internet connectivity remains available.", successOutcome: "The application port is corrected and Company Portal access is verified.", selectCommand: "select tcp port connectivity" },
   },
 
+  active_network_connections_application_port_conflict: {
+    label: "Active Network Connections — Application Port Conflict",
+    startPrompt: `Customer: The Company Reporting Tool displays an error during startup and closes before I can generate a report. I need it to work so I can complete normal reporting activities.
+
+What is your first troubleshooting step?`,
+    scenarioType: "standard",
+    category: "network",
+    procedure: [
+      {
+        command: "verify_identity",
+        preview: "Verify the employee and affected workstation.",
+        technicianEntry: "Simulator procedure: verify_identity (not a Windows command)",
+        systemResult: "The employee's identity has been verified. The affected workstation and reported application have been confirmed.",
+        technicalOutput: "",
+      },
+      {
+        command: "open_company_reporting_tool",
+        preview: "Reproduce the reported application startup failure.",
+        technicianEntry: "Simulator procedure: open_company_reporting_tool (not a Windows command)",
+        systemResult: "The Company Reporting Tool fails during initialization and closes after displaying a startup error.",
+        technicalOutput: "Company Reporting Tool\n\nStartup Error\n\nUnable to initialize local reporting service.\n\nSocket error: 10048\n\nApplication startup unsuccessful.",
+        evidence: { id: "active-connections-startup-error", text: "The Company Reporting Tool displayed socket error 10048 during startup and closed." },
+      },
+      {
+        command: "open_reporting_config_ini",
+        preview: "Inspect the application's reporting configuration.",
+        technicianEntry: "Simulator procedure: open_reporting_config.ini (not a Windows command)",
+        systemResult: "The Company Reporting Tool configuration file has been inspected.\n\nThe local reporting service is configured to use TCP address 127.0.0.1 and port 8080.\n\nNo configuration changes have been made.",
+        technicalOutput: "File: C:\\CompanyTools\\Reporting\\config.ini\n\n[LocalService]\nProtocol=TCP\nListenAddress=127.0.0.1\nListenPort=8080",
+        evidence: { id: "active-connections-config", text: "The configuration file specifies TCP 127.0.0.1:8080 for the local reporting service." },
+      },
+      {
+        command: "inspect_tcp_8080_listener",
+        preview: "Inspect current network information for the configured endpoint.",
+        technicianEntry: "netstat -ano | findstr :8080",
+        systemResult: "A TCP listener is present on local address 127.0.0.1 and port 8080.\n\nThe listener is associated with process ID 4820.",
+        technicalOutput: "C:\\>netstat -ano | findstr :8080\n  TCP    127.0.0.1:8080    0.0.0.0:0    LISTENING    4820",
+        evidence: { id: "active-connections-listener-4820", text: "A TCP listener on 127.0.0.1:8080 is associated with PID 4820." },
+      },
+      {
+        command: "identify_report_preview_process",
+        preview: "Identify the executable associated with the discovered process ID.",
+        technicianEntry: 'tasklist /FI "PID eq 4820"',
+        systemResult: "Process ID 4820 belongs to ReportPreview.exe, the executable associated with the Report Preview Tool.\n\nThe process associated with the conflicting local listener has been identified.",
+        technicalOutput: 'C:\\>tasklist /FI "PID eq 4820"\n\nImage Name                     PID Session Name        Session#    Mem Usage\n========================= ======== ================ =========== ============\nReportPreview.exe             4820 Console                    1     48,216 K',
+        evidence: { id: "active-connections-process-4820", text: "PID 4820 belongs to ReportPreview.exe." },
+      },
+      {
+        command: "check_report_preview_tool",
+        preview: "Confirm the application's status and that it is safe to close.",
+        technicianEntry: "Simulator procedure: check_report_preview_tool (not a Windows command)",
+        systemResult: "The Report Preview Tool is running on the affected workstation.\n\nThe employee confirms that the application is no longer needed and that no unsaved work or active reporting operations remain.\n\nAuthorization to close the application has been obtained.",
+        technicalOutput: "",
+        evidence: { id: "active-connections-safe-to-close", text: "The employee confirms no unsaved work or active operations and authorizes normal shutdown of Report Preview Tool." },
+      },
+      {
+        command: "close_report_preview_tool",
+        preview: "Close the approved application normally.",
+        technicianEntry: "Simulator procedure: close_report_preview_tool (not a Windows command)",
+        systemResult: "The Report Preview Tool has been closed normally with the employee's authorization.\n\nNo unsaved work was reported.",
+        technicalOutput: "",
+        evidence: { id: "active-connections-preview-tool-closed", text: "Report Preview Tool was closed normally after the employee authorized shutdown." },
+      },
+      {
+        command: "inspect_tcp_8080_listener",
+        preview: "Recheck the filtered network connection information.",
+        technicianEntry: "netstat -ano | findstr :8080",
+        systemResult: "No matching network entries were returned.\n\nThe previously identified TCP listener on 127.0.0.1:8080 is no longer present in the current network connection information.",
+        technicalOutput: "C:\\>netstat -ano | findstr :8080\n\nC:\\>",
+        evidence: { id: "active-connections-listener-absent", text: "No matching entry for the previously identified listener was returned during the current inspection." },
+      },
+      {
+        command: "open_company_reporting_tool",
+        preview: "Retry the original application startup operation.",
+        technicianEntry: "Simulator procedure: open_company_reporting_tool (not a Windows command)",
+        systemResult: "The Company Reporting Tool starts successfully.\n\nThe local reporting service reports successful initialization, and the previous startup error does not appear.",
+        technicalOutput: "Company Reporting Tool\n\nLocal reporting service initialized.\n\nApplication status: Ready",
+        evidence: { id: "active-connections-reporting-tool-started", text: "The Company Reporting Tool initialized successfully without the previous startup error." },
+      },
+      {
+        command: "inspect_tcp_8080_listener",
+        preview: "Inspect the current listener on the configured endpoint.",
+        technicianEntry: "netstat -ano | findstr :8080",
+        systemResult: "A TCP listener is present on local address 127.0.0.1 and port 8080.\n\nThe current listener is associated with process ID 6132.",
+        technicalOutput: "C:\\>netstat -ano | findstr :8080\n  TCP    127.0.0.1:8080    0.0.0.0:0    LISTENING    6132",
+        evidence: { id: "active-connections-reporting-listener-6132", text: "A TCP listener on 127.0.0.1:8080 is associated with PID 6132." },
+      },
+      {
+        command: "identify_company_reporting_process",
+        preview: "Confirm the executable associated with the current process ID.",
+        technicianEntry: 'tasklist /FI "PID eq 6132"',
+        systemResult: "Process ID 6132 belongs to ReportingTool.exe.\n\nThe Company Reporting Tool has been confirmed as the process associated with the required local TCP listener.",
+        technicalOutput: 'C:\\>tasklist /FI "PID eq 6132"\n\nImage Name                     PID Session Name        Session#    Mem Usage\n========================= ======== ================ =========== ============\nReportingTool.exe             6132 Console                    1     82,640 K',
+        evidence: { id: "active-connections-reporting-process-6132", text: "PID 6132 belongs to ReportingTool.exe." },
+      },
+      {
+        command: "test_company_reporting_tool",
+        preview: "Test the application's normal reporting function.",
+        technicianEntry: "Simulator procedure: test_company_reporting_tool (not a Windows command)",
+        systemResult: "The Company Reporting Tool successfully generates and displays a sample report.\n\nNo application errors occur during the test operation.",
+        technicalOutput: "Company Reporting Tool\n\nReport: Sample Report\n\nGeneration status: Completed\n\nApplication status: Ready",
+        evidence: { id: "active-connections-report-generated", text: "The Company Reporting Tool generated and displayed a sample report without errors." },
+      },
+      {
+        command: "confirm_user_resolution",
+        preview: "Confirm normal reporting activities with the employee.",
+        technicianEntry: "Simulator procedure: confirm_user_resolution (not a Windows command)",
+        systemResult: "The employee confirms that the Company Reporting Tool opens successfully and generates reports as expected.\n\nThe original reported issue has been resolved.",
+        technicalOutput: "",
+        evidence: { id: "active-connections-user-resolution", text: "The employee confirms the Company Reporting Tool opens and generates reports as expected." },
+      },
+    ],
+    investigation: {
+      relatedActions: {
+        check_network_status: {
+          agent: "I’m checking the workstation's general network status.",
+          system: "Windows reports that the workstation has an active network connection. This check does not identify the cause of the reported application startup problem.",
+          evidence: { id: "active-connections-network-status", text: "The workstation reports an active network connection; the cause of the application startup problem remains undetermined." },
+        },
+      },
+    },
+    completion: {
+      command: "confirm_user_resolution",
+      fact: "user_resolution_confirmed",
+    },
+    proofLines: [
+      "Verified the employee and affected workstation",
+      "Reproduced the Company Reporting Tool startup error",
+      "Inspected the configured local TCP endpoint",
+      "Identified the process associated with the initial listener",
+      "Confirmed operational safety and authorization before normal application shutdown",
+      "Verified the previous listener was absent after shutdown",
+      "Retested application startup and identified the current listener owner",
+      "Generated a sample report and confirmed resolution with the employee",
+    ],
+    successLines: [
+      "The Company Reporting Tool starts and generates reports successfully.",
+      "The employee confirms normal reporting activities are restored.",
+    ],
+    defaults: {
+      kind: "active_network_connections_application_port_conflict",
+      identity_verified: false,
+      application_startup_failure_reproduced: false,
+      reporting_configuration_inspected: false,
+      conflicting_listener_discovered: false,
+      conflicting_process_identified: false,
+      report_preview_tool_operational_status_checked: false,
+      report_preview_tool_safe_to_close: false,
+      report_preview_tool_running: true,
+      report_preview_tool_closed: false,
+      conflicting_listener_present: true,
+      conflicting_listener_absence_verified: false,
+      company_reporting_tool_running: false,
+      reporting_listener_discovered: false,
+      reporting_process_owner_verified: false,
+      reporting_functionality_verified: false,
+      user_resolution_confirmed: false,
+    },
+    previewMetadata: {
+      level: "Beginner",
+      estimatedTime: "5–8 min",
+      description: "Investigate an application startup error and restore normal reporting activity.",
+      skillFocus: ["Windows Network Connections", "Process Identification", "Application Verification"],
+      scenarioContext: "The Company Reporting Tool closes during startup and the employee cannot generate reports.",
+      successOutcome: "The employee can open the reporting tool and generate reports again.",
+      selectCommand: "select active network connections application port conflict",
+    },
+  },
+
   dhcp_apipa_troubleshooting: {
     label: "DHCP Address Renewal",
     startPrompt: "Customer: Websites would not load.",
@@ -4613,6 +4784,361 @@ defaults: {
         "select low memory",
     },
   },
+
+computer_running_slowly_memory_leak: {
+  label: "Computer Running Slowly",
+  startPrompt: `Subject: Computer Running Slowly
+Employee: Jordan Taylor
+Workstation: WS-108
+
+Employee message:
+"My computer has been running really slowly today. Switching between applications takes a long time, and sometimes everything freezes for a few seconds. I can still get my work done, but it's taking much longer than usual."
+
+What is your first troubleshooting step?`,
+  scenarioType: "standard",
+  category: "device_performance",
+  procedure: [
+    {
+      command: "verify_identity",
+      preview: "Verify the employee's identity and support authorization.",
+      technicianEntry: "Verify user",
+      systemResult: "Employee identity verified.\n\nJordan Taylor is confirmed as the assigned employee for workstation WS-108.\n\nThe technician is authorized to investigate the reported workstation performance issue.",
+      technicalOutput: "",
+      evidence: { id: "computer-slow-identity", text: "Employee identity verified; Jordan Taylor and workstation WS-108 confirmed; support authorization established." },
+    },
+    {
+      command: "test_performance",
+      preview: "Check workstation performance and reproduce the reported symptoms.",
+      technicianEntry: "Check workstation performance",
+      systemResult: "The technician reproduces the reported performance issue.\n\nSwitching between applications is delayed, File Explorer responds slowly, and the workstation briefly becomes unresponsive during normal employee activity.\n\nThe reported issue is confirmed.",
+      technicalOutput: `Workstation: WS-108
+Operating system: Windows 11
+
+Observed behavior:
+
+- Application switching: Delayed
+- File Explorer responsiveness: Slow
+- Intermittent freezing: Observed
+- Workstation operational: Yes`,
+      evidence: { id: "computer-slow-initial-performance", text: "Application switching delays, slow File Explorer, and intermittent freezing reproduced on WS-108." },
+    },
+    {
+      command: "restart_workstation",
+      preview: "Restart the workstation with employee authorization.",
+      technicianEntry: "Restart computer",
+      systemResult: "The employee confirms that all work has been saved and authorizes the restart.\n\nThe workstation restarts successfully.\n\nAfter the employee signs in, the normal desktop environment and startup applications load.",
+      technicalOutput: `Restart status: Successful
+Windows sign-in: Successful
+Desktop environment: Available
+Startup applications: Loaded`,
+      evidence: { id: "computer-slow-workstation-restarted", text: "The employee authorized the restart after saving work; Windows and startup applications loaded successfully." },
+    },
+    {
+      command: "test_performance",
+      preview: "Retest performance after normal activity resumes.",
+      technicianEntry: "Check workstation performance",
+      systemResult: "The workstation initially responds normally following the restart.\n\nAfter approximately 10 minutes of normal employee activity, application switching becomes delayed and intermittent freezing returns.\n\nThe performance issue remains unresolved.",
+      technicalOutput: `Post-restart observation:
+
+Immediately after sign-in:
+
+- Application switching: Normal
+- File Explorer responsiveness: Normal
+- Intermittent freezing: Not observed
+
+After 10 minutes of normal activity:
+
+- Application switching: Delayed
+- File Explorer responsiveness: Slow
+- Intermittent freezing: Observed`,
+      evidence: { id: "computer-slow-symptoms-recurred", text: "Performance improved immediately after restart, then the original delays and freezing returned after normal activity." },
+    },
+    {
+      command: "check_disk_space",
+      preview: "Check the system drive's available storage capacity.",
+      technicianEntry: "Open This PC",
+      systemResult: "The technician inspects the available storage capacity of the workstation's system drive.\n\nThe system drive has 118 GB of available storage.",
+      technicalOutput: `This PC — Devices and drives
+Local Disk (C:)
+- Total capacity: 256 GB
+- Used space: 138 GB
+    - Free space: 118 GB`,
+      evidence: { id: "computer-slow-disk-space", text: "Local Disk (C:) has a total capacity of 256 GB with 118 GB of free storage." },
+    },
+    {
+      command: "inspect_task_manager",
+      preview: "Inspect Task Manager CPU, memory, disk, GPU and process usage.",
+      technicianEntry: "Inspect Task Manager",
+      systemResult: "Task Manager shows elevated memory utilization and disk active time.\n\nCPU and GPU utilization remain comparatively low.\n\nCompany Sync Tool is the largest individual consumer of memory among the displayed processes.",
+      technicalOutput: `Task Manager — Performance
+
+CPU
+- Utilization: 24%
+Memory
+- Installed: 8.0 GB
+- In use: 7.5 GB
+- Available: 0.3 GB
+- Utilization: 96%
+Disk 0 (C:)
+- Type: SSD
+- Active time: 100%
+GPU 0
+- Utilization: 5%
+
+Task Manager — Processes
+
+Name | CPU | Memory | Disk
+
+Company Sync Tool | 4% | 5,600 MB | 1.2 MB/s
+Web Browser | 6% | 620 MB | 0.2 MB/s
+File Explorer | 1% | 95 MB | 0.1 MB/s
+Other displayed processes | 13% | Various | Various
+
+The process list is a selected excerpt, not a complete accounting of all system memory.`,
+      evidence: { id: "computer-slow-task-manager", text: "Task Manager shows 96% memory use, 0.3 GB available, 100% disk active time, low CPU/GPU use, and Company Sync Tool as the largest displayed memory consumer." },
+    },
+    {
+      command: "inspect_resource_monitor",
+      preview: "Inspect Resource Monitor memory, hard-fault, disk and process activity over time.",
+      technicianEntry: "Inspect Resource Monitor",
+      systemResult: "Resource Monitor shows sustained memory pressure and substantial hard-fault activity.\n\nDisk activity includes frequent access to the Windows paging file.\n\nDuring a controlled observation of normal synchronization activity, CompanySync.exe continues consuming additional memory.",
+      technicalOutput: `Resource Monitor — Memory
+
+Process: CompanySync.exe
+- Private (KB): Approximately 5,632,000 (5,500 MB)
+- Working Set (KB): Approximately 5,734,400 (5,600 MB)
+- Hard faults/sec: 120
+System-wide hard faults/sec: Approximately 180
+
+Resource Monitor — Disk Activity
+
+Image: System
+File: C:\\pagefile.sys
+- Read activity: Approximately 8,400,000 B/sec
+- Write activity: Approximately 3,200,000 B/sec
+
+Technician observation — CompanySync.exe private memory
+
+Normal synchronization workload:
+
+Observation time | Private memory (converted to MB)
+Start | 5,500 MB
+After 2 minutes | 5,750 MB
+After 5 minutes | 6,100 MB
+
+The observation table represents technician-recorded measurements, not a native Resource Monitor historical report.`,
+      evidence: { id: "computer-slow-resource-monitor", text: "Resource Monitor shows memory pressure, hard faults, paging-file activity, and CompanySync.exe private memory increasing from 5,500 MB to 6,100 MB over five minutes." },
+    },
+    {
+      command: "review_application_support_information",
+      preview: "Review the installed application version and approved support information.",
+      technicianEntry: "Review application support information",
+      systemResult: "The installed Company Sync Tool version is 2.4.1.\n\nThe organization's IT Knowledge Base contains a documented memory leak affecting this version during synchronization activity.\n\nVersion 2.4.2 contains the corrective update and is approved for installation on managed workstations.",
+      technicalOutput: `Company Sync Tool — About
+
+Installed version: 2.4.1
+
+IT Knowledge Base
+
+Article: KB-206
+Title: Company Sync Tool Memory Leak
+Affected version: 2.4.1
+
+Documented symptoms:
+
+- Increasing process memory consumption during synchronization.
+- Reduced available physical memory.
+- Increased paging activity.
+- Reduced workstation responsiveness.
+- Temporary improvement following application or workstation restart.
+
+Documented cause:
+
+Version 2.4.1 fails to release certain memory allocations during repeated synchronization operations.
+
+Corrected version: 2.4.2
+Approved installation source: Managed Software Repository
+Installation authorization: Level 1 Desktop Support
+Installation requirement: Close Company Sync Tool before installing the update.`,
+      evidence: { id: "computer-slow-known-issue", text: "KB-206 documents a Company Sync Tool 2.4.1 memory leak, approves version 2.4.2 through the Managed Software Repository, and authorizes Level 1 installation after closing the application." },
+    },
+    {
+      command: "safely_close_application",
+      preview: "Safely close Company Sync Tool after synchronization completes and employee authorization.",
+      technicianEntry: "Safely close application",
+      systemResult: "Company Sync Tool is inspected before closure.\n\nThe current synchronization operation completes.\n\nThe employee confirms that no unsaved work will be affected and authorizes application closure.\n\nCompany Sync Tool exits successfully.",
+      technicalOutput: `Company Sync Tool
+Synchronization status: Complete
+Pending operations: None
+Employee authorization: Confirmed
+Application status: Closed
+
+Task Manager — Processes
+CompanySync.exe: Not running`,
+      evidence: { id: "computer-slow-app-closed", text: "Synchronization completed, no pending operations remained, the employee authorized closure, and CompanySync.exe stopped running." },
+    },
+    {
+      command: "install_software_update",
+      preview: "Install the authorized Company Sync Tool 2.4.2 update.",
+      technicianEntry: "Install approved application update",
+      systemResult: "The approved Company Sync Tool version 2.4.2 installer is obtained from the organization's managed software repository.\n\nThe installation completes successfully.\n\nThe installer reports that no workstation restart is required.",
+      technicalOutput: `Managed Software Repository
+Package: Company Sync Tool 2.4.2
+Approval status: Authorized
+
+Installation Results
+
+Previous version: 2.4.1
+Target version: 2.4.2
+Installation status: Successful
+Restart required: No`,
+      evidence: { id: "computer-slow-update-installed", text: "Authorized Company Sync Tool 2.4.2 installed successfully; no workstation restart was required." },
+    },
+    {
+      command: "check_software_version",
+      preview: "Launch the updated application and verify its installed version.",
+      technicianEntry: "Verify updated application",
+      systemResult: "Company Sync Tool launches successfully.\n\nThe application's About information confirms that version 2.4.2 is installed.\n\nThe application initializes and its synchronization functionality becomes available.",
+      technicalOutput: `Company Sync Tool — About
+Application: Company Sync Tool
+Installed version: 2.4.2
+Application status: Running
+Synchronization functionality: Available`,
+      evidence: { id: "computer-slow-updated-app-verified", text: "Company Sync Tool launched successfully, reports version 2.4.2, and has synchronization functionality available." },
+    },
+    {
+      command: "verify_system_resource_utilization",
+      preview: "Repeat the equivalent synchronization workload and verify system resources.",
+      technicianEntry: "Verify system resource utilization",
+      systemResult: "The original synchronization workload is repeated.\n\nThe workstation maintains substantially more available physical memory, and disk active time remains reduced.\n\nCompanySync.exe does not demonstrate the previous abnormal memory growth during the equivalent five-minute observation period.",
+      technicalOutput: `Task Manager — Performance
+
+CPU
+- Utilization: 12%
+Memory
+- Installed: 8.0 GB
+- In use: 3.3 GB
+- Available: 4.5 GB
+- Utilization: 42%
+Disk 0 (C:)
+- Type: SSD
+- Active time: 8%
+GPU 0
+- Utilization: 5%
+
+Task Manager — Processes
+
+Company Sync Tool
+- CPU: 3%
+- Memory: Approximately 290 MB
+
+Resource Monitor — Memory
+
+Process: CompanySync.exe
+- Private (KB): Approximately 266,240 (260 MB)
+- Working Set (KB): Approximately 296,960 (290 MB)
+- Hard faults/sec: 0
+System-wide hard faults/sec: Approximately 2
+
+Resource Monitor — Disk Activity
+
+Image: System
+File: C:\\pagefile.sys
+- Read activity: 0 B/sec during sampled interval
+- Write activity: Approximately 16,384 B/sec
+
+Technician observation — CompanySync.exe private memory
+
+Equivalent synchronization workload:
+
+Observation time | Private memory (converted to MB)
+Start | 250 MB
+After 2 minutes | 265 MB
+After 5 minutes | 260 MB
+
+Before-and-after comparison
+
+Measurement | Before update | After update
+Memory utilization | 96% | 42%
+Available memory | 0.3 GB | 4.5 GB
+Disk active time | 100% | 8%
+Process private memory growth over 5 minutes | +600 MB | +10 MB
+System hard faults/sec | 180 | 2
+
+These values are simulated observations under the scenario's specified workload.`,
+      evidence: { id: "computer-slow-resources-verified", text: "Under an equivalent workload, memory utilization decreased to 42%, available memory rose to 4.5 GB, disk active time fell to 8%, process memory remained stable, and hard faults fell to 2/sec." },
+    },
+    {
+      command: "test_performance",
+      preview: "Repeat the original workstation checks and confirm resolution with the employee.",
+      technicianEntry: "Test workstation performance",
+        systemResult: "The technician repeats the original workstation performance checks.\n\nApplication switching and File Explorer responsiveness remain normal during the employee's usual activity.\n\nCompany Sync Tool completes its normal synchronization workload.\n\nThe employee confirms that the original performance problem is no longer occurring.\n\nEmployee: \"Everything is responding normally again. I can switch between my applications without waiting, and the freezing hasn't come back.\"",
+      technicalOutput: `Functional Verification
+
+Application switching: Normal
+File Explorer responsiveness: Normal
+Company Sync Tool synchronization: Successful
+Intermittent freezing: Not reproduced
+Employee confirmation: Received
+Resolution status: Verified`,
+      evidence: { id: "computer-slow-resolution-confirmed", text: "Normal application switching and File Explorer responsiveness verified; synchronization succeeded; employee confirmed the original symptoms were resolved." },
+    },
+  ],
+  completion: {
+    command: "test_performance",
+    fact: "user_confirmation_received",
+  },
+  proofLines: [
+    "Verified employee identity and support authorization",
+    "Reproduced the reported workstation performance problem",
+    "Observed temporary improvement after restart and recurrence during normal activity",
+    "Confirmed adequate free storage and identified memory pressure and paging activity",
+    "Matched the installed Company Sync Tool version with documented KB-206 symptoms",
+    "Closed the application safely and installed the authorized corrective update",
+    "Verified the updated application and improved resource utilization under comparable workload",
+    "Confirmed normal workstation functionality with the employee",
+  ],
+  successLines: [
+    "The Company Sync Tool memory leak was corrected and workstation performance was verified.",
+    "The employee confirms normal application switching and workstation responsiveness.",
+  ],
+  defaults: {
+    kind: "computer_running_slowly_memory_leak",
+    identity_verified: false,
+    initial_performance_check_completed: false,
+    restart_authorized: false,
+    workstation_restarted: false,
+    post_restart_performance_check_completed: false,
+    symptoms_recurred: false,
+    disk_space_checked: false,
+    task_manager_inspected: false,
+    resource_pressure_observed: false,
+    resource_monitor_inspected: false,
+    paging_activity_observed: false,
+    baseline_memory_growth_observed: false,
+    support_information_reviewed: false,
+    documented_memory_leak_confirmed: false,
+    update_authorized: false,
+    sync_tool_running: true,
+    application_safely_closed: false,
+    software_update_installed: false,
+    updated_application_verified: false,
+    post_update_resources_verified: false,
+    memory_growth_not_reproduced: false,
+    final_performance_verified: false,
+    user_confirmation_received: false,
+    sync_tool_version: "2.4.1",
+  },
+  previewMetadata: {
+    level: "Beginner",
+    estimatedTime: "8–12 min",
+    description: "Challenging beginner — Level 1 troubleshooting for recurring Windows workstation performance problems.",
+    skillFocus: ["Performance Troubleshooting", "Resource Interpretation", "Evidence-Based Verification"],
+    scenarioContext: "An employee's workstation remains operational but is unusually slow and intermittently freezes.",
+    successOutcome: "The employee can complete usual workstation activities with normal responsiveness.",
+    selectCommand: "select computer running slowly memory leak",
+  },
+},
 
 browser_running_slow: {
   label: "Browser Running Slow",
@@ -6072,7 +6598,10 @@ export function getScenarioProcedureOutput(
     !scenario ||
     step?.command !== command ||
     !step.systemResult ||
-    !step.technicalOutput
+    step.technicalOutput === undefined ||
+    (step.technicalOutput.length === 0 &&
+      scenarioId !== "active_network_connections_application_port_conflict" &&
+      scenarioId !== "computer_running_slowly_memory_leak")
   ) {
     return null;
   }
@@ -6100,15 +6629,20 @@ export function getScenarioProcedureOutput(
             ? TCP_PORT_EDUCATIONAL_CONTENT[procedureIndex + 1]
             : scenarioId === "active_directory_locked_employee_account"
               ? ACTIVE_DIRECTORY_LOCKOUT_EDUCATIONAL_CONTENT[procedureIndex + 1]
+                  : scenarioId === "active_network_connections_application_port_conflict"
+                    ? ACTIVE_NETWORK_CONNECTIONS_EDUCATIONAL_CONTENT[procedureIndex + 1]
+                    : scenarioId === "computer_running_slowly_memory_leak"
+                      ? COMPUTER_RUNNING_SLOWLY_EDUCATIONAL_CONTENT[procedureIndex + 1]
         : undefined;
-  const technicalLines: TechnicalOutputLine[] = technicalOutput
-    .split("\n")
-    .map((text, lineIndex) => ({
-      id:
-        educationalContent?.technicalLineIds[lineIndex] ??
-        `${scenarioId}.p${procedureIndex + 1}.line${lineIndex}`,
-      text,
-    }));
+  const technicalLines: TechnicalOutputLine[] | undefined =
+    technicalOutput.length === 0
+      ? undefined
+      : technicalOutput.split("\n").map((text, lineIndex) => ({
+          id:
+            educationalContent?.technicalLineIds[lineIndex] ??
+            `${scenarioId}.p${procedureIndex + 1}.line${lineIndex}`,
+          text,
+        }));
 
   const commandOccurrence = scenario.procedure
     .slice(0, procedureIndex + 1)
@@ -6123,7 +6657,7 @@ export function getScenarioProcedureOutput(
     technicianEntry: step.technicianEntry ?? command,
     systemResult: step.systemResult,
     technicalOutput,
-    technicalLines,
+    ...(technicalLines ? { technicalLines } : {}),
     annotations: educationalContent?.annotations ?? [],
     learnMore: {
       howToExecute: educationalContent?.learnMore.howToExecute ?? null,
@@ -6136,6 +6670,16 @@ export function getScenarioProcedureOutput(
 export function getScenarioPreviewSteps(scenarioId: string): string[] {
   const scenario =
     SCENARIO_REGISTRY[scenarioId as keyof typeof SCENARIO_REGISTRY];
+
+  if (scenarioId === "active_network_connections_application_port_conflict") {
+    return [
+      "Investigate the reported application startup problem and verify normal reporting activity.",
+    ];
+  }
+
+  if (scenarioId === "computer_running_slowly_memory_leak") {
+    return ["Investigate the workstation's reported performance problem and verify normal operation."];
+  }
 
   return scenario?.procedure.map((step) => step.preview) ?? [];
 }

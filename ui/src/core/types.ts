@@ -149,6 +149,14 @@ export type Command =
   | { kind: "ping_portal_hostname"; readOnly: false }
   | { kind: "nslookup"; readOnly: false }
   | { kind: "test_website_access"; readOnly: false }
+  | { kind: "open_company_reporting_tool"; readOnly: false }
+  | { kind: "open_reporting_config_ini"; readOnly: false }
+  | { kind: "inspect_tcp_8080_listener"; readOnly: false }
+  | { kind: "identify_report_preview_process"; readOnly: false }
+  | { kind: "check_report_preview_tool"; readOnly: false }
+  | { kind: "close_report_preview_tool"; readOnly: false }
+  | { kind: "identify_company_reporting_process"; readOnly: false }
+  | { kind: "test_company_reporting_tool"; readOnly: false }
 
   // FILES / STORAGE
   | { kind: "check_disk_space"; readOnly: false }
@@ -172,6 +180,11 @@ export type Command =
   | { kind: "test_performance"; readOnly: false }
   | { kind: "check_memory_usage"; readOnly: false }
   | { kind: "close_memory_heavy_apps"; readOnly: false }
+  | { kind: "inspect_task_manager"; readOnly: false }
+  | { kind: "inspect_resource_monitor"; readOnly: false }
+  | { kind: "review_application_support_information"; readOnly: false }
+  | { kind: "safely_close_application"; readOnly: false }
+  | { kind: "verify_system_resource_utilization"; readOnly: false }
   | { kind: "check_browser_cache"; readOnly: false }
   | { kind: "clear_browser_cache"; readOnly: false }
   | { kind: "check_browser_extensions"; readOnly: false }
@@ -386,6 +399,14 @@ export type ExecutionPlan =
   | { kind: "PingPortalHostname" }
   | { kind: "Nslookup" }
   | { kind: "TestWebsiteAccess" }
+  | { kind: "OpenCompanyReportingTool" }
+  | { kind: "OpenReportingConfigIni" }
+  | { kind: "InspectTcp8080Listener" }
+  | { kind: "IdentifyReportPreviewProcess" }
+  | { kind: "CheckReportPreviewTool" }
+  | { kind: "CloseReportPreviewTool" }
+  | { kind: "IdentifyCompanyReportingProcess" }
+  | { kind: "TestCompanyReportingTool" }
 
   // FILES / STORAGE
   | { kind: "CheckDiskSpace" }
@@ -409,6 +430,11 @@ export type ExecutionPlan =
   | { kind: "TestPerformance" }
   | { kind: "CheckMemoryUsage" }
   | { kind: "CloseMemoryHeavyApps" }
+  | { kind: "InspectTaskManager" }
+  | { kind: "InspectResourceMonitor" }
+  | { kind: "ReviewApplicationSupportInformation" }
+  | { kind: "SafelyCloseApplication" }
+  | { kind: "VerifySystemResourceUtilization" }
   | { kind: "CheckBrowserCache" }
   | { kind: "ClearBrowserCache" }
   | { kind: "CheckBrowserExtensions" }
@@ -1048,6 +1074,34 @@ export type BrowserRunningSlowExtensionFacts = {
   browser_performance_ok: boolean;
 };
 
+export type ComputerRunningSlowlyMemoryLeakFacts = {
+  kind: "computer_running_slowly_memory_leak";
+  identity_verified: boolean;
+  initial_performance_check_completed: boolean;
+  restart_authorized: boolean;
+  workstation_restarted: boolean;
+  post_restart_performance_check_completed: boolean;
+  symptoms_recurred: boolean;
+  disk_space_checked: boolean;
+  task_manager_inspected: boolean;
+  resource_pressure_observed: boolean;
+  resource_monitor_inspected: boolean;
+  paging_activity_observed: boolean;
+  baseline_memory_growth_observed: boolean;
+  support_information_reviewed: boolean;
+  documented_memory_leak_confirmed: boolean;
+  update_authorized: boolean;
+  sync_tool_running: boolean;
+  application_safely_closed: boolean;
+  software_update_installed: boolean;
+  updated_application_verified: boolean;
+  post_update_resources_verified: boolean;
+  memory_growth_not_reproduced: boolean;
+  final_performance_verified: boolean;
+  user_confirmation_received: boolean;
+  sync_tool_version: "2.4.1" | "2.4.2";
+};
+
 export type TcpPortConnectivityFacts = {
   kind: "tcp_port_connectivity";
   identity_verified: boolean;
@@ -1070,6 +1124,26 @@ export type TcpPortConnectivityFacts = {
   application_server: string;
   incorrect_tcp_port: number;
   required_tcp_port: number;
+};
+
+export type ActiveNetworkConnectionsFacts = {
+  kind: "active_network_connections_application_port_conflict";
+  identity_verified: boolean;
+  application_startup_failure_reproduced: boolean;
+  reporting_configuration_inspected: boolean;
+  conflicting_listener_discovered: boolean;
+  conflicting_process_identified: boolean;
+  report_preview_tool_operational_status_checked: boolean;
+  report_preview_tool_safe_to_close: boolean;
+  report_preview_tool_running: boolean;
+  report_preview_tool_closed: boolean;
+  conflicting_listener_present: boolean;
+  conflicting_listener_absence_verified: boolean;
+  company_reporting_tool_running: boolean;
+  reporting_listener_discovered: boolean;
+  reporting_process_owner_verified: boolean;
+  reporting_functionality_verified: boolean;
+  user_resolution_confirmed: boolean;
 };
 
 export type NetworkPrinterNotPrintingFacts = {
@@ -1288,11 +1362,13 @@ export type ScenarioFacts =
 | LowMemoryFacts
 | BrowserRunningSlowFacts
 | BrowserRunningSlowExtensionFacts
+| ComputerRunningSlowlyMemoryLeakFacts
 
   // HARDWARE / PERIPHERALS
   | PrinterNotWorkingFacts
   | NetworkPrinterNotPrintingFacts
   | TcpPortConnectivityFacts
+  | ActiveNetworkConnectionsFacts
   | PrinterWrongDefaultPrinterFacts
   | MouseKeyboardNotWorkingFacts
   | MicrophoneNotWorkingFacts

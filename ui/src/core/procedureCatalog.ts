@@ -223,6 +223,14 @@ check_outlook_mailbox_configuration: {
   ping_portal_hostname: { plan: "PingPortalHostname" },
   nslookup: { plan: "Nslookup" },
   test_website_access: { plan: "TestWebsiteAccess" },
+  open_company_reporting_tool: { plan: "OpenCompanyReportingTool" },
+  open_reporting_config_ini: { plan: "OpenReportingConfigIni" },
+  inspect_tcp_8080_listener: { plan: "InspectTcp8080Listener" },
+  identify_report_preview_process: { plan: "IdentifyReportPreviewProcess" },
+  check_report_preview_tool: { plan: "CheckReportPreviewTool" },
+  close_report_preview_tool: { plan: "CloseReportPreviewTool" },
+  identify_company_reporting_process: { plan: "IdentifyCompanyReportingProcess" },
+  test_company_reporting_tool: { plan: "TestCompanyReportingTool" },
 
   // FILES / STORAGE
   check_disk_space: { plan: "CheckDiskSpace" },
@@ -248,6 +256,11 @@ check_outlook_mailbox_configuration: {
   test_performance: { plan: "TestPerformance" },
   check_memory_usage: { plan: "CheckMemoryUsage" },
   close_memory_heavy_apps: { plan: "CloseMemoryHeavyApps" },
+  inspect_task_manager: { plan: "InspectTaskManager" },
+  inspect_resource_monitor: { plan: "InspectResourceMonitor" },
+  review_application_support_information: { plan: "ReviewApplicationSupportInformation" },
+  safely_close_application: { plan: "SafelyCloseApplication" },
+  verify_system_resource_utilization: { plan: "VerifySystemResourceUtilization" },
 
   check_browser_cache: { plan: "CheckBrowserCache" },
   clear_browser_cache: { plan: "ClearBrowserCache" },

@@ -233,6 +233,15 @@ not_receiving_email_inbox_rule_redirecting:
           low_memory: (facts) =>
             facts.memory_heavy_apps_closed &&
             !facts.memory_ok,
+
+          computer_running_slowly_memory_leak: (facts) =>
+            (facts.identity_verified &&
+              !facts.initial_performance_check_completed) ||
+            (facts.workstation_restarted &&
+              !facts.post_restart_performance_check_completed) ||
+            (facts.post_update_resources_verified &&
+              facts.memory_growth_not_reproduced &&
+              !facts.user_confirmation_received),
         },
       }),
 
@@ -339,6 +348,7 @@ confirm_user_resolution:
       network_printer_not_printing: (facts) => facts.printer_port_configuration_corrected && facts.queued_document_printed && facts.windows_test_page_printed && !facts.user_resolution_confirmed,
       tcp_port_connectivity: (facts) => facts.application_connection_verified && !facts.user_resolution_confirmed,
       active_directory_locked_employee_account: (facts) => facts.recurring_lockout_confirmed && facts.outdated_credential_removed && facts.second_account_unlock_completed && facts.final_login_succeeded && facts.affected_network_resource_verified && !facts.user_resolution_confirmed,
+      active_network_connections_application_port_conflict: (facts) => facts.reporting_functionality_verified && !facts.user_resolution_confirmed,
     },
   }),
 ping_printer:
@@ -1359,6 +1369,8 @@ check_disk_space:
         scenarios: {
           disk_space_full: (facts) =>
             !facts.disk_checked,
+          computer_running_slowly_memory_leak: (facts) =>
+            facts.symptoms_recurred && !facts.disk_space_checked,
         },
       }),
 
@@ -1485,6 +1497,11 @@ check_disk_space:
         scenarios: {
           software_update_required: (facts) =>
             facts.software_version_checked &&
+            !facts.software_update_installed,
+          computer_running_slowly_memory_leak: (facts) =>
+            facts.support_information_reviewed &&
+            facts.update_authorized &&
+            facts.application_safely_closed &&
             !facts.software_update_installed,
         },
       }),

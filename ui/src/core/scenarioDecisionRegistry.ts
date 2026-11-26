@@ -601,6 +601,45 @@ second_monitor_display_adapter_code_43:
     }
   ),
 
+computer_running_slowly_memory_leak:
+  defineScenarioProcedureRules("computer_running_slowly_memory_leak", {
+    restart_workstation: (facts) =>
+      facts.identity_verified &&
+      facts.initial_performance_check_completed &&
+      !facts.workstation_restarted,
+
+    inspect_task_manager: (facts) =>
+      facts.symptoms_recurred &&
+      facts.disk_space_checked &&
+      !facts.task_manager_inspected,
+
+    inspect_resource_monitor: (facts) =>
+      facts.task_manager_inspected &&
+      facts.resource_pressure_observed &&
+      !facts.resource_monitor_inspected,
+
+    review_application_support_information: (facts) =>
+      facts.resource_monitor_inspected &&
+      facts.baseline_memory_growth_observed &&
+      !facts.support_information_reviewed,
+
+    safely_close_application: (facts) =>
+      facts.support_information_reviewed &&
+      facts.documented_memory_leak_confirmed &&
+      facts.update_authorized &&
+      facts.sync_tool_running &&
+      !facts.application_safely_closed,
+
+    check_software_version: (facts) =>
+      facts.software_update_installed &&
+      facts.sync_tool_version === "2.4.2" &&
+      !facts.updated_application_verified,
+
+    verify_system_resource_utilization: (facts) =>
+      facts.updated_application_verified &&
+      !facts.post_update_resources_verified,
+  }),
+
 browser_running_slow_extension:
   defineScenarioProcedureRules("browser_running_slow_extension", {
     check_browser_cache: (facts) =>
@@ -654,6 +693,45 @@ browser_running_slow_extension:
           facts.printer_physical_status_checked &&
           !facts.printer_status_checked,
       }),
+
+    active_network_connections_application_port_conflict:
+      defineScenarioProcedureRules(
+        "active_network_connections_application_port_conflict",
+        {
+          open_company_reporting_tool: (facts) =>
+            facts.identity_verified &&
+            (!facts.application_startup_failure_reproduced ||
+              (facts.conflicting_listener_absence_verified &&
+                !facts.company_reporting_tool_running)),
+          open_reporting_config_ini: (facts) =>
+            facts.application_startup_failure_reproduced &&
+            !facts.reporting_configuration_inspected,
+          inspect_tcp_8080_listener: (facts) =>
+            (facts.reporting_configuration_inspected &&
+              !facts.conflicting_listener_discovered) ||
+            (facts.report_preview_tool_closed &&
+              !facts.conflicting_listener_absence_verified) ||
+            (facts.company_reporting_tool_running &&
+              !facts.reporting_listener_discovered),
+          identify_report_preview_process: (facts) =>
+            facts.conflicting_listener_discovered &&
+            !facts.conflicting_process_identified,
+          check_report_preview_tool: (facts) =>
+            facts.conflicting_process_identified &&
+            !facts.report_preview_tool_operational_status_checked,
+          close_report_preview_tool: (facts) =>
+            facts.report_preview_tool_operational_status_checked &&
+            facts.report_preview_tool_safe_to_close &&
+            facts.report_preview_tool_running &&
+            !facts.report_preview_tool_closed,
+          identify_company_reporting_process: (facts) =>
+            facts.reporting_listener_discovered &&
+            !facts.reporting_process_owner_verified,
+          test_company_reporting_tool: (facts) =>
+            facts.reporting_process_owner_verified &&
+            !facts.reporting_functionality_verified,
+        }
+      ),
 
     printer_not_working:
       defineScenarioProcedureRules("printer_not_working", {

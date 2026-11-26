@@ -110,6 +110,7 @@ const INVESTIGATION_SCENARIO_LABELS = [
   "Second Monitor — Display Adapter Code 43",
   "Email Client Won't Open — Corrupted Profile",
   "Classic Outlook — Working Offline",
+  "Computer Running Slowly",
 ] as const;
 
 function pickRandomInvestigationScenario() {

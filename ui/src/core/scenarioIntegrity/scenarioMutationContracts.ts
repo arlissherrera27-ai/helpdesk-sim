@@ -50,6 +50,64 @@ export const SCENARIO_MUTATION_CONTRACTS:
       },
     },
 
+    computer_running_slowly_memory_leak: {
+      verify_identity: {
+        allowedFacts: ["identity_verified"],
+        expectedFacts: ["identity_verified"],
+      },
+      test_performance: [
+        {
+          allowedFacts: ["initial_performance_check_completed"],
+          expectedFacts: ["initial_performance_check_completed"],
+        },
+        {
+          allowedFacts: ["post_restart_performance_check_completed", "symptoms_recurred"],
+          expectedFacts: ["post_restart_performance_check_completed", "symptoms_recurred"],
+        },
+        {
+          allowedFacts: ["final_performance_verified", "user_confirmation_received"],
+          expectedFacts: ["final_performance_verified", "user_confirmation_received"],
+          mayChangeResult: true,
+        },
+      ],
+      restart_workstation: {
+        allowedFacts: ["restart_authorized", "workstation_restarted"],
+        expectedFacts: ["restart_authorized", "workstation_restarted"],
+      },
+      check_disk_space: {
+        allowedFacts: ["disk_space_checked"],
+        expectedFacts: ["disk_space_checked"],
+      },
+      inspect_task_manager: {
+        allowedFacts: ["task_manager_inspected", "resource_pressure_observed"],
+        expectedFacts: ["task_manager_inspected", "resource_pressure_observed"],
+      },
+      inspect_resource_monitor: {
+        allowedFacts: ["resource_monitor_inspected", "paging_activity_observed", "baseline_memory_growth_observed"],
+        expectedFacts: ["resource_monitor_inspected", "paging_activity_observed", "baseline_memory_growth_observed"],
+      },
+      review_application_support_information: {
+        allowedFacts: ["support_information_reviewed", "documented_memory_leak_confirmed", "update_authorized"],
+        expectedFacts: ["support_information_reviewed", "documented_memory_leak_confirmed", "update_authorized"],
+      },
+      safely_close_application: {
+        allowedFacts: ["sync_tool_running", "application_safely_closed"],
+        expectedFacts: ["sync_tool_running", "application_safely_closed"],
+      },
+      install_software_update: {
+        allowedFacts: ["sync_tool_version", "software_update_installed"],
+        expectedFacts: ["sync_tool_version", "software_update_installed"],
+      },
+      check_software_version: {
+        allowedFacts: ["sync_tool_running", "updated_application_verified"],
+        expectedFacts: ["sync_tool_running", "updated_application_verified"],
+      },
+      verify_system_resource_utilization: {
+        allowedFacts: ["post_update_resources_verified", "memory_growth_not_reproduced"],
+        expectedFacts: ["post_update_resources_verified", "memory_growth_not_reproduced"],
+      },
+    },
+
     too_many_apps_running: {
       verify_identity: {
         allowedFacts: ["identity_verified"],
@@ -1329,6 +1387,80 @@ tcp_port_connectivity: {
   test_application_connection: {
     allowedFacts: ["application_connection_verified"],
     expectedFacts: ["application_connection_verified"],
+  },
+  confirm_user_resolution: {
+    allowedFacts: ["user_resolution_confirmed"],
+    expectedFacts: ["user_resolution_confirmed"],
+    mayChangeResult: true,
+  },
+},
+
+active_network_connections_application_port_conflict: {
+  verify_identity: {
+    allowedFacts: ["identity_verified"],
+    expectedFacts: ["identity_verified"],
+  },
+  open_company_reporting_tool: [
+    {
+      allowedFacts: ["application_startup_failure_reproduced"],
+      expectedFacts: ["application_startup_failure_reproduced"],
+    },
+    {
+      allowedFacts: ["company_reporting_tool_running"],
+      expectedFacts: ["company_reporting_tool_running"],
+    },
+  ],
+  open_reporting_config_ini: {
+    allowedFacts: ["reporting_configuration_inspected"],
+    expectedFacts: ["reporting_configuration_inspected"],
+  },
+  inspect_tcp_8080_listener: [
+    {
+      allowedFacts: ["conflicting_listener_discovered"],
+      expectedFacts: ["conflicting_listener_discovered"],
+    },
+    {
+      allowedFacts: ["conflicting_listener_absence_verified"],
+      expectedFacts: ["conflicting_listener_absence_verified"],
+    },
+    {
+      allowedFacts: ["reporting_listener_discovered"],
+      expectedFacts: ["reporting_listener_discovered"],
+    },
+  ],
+  identify_report_preview_process: {
+    allowedFacts: ["conflicting_process_identified"],
+    expectedFacts: ["conflicting_process_identified"],
+  },
+  check_report_preview_tool: {
+    allowedFacts: [
+      "report_preview_tool_operational_status_checked",
+      "report_preview_tool_safe_to_close",
+    ],
+    expectedFacts: [
+      "report_preview_tool_operational_status_checked",
+      "report_preview_tool_safe_to_close",
+    ],
+  },
+  close_report_preview_tool: {
+    allowedFacts: [
+      "report_preview_tool_running",
+      "report_preview_tool_closed",
+      "conflicting_listener_present",
+    ],
+    expectedFacts: [
+      "report_preview_tool_running",
+      "report_preview_tool_closed",
+      "conflicting_listener_present",
+    ],
+  },
+  identify_company_reporting_process: {
+    allowedFacts: ["reporting_process_owner_verified"],
+    expectedFacts: ["reporting_process_owner_verified"],
+  },
+  test_company_reporting_tool: {
+    allowedFacts: ["reporting_functionality_verified"],
+    expectedFacts: ["reporting_functionality_verified"],
   },
   confirm_user_resolution: {
     allowedFacts: ["user_resolution_confirmed"],

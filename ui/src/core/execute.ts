@@ -54,6 +54,8 @@ const DNS_SCENARIO_ID = "dns_lookup_website_not_opening";
 const PRINTER_SCENARIO_ID = "network_printer_not_printing";
 const TCP_SCENARIO_ID = "tcp_port_connectivity";
 const ACTIVE_DIRECTORY_LOCKOUT_SCENARIO_ID = "active_directory_locked_employee_account";
+const ACTIVE_NETWORK_CONNECTIONS_SCENARIO_ID = "active_network_connections_application_port_conflict";
+const COMPUTER_RUNNING_SLOWLY_SCENARIO_ID = "computer_running_slowly_memory_leak";
 
 function isExpectedDhcpProcedure(
   state: SimState,
@@ -133,6 +135,33 @@ function isExpectedTcpProcedure(state: SimState, command: string): boolean {
 
 function tcpProcedureError(command: string): StatePatch {
   return wrongScenarioError("TCP_PROCEDURE_PREREQUISITE_FAILED", "The TCP connectivity procedure is not authorized in the current state.", command);
+}
+
+function isExpectedActiveNetworkConnectionsProcedure(
+  state: SimState,
+  command: string,
+): boolean {
+  if (
+    state.scenario !== ACTIVE_NETWORK_CONNECTIONS_SCENARIO_ID ||
+    state.scenarioFacts?.kind !== ACTIVE_NETWORK_CONNECTIONS_SCENARIO_ID
+  ) {
+    return false;
+  }
+
+  const procedureIndex = getSuccessfulScenarioProcedureCount(
+    state.scenario,
+    state.runLog,
+  );
+
+  return getScenarioProcedureCommands(state.scenario)[procedureIndex] === command;
+}
+
+function activeNetworkConnectionsProcedureError(command: string): StatePatch {
+  return wrongScenarioError(
+    "ACTIVE_NETWORK_CONNECTIONS_PROCEDURE_PREREQUISITE_FAILED",
+    "The Active Network Connections procedure is not authorized in the current state.",
+    command,
+  );
 }
 
 function isExpectedActiveDirectoryLockoutProcedure(
@@ -2392,6 +2421,166 @@ case "CheckApplicationError": {
   return updateScenarioFacts(facts, { application_error_checked: true });
 }
 
+case "OpenCompanyReportingTool": {
+  const facts = getScenarioFacts(state, ACTIVE_NETWORK_CONNECTIONS_SCENARIO_ID);
+  const procedureIndex = getSuccessfulScenarioProcedureCount(state.scenario, state.runLog);
+  if (!facts || !isExpectedActiveNetworkConnectionsProcedure(state, "open_company_reporting_tool")) {
+    return activeNetworkConnectionsProcedureError("open_company_reporting_tool");
+  }
+  if (
+    procedureIndex === 1 &&
+    facts.identity_verified &&
+    !facts.application_startup_failure_reproduced
+  ) {
+    return updateScenarioFacts(facts, {
+      application_startup_failure_reproduced: true,
+    });
+  }
+  if (
+    procedureIndex === 8 &&
+    facts.conflicting_listener_absence_verified &&
+    !facts.company_reporting_tool_running
+  ) {
+    return updateScenarioFacts(facts, {
+      company_reporting_tool_running: true,
+    });
+  }
+  return activeNetworkConnectionsProcedureError("open_company_reporting_tool");
+}
+
+case "OpenReportingConfigIni": {
+  const facts = getScenarioFacts(state, ACTIVE_NETWORK_CONNECTIONS_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveNetworkConnectionsProcedure(state, "open_reporting_config_ini") ||
+    !facts.application_startup_failure_reproduced ||
+    facts.reporting_configuration_inspected
+  ) {
+    return activeNetworkConnectionsProcedureError("open_reporting_config_ini");
+  }
+  return updateScenarioFacts(facts, {
+    reporting_configuration_inspected: true,
+  });
+}
+
+case "InspectTcp8080Listener": {
+  const facts = getScenarioFacts(state, ACTIVE_NETWORK_CONNECTIONS_SCENARIO_ID);
+  const procedureIndex = getSuccessfulScenarioProcedureCount(state.scenario, state.runLog);
+  if (!facts || !isExpectedActiveNetworkConnectionsProcedure(state, "inspect_tcp_8080_listener")) {
+    return activeNetworkConnectionsProcedureError("inspect_tcp_8080_listener");
+  }
+  if (
+    procedureIndex === 3 &&
+    facts.reporting_configuration_inspected &&
+    !facts.conflicting_listener_discovered
+  ) {
+    return updateScenarioFacts(facts, {
+      conflicting_listener_discovered: true,
+    });
+  }
+  if (
+    procedureIndex === 7 &&
+    facts.report_preview_tool_closed &&
+    !facts.conflicting_listener_present &&
+    !facts.conflicting_listener_absence_verified
+  ) {
+    return updateScenarioFacts(facts, {
+      conflicting_listener_absence_verified: true,
+    });
+  }
+  if (
+    procedureIndex === 9 &&
+    facts.company_reporting_tool_running &&
+    !facts.reporting_listener_discovered
+  ) {
+    return updateScenarioFacts(facts, {
+      reporting_listener_discovered: true,
+    });
+  }
+  return activeNetworkConnectionsProcedureError("inspect_tcp_8080_listener");
+}
+
+case "IdentifyReportPreviewProcess": {
+  const facts = getScenarioFacts(state, ACTIVE_NETWORK_CONNECTIONS_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveNetworkConnectionsProcedure(state, "identify_report_preview_process") ||
+    !facts.conflicting_listener_discovered ||
+    facts.conflicting_process_identified
+  ) {
+    return activeNetworkConnectionsProcedureError("identify_report_preview_process");
+  }
+  return updateScenarioFacts(facts, {
+    conflicting_process_identified: true,
+  });
+}
+
+case "CheckReportPreviewTool": {
+  const facts = getScenarioFacts(state, ACTIVE_NETWORK_CONNECTIONS_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveNetworkConnectionsProcedure(state, "check_report_preview_tool") ||
+    !facts.conflicting_process_identified ||
+    facts.report_preview_tool_operational_status_checked
+  ) {
+    return activeNetworkConnectionsProcedureError("check_report_preview_tool");
+  }
+  return updateScenarioFacts(facts, {
+    report_preview_tool_operational_status_checked: true,
+    report_preview_tool_safe_to_close: true,
+  });
+}
+
+case "CloseReportPreviewTool": {
+  const facts = getScenarioFacts(state, ACTIVE_NETWORK_CONNECTIONS_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveNetworkConnectionsProcedure(state, "close_report_preview_tool") ||
+    !facts.report_preview_tool_operational_status_checked ||
+    !facts.report_preview_tool_safe_to_close ||
+    !facts.report_preview_tool_running ||
+    facts.report_preview_tool_closed
+  ) {
+    return activeNetworkConnectionsProcedureError("close_report_preview_tool");
+  }
+  return updateScenarioFacts(facts, {
+    report_preview_tool_running: false,
+    report_preview_tool_closed: true,
+    conflicting_listener_present: false,
+  });
+}
+
+case "IdentifyCompanyReportingProcess": {
+  const facts = getScenarioFacts(state, ACTIVE_NETWORK_CONNECTIONS_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveNetworkConnectionsProcedure(state, "identify_company_reporting_process") ||
+    !facts.reporting_listener_discovered ||
+    facts.reporting_process_owner_verified
+  ) {
+    return activeNetworkConnectionsProcedureError("identify_company_reporting_process");
+  }
+  return updateScenarioFacts(facts, {
+    reporting_process_owner_verified: true,
+  });
+}
+
+case "TestCompanyReportingTool": {
+  const facts = getScenarioFacts(state, ACTIVE_NETWORK_CONNECTIONS_SCENARIO_ID);
+  if (
+    !facts ||
+    !isExpectedActiveNetworkConnectionsProcedure(state, "test_company_reporting_tool") ||
+    !facts.company_reporting_tool_running ||
+    !facts.reporting_process_owner_verified ||
+    facts.reporting_functionality_verified
+  ) {
+    return activeNetworkConnectionsProcedureError("test_company_reporting_tool");
+  }
+  return updateScenarioFacts(facts, {
+    reporting_functionality_verified: true,
+  });
+}
+
 case "CheckPhysicalNetworkConnection": {
   const facts = getScenarioFacts(state, TCP_SCENARIO_ID);
   if (!facts || !isExpectedTcpProcedure(state, "check_physical_network_connection") || !facts.application_error_checked || facts.physical_network_connection_checked) return tcpProcedureError("check_physical_network_connection");
@@ -2447,6 +2636,23 @@ case "TestApplicationConnection": {
 }
 
 case "ConfirmUserResolution": {
+  const activeNetworkConnectionsFacts = getScenarioFacts(
+    state,
+    ACTIVE_NETWORK_CONNECTIONS_SCENARIO_ID,
+  );
+  if (activeNetworkConnectionsFacts) {
+    if (
+      !isExpectedActiveNetworkConnectionsProcedure(state, "confirm_user_resolution") ||
+      !activeNetworkConnectionsFacts.reporting_functionality_verified ||
+      activeNetworkConnectionsFacts.user_resolution_confirmed
+    ) {
+      return activeNetworkConnectionsProcedureError("confirm_user_resolution");
+    }
+    return completeScenario(activeNetworkConnectionsFacts, {
+      user_resolution_confirmed: true,
+    });
+  }
+
   const tcpFacts = getScenarioFacts(state, TCP_SCENARIO_ID);
   if (tcpFacts) {
     if (!isExpectedTcpProcedure(state, "confirm_user_resolution") || !tcpFacts.application_connection_verified || tcpFacts.user_resolution_confirmed) {
@@ -3598,6 +3804,32 @@ case "TestPerformance": {
     });
   }
 
+  if (facts.kind === COMPUTER_RUNNING_SLOWLY_SCENARIO_ID) {
+    if (facts.identity_verified && !facts.initial_performance_check_completed) {
+      return updateScenarioFacts(facts, {
+        initial_performance_check_completed: true,
+      });
+    }
+
+    if (facts.workstation_restarted && !facts.post_restart_performance_check_completed) {
+      return updateScenarioFacts(facts, {
+        post_restart_performance_check_completed: true,
+        symptoms_recurred: true,
+      });
+    }
+
+    if (
+      facts.post_update_resources_verified &&
+      facts.memory_growth_not_reproduced &&
+      !facts.user_confirmation_received
+    ) {
+      return completeScenario(facts, {
+        final_performance_verified: true,
+        user_confirmation_received: true,
+      });
+    }
+  }
+
   return wrongScenarioError(
     "TEST_PERFORMANCE_WRONG_SCENARIO",
     "test_performance is not valid for this scenario.",
@@ -3642,6 +3874,109 @@ case "CloseMemoryHeavyApps": {
 
   return updateScenarioFacts(facts, {
     memory_heavy_apps_closed: true,
+  });
+}
+
+case "InspectTaskManager": {
+  const facts = getScenarioFacts(state, COMPUTER_RUNNING_SLOWLY_SCENARIO_ID);
+  if (
+    !facts ||
+    facts.task_manager_inspected ||
+    !facts.symptoms_recurred ||
+    !facts.disk_space_checked
+  ) {
+    return wrongScenarioError(
+      "INSPECT_TASK_MANAGER_PREREQUISITE_FAILED",
+      "Task Manager inspection is not authorized by the current Computer Running Slowly evidence.",
+      "inspect_task_manager",
+    );
+  }
+  return updateScenarioFacts(facts, {
+    task_manager_inspected: true,
+    resource_pressure_observed: true,
+  });
+}
+
+case "InspectResourceMonitor": {
+  const facts = getScenarioFacts(state, COMPUTER_RUNNING_SLOWLY_SCENARIO_ID);
+  if (
+    !facts ||
+    !facts.task_manager_inspected ||
+    !facts.resource_pressure_observed ||
+    facts.resource_monitor_inspected
+  ) {
+    return wrongScenarioError(
+      "INSPECT_RESOURCE_MONITOR_PREREQUISITE_FAILED",
+      "Resource Monitor inspection requires the preceding Task Manager evidence.",
+      "inspect_resource_monitor",
+    );
+  }
+  return updateScenarioFacts(facts, {
+    resource_monitor_inspected: true,
+    paging_activity_observed: true,
+    baseline_memory_growth_observed: true,
+  });
+}
+
+case "ReviewApplicationSupportInformation": {
+  const facts = getScenarioFacts(state, COMPUTER_RUNNING_SLOWLY_SCENARIO_ID);
+  if (
+    !facts ||
+    !facts.resource_monitor_inspected ||
+    !facts.baseline_memory_growth_observed ||
+    facts.support_information_reviewed
+  ) {
+    return wrongScenarioError(
+      "REVIEW_APPLICATION_SUPPORT_PREREQUISITE_FAILED",
+      "Application support information requires the preceding resource evidence.",
+      "review_application_support_information",
+    );
+  }
+  return updateScenarioFacts(facts, {
+    support_information_reviewed: true,
+    documented_memory_leak_confirmed: true,
+    update_authorized: true,
+  });
+}
+
+case "SafelyCloseApplication": {
+  const facts = getScenarioFacts(state, COMPUTER_RUNNING_SLOWLY_SCENARIO_ID);
+  if (
+    !facts ||
+    !facts.support_information_reviewed ||
+    !facts.documented_memory_leak_confirmed ||
+    !facts.update_authorized ||
+    !facts.sync_tool_running ||
+    facts.application_safely_closed
+  ) {
+    return wrongScenarioError(
+      "SAFE_APPLICATION_CLOSE_PREREQUISITE_FAILED",
+      "Company Sync Tool cannot be closed until support authorization and operational safety are established.",
+      "safely_close_application",
+    );
+  }
+  return updateScenarioFacts(facts, {
+    sync_tool_running: false,
+    application_safely_closed: true,
+  });
+}
+
+case "VerifySystemResourceUtilization": {
+  const facts = getScenarioFacts(state, COMPUTER_RUNNING_SLOWLY_SCENARIO_ID);
+  if (
+    !facts ||
+    !facts.updated_application_verified ||
+    facts.post_update_resources_verified
+  ) {
+    return wrongScenarioError(
+      "POST_UPDATE_RESOURCE_VERIFICATION_PREREQUISITE_FAILED",
+      "System resources cannot be verified until the updated application has been verified.",
+      "verify_system_resource_utilization",
+    );
+  }
+  return updateScenarioFacts(facts, {
+    post_update_resources_verified: true,
+    memory_growth_not_reproduced: true,
   });
 }
 
@@ -3779,6 +4114,18 @@ case "PrintTestPage": {
 // disk_space_full
 
 case "CheckDiskSpace": {
+  const computerSlowFacts = getScenarioFacts(state, COMPUTER_RUNNING_SLOWLY_SCENARIO_ID);
+  if (computerSlowFacts) {
+    if (!computerSlowFacts.symptoms_recurred || computerSlowFacts.disk_space_checked) {
+      return wrongScenarioError(
+        "COMPUTER_SLOW_DISK_CHECK_PREREQUISITE_FAILED",
+        "Disk capacity cannot be checked before the performance issue recurs or repeated after completion.",
+        "check_disk_space",
+      );
+    }
+    return updateScenarioFacts(computerSlowFacts, { disk_space_checked: true });
+  }
+
   const facts = getScenarioFacts(
     state,
     "disk_space_full"
@@ -4153,6 +4500,25 @@ if (
 // software_update_required
 
 case "CheckSoftwareVersion": {
+  const computerSlowFacts = getScenarioFacts(state, COMPUTER_RUNNING_SLOWLY_SCENARIO_ID);
+  if (computerSlowFacts) {
+    if (
+      !computerSlowFacts.software_update_installed ||
+      computerSlowFacts.sync_tool_version !== "2.4.2" ||
+      computerSlowFacts.updated_application_verified
+    ) {
+      return wrongScenarioError(
+        "COMPUTER_SYNC_VERSION_CHECK_PREREQUISITE_FAILED",
+        "The corrected application version cannot be verified before the approved update is installed.",
+        "check_software_version",
+      );
+    }
+    return updateScenarioFacts(computerSlowFacts, {
+      sync_tool_running: true,
+      updated_application_verified: true,
+    });
+  }
+
   const facts = getScenarioFacts(
     state,
     "software_update_required"
@@ -4172,6 +4538,27 @@ case "CheckSoftwareVersion": {
 }
 
 case "InstallSoftwareUpdate": {
+  const computerSlowFacts = getScenarioFacts(state, COMPUTER_RUNNING_SLOWLY_SCENARIO_ID);
+  if (computerSlowFacts) {
+    if (
+      !computerSlowFacts.support_information_reviewed ||
+      !computerSlowFacts.update_authorized ||
+      !computerSlowFacts.application_safely_closed ||
+      computerSlowFacts.sync_tool_running ||
+      computerSlowFacts.software_update_installed
+    ) {
+      return wrongScenarioError(
+        "COMPUTER_SYNC_UPDATE_PREREQUISITE_FAILED",
+        "The approved update requires documented authorization and safe application closure.",
+        "install_software_update",
+      );
+    }
+    return updateScenarioFacts(computerSlowFacts, {
+      sync_tool_version: "2.4.2",
+      software_update_installed: true,
+    });
+  }
+
   const facts = getScenarioFacts(
     state,
     "software_update_required"
@@ -5457,6 +5844,25 @@ case "ResetGraphicsDriver": {
 }
 
 case "RestartWorkstation": {
+  const computerSlowFacts = getScenarioFacts(state, COMPUTER_RUNNING_SLOWLY_SCENARIO_ID);
+  if (computerSlowFacts) {
+    if (
+      !computerSlowFacts.identity_verified ||
+      !computerSlowFacts.initial_performance_check_completed ||
+      computerSlowFacts.workstation_restarted
+    ) {
+      return wrongScenarioError(
+        "COMPUTER_SLOW_RESTART_PREREQUISITE_FAILED",
+        "The workstation restart is not authorized by the current scenario state.",
+        "restart_workstation",
+      );
+    }
+    return updateScenarioFacts(computerSlowFacts, {
+      restart_authorized: true,
+      workstation_restarted: true,
+    });
+  }
+
   const facts = getScenarioFacts(
     state,
     "second_monitor_display_adapter_code_43"

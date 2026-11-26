@@ -382,7 +382,8 @@ if (command.kind === "restart") {
   if (
     state.scenarioFacts?.kind === "dhcp_apipa_troubleshooting" ||
     state.scenarioFacts?.kind === "dns_lookup_website_not_opening" ||
-    state.scenarioFacts?.kind === "network_printer_not_printing"
+    state.scenarioFacts?.kind === "network_printer_not_printing" ||
+    state.scenarioFacts?.kind === "active_network_connections_application_port_conflict"
   ) {
     const procedureIndex = getSuccessfulScenarioProcedureCount(
       state.scenario,
@@ -391,7 +392,15 @@ if (command.kind === "restart") {
     const expectedCommand =
       getScenarioProcedureCommands(state.scenario)[procedureIndex];
 
-    if (command.kind !== expectedCommand) {
+    const registeredInvestigationAction =
+      state.scenarioFacts?.kind ===
+        "active_network_connections_application_port_conflict" &&
+      state.mode === "investigation" &&
+      state.scenario !== null &&
+      isValidScenarioId(state.scenario) &&
+      isScenarioInvestigationRelatedAction(state.scenario, command.kind);
+
+    if (command.kind !== expectedCommand && !registeredInvestigationAction) {
       return denyProcedure(command.kind);
     }
   }
